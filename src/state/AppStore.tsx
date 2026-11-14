@@ -37,6 +37,7 @@ import { chapterIndexAt, transcriptIndexAt } from '../lib/episode';
 import { clamp } from '../lib/format';
 import { feedUrlKey } from '../lib/urls';
 import { showDisplayTitle } from '../lib/shows';
+import { assetUrl, STATIC_DEMO } from '../lib/env';
 
 export interface ToastMessage {
   id: number;
@@ -387,6 +388,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   // lazily during the first play so browsers treat it as user-initiated, then
   // the live bars read from it without putting spectrum data into React state.
   const ensureSpectrum = useCallback(() => {
+    // GitHub Pages has no CORS proxy; do not taint direct audio with an analyser.
+    if (STATIC_DEMO) return;
     const context = audioContextRef.current;
     if (context) {
       if (context.state === 'suspended') void context.resume().catch(() => undefined);
@@ -1110,7 +1113,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         {
           src: image
             ? new URL(image, window.location.origin).toString()
-            : new URL('/icon.svg', window.location.origin).toString(),
+            : new URL(assetUrl('icon.svg'), window.location.origin).toString(),
           sizes: '512x512',
           type: 'image/svg+xml',
         },
@@ -1301,7 +1304,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         ref={audioEl}
         preload="metadata"
         playsInline
-        crossOrigin="anonymous"
+        crossOrigin={STATIC_DEMO ? undefined : 'anonymous'}
         onPlay={() => {
           const context = audioContextRef.current;
           if (context?.state === 'suspended') void context.resume().catch(() => undefined);

@@ -1,7 +1,12 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
 /* 留频 · offline app shell. API and audio are always network-only. */
-const CACHE = 'stay-tuned-shell-v1';
+const CACHE = 'stay-tuned-shell-v2';
+const SCOPE = self.registration.scope;
+const SHELL_URL = new URL('./', SCOPE).toString();
+const BASE_PATH = new URL('./', SCOPE).pathname;
+const API_PREFIX = `${BASE_PATH}api/`;
+const AUDIO_PREFIX = `${BASE_PATH}audio/`;
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -29,7 +34,7 @@ self.addEventListener('fetch', (event) => {
   }
   if (url.origin !== self.location.origin) return;
   // Live data and media must never come from the shell cache.
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/audio/')) return;
+  if (url.pathname.startsWith(API_PREFIX) || url.pathname.startsWith(AUDIO_PREFIX)) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(
@@ -37,12 +42,12 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           if (response.ok) {
             const copy = response.clone();
-            void caches.open(CACHE).then((cache) => cache.put('/', copy));
+            void caches.open(CACHE).then((cache) => cache.put(SHELL_URL, copy));
           }
           return response;
         })
         .catch(async () => {
-          const cached = await caches.match('/');
+          const cached = await caches.match(SHELL_URL);
           return cached || new Response('留频需要网络连接才能调谐新的声音。', {
             status: 503,
             headers: { 'content-type': 'text/plain; charset=utf-8' },

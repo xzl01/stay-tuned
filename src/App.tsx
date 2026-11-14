@@ -9,6 +9,7 @@ import { LibrarySheet } from './components/LibrarySheet';
 import { QueueSheet } from './components/QueueSheet';
 import { ToastStack } from './components/ui/Primitives';
 import { Receiver3DEggContext } from './hooks/usePlayEasterEgg';
+import { STATIC_DEMO } from './lib/env';
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -29,6 +30,7 @@ function AppShell() {
     skip,
     toggleMute,
     setTheme,
+    notify,
   } = useAppStore();
   const isMobile = useIsMobile();
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -52,6 +54,14 @@ function AppShell() {
     const meta = document.querySelector('meta[name="theme-color"]');
     meta?.setAttribute('content', prefs.theme === 'dark' ? '#121410' : '#efece4');
   }, [prefs.theme, prefs.mode]);
+
+  useEffect(() => {
+    if (!STATIC_DEMO) return;
+    const timer = window.setTimeout(() => {
+      notify('GitHub Pages 静态演示版：示例内容可播放；RSS、搜索、M3U 导入与代理流请在本机运行完整版。');
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [notify]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

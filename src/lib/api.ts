@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
 import type { Chapter, FeedResponse, PodcastSearchResult, Station, TranscriptLine } from '../types';
+import { STATIC_DEMO } from './env';
 
 export class ApiError extends Error {
   status: number;
@@ -11,6 +12,9 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, params?: Record<string, string>, signal?: AbortSignal): Promise<T> {
+  if (STATIC_DEMO) {
+    throw new ApiError('GitHub Pages 是静态演示版；RSS、搜索和 M3U 导入请在本机运行完整版。');
+  }
   const url = new URL(path, window.location.origin);
   for (const [key, value] of Object.entries(params ?? {})) {
     if (value != null) url.searchParams.set(key, value);
@@ -63,6 +67,9 @@ export function fetchPlaylist(url: string, signal?: AbortSignal): Promise<{ stat
 }
 
 export async function parsePlaylistText(text: string): Promise<Station[]> {
+  if (STATIC_DEMO) {
+    throw new ApiError('GitHub Pages 是静态演示版；本地 M3U 导入请在本机运行完整版。');
+  }
   const response = await fetch('/api/playlist/parse', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -109,6 +116,7 @@ export function isHlsUrl(url: string): boolean {
 
 export function proxiedImage(url?: string): string | undefined {
   if (!url) return undefined;
+  if (STATIC_DEMO) return url;
   if (url.startsWith('/') || url.startsWith('data:') || url.startsWith('blob:')) return url;
   if (!/^https?:/i.test(url)) return undefined;
   return `/api/image?url=${encodeURIComponent(url)}`;
@@ -116,10 +124,12 @@ export function proxiedImage(url?: string): string | undefined {
 
 export function audioSource(url: string): string {
   if (!url) return '';
+  if (STATIC_DEMO) return url;
   if (url.startsWith('/') || url.startsWith('data:') || url.startsWith('blob:')) return url;
   return `/api/audio?url=${encodeURIComponent(url)}`;
 }
 
 export function hlsSource(url: string): string {
+  if (STATIC_DEMO) return url;
   return `/api/hls?url=${encodeURIComponent(url)}`;
 }

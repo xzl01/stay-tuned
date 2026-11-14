@@ -1,6 +1,6 @@
 # 留频 · Stay Tuned
 
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE) [![Source](https://img.shields.io/badge/source-GitHub-24292f.svg)](https://github.com/xzl01/stay-tuned)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE) [![Source](https://img.shields.io/badge/source-GitHub-24292f.svg)](https://github.com/xzl01/stay-tuned) [![Static demo](https://img.shields.io/badge/demo-GitHub%20Pages-2ea44f.svg)](https://xzl01.github.io/stay-tuned/)
 
 一档可以**订阅 RSS 播客**、也可以**调谐 M3U 网络电台**的播放器。PC 与移动端各有一套独立编排的界面，支持拟物 / 扁平两种质感和浅色 / 深色两种主题。
 
@@ -95,6 +95,21 @@ npm start
 | --- | --- | --- |
 | `PORT` | `8787` | Node 服务端口 |
 | `HOST` | `0.0.0.0` | 监听地址；只想本机访问可设为 `127.0.0.1` |
+
+### GitHub Pages 静态演示
+
+仓库包含 [`.github/workflows/pages.yml`](.github/workflows/pages.yml)，推送到 `main` 后会自动构建并部署到：
+
+**<https://xzl01.github.io/stay-tuned/>**
+
+GitHub Pages 只能托管静态文件，因此该部署是**静态演示版**：
+
+- 内置示例播客、章节、文字稿和示例音频可以播放
+- 示例电台的直链音频可以尝试直接播放；HLS/跨域代理不保证可用
+- RSS 订阅、播客/电台搜索、M3U 导入、刷新、远程章节/文字稿等依赖 Node API 的功能会提示静态演示限制
+- 所有数据仍只保存在浏览器本地
+
+完整功能请在本机执行 `npm run dev` 或部署 Node 服务。Pages 构建使用 `VITE_BASE=/stay-tuned/` 和 `VITE_STATIC_DEMO=1`，并已适配子路径、PWA manifest 与 service worker scope。
 
 ### 测试
 

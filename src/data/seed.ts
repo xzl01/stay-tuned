@@ -2,6 +2,7 @@
 
 import type { Episode, Show, Station } from '../types';
 import type { PersistedState } from '../types';
+import { assetUrl } from '../lib/env';
 
 const dailyEpisodes: Episode[] = [
   {
@@ -10,7 +11,7 @@ const dailyEpisodes: Episode[] = [
     title: '在忙碌的世界里，重新找回专注',
     description:
       '我们总以为，专注是把时间填满。这一期，和林间一起从日常的缝隙里，重新理解注意力、留白，以及好好听完一段对话的意义。',
-    audioUrl: '/audio/forest-focus.mp3',
+    audioUrl: assetUrl('audio/forest-focus.mp3'),
     duration: 3136,
     pubDate: '2026-11-12T10:00:00+08:00',
     episodeNumber: 128,
@@ -50,7 +51,7 @@ const dailyEpisodes: Episode[] = [
     showId: 'demo-daily',
     title: '把一天过慢一点：与晨间仪式聊聊',
     description: '从烧水、磨豆到推开窗，晨间的重复动作如何为一天定下速度。',
-    audioUrl: '/audio/slow-morning.mp3',
+    audioUrl: assetUrl('audio/slow-morning.mp3'),
     duration: 720,
     pubDate: '2026-11-05T10:00:00+08:00',
     episodeNumber: 127,
@@ -73,7 +74,7 @@ const dailyEpisodes: Episode[] = [
     showId: 'demo-daily',
     title: '声音里的城市：从街角到站台',
     description: '带上录音机，沿着一条熟悉的街走到地铁站，记录城市在一天里的声场变化。',
-    audioUrl: '/audio/city-walk.mp3',
+    audioUrl: assetUrl('audio/city-walk.mp3'),
     duration: 960,
     pubDate: '2026-10-29T10:00:00+08:00',
     episodeNumber: 126,
@@ -118,7 +119,7 @@ export const seedShows: Show[] = [
         showId: 'demo-valley',
         title: '在雨声里整理房间',
         description: '下雨的周日，适合把抽屉里的旧东西一件一件拿出来。',
-        audioUrl: '/audio/slow-morning.mp3',
+        audioUrl: assetUrl('audio/slow-morning.mp3'),
         duration: 720,
         pubDate: '2026-11-09T08:00:00+08:00',
         episodeNumber: 12,
@@ -139,7 +140,7 @@ export const seedShows: Show[] = [
         showId: 'demo-valley',
         title: '写给三年后的自己',
         description: '一封没有寄出的信，和一段关于时间的声音。',
-        audioUrl: '/audio/city-walk.mp3',
+        audioUrl: assetUrl('audio/city-walk.mp3'),
         duration: 960,
         pubDate: '2026-11-02T08:00:00+08:00',
         episodeNumber: 11,
@@ -170,7 +171,7 @@ export const seedShows: Show[] = [
         showId: 'demo-studio',
         title: '一卷冬天的城市',
         description: '在光线最短的季节里，带着一卷胶片穿过城市。',
-        audioUrl: '/audio/city-walk.mp3',
+        audioUrl: assetUrl('audio/city-walk.mp3'),
         duration: 960,
         pubDate: '2026-11-08T18:00:00+08:00',
         episodeNumber: 33,
@@ -191,7 +192,7 @@ export const seedShows: Show[] = [
         showId: 'demo-studio',
         title: '暗房里的下午',
         description: '红色安全灯下，影像慢慢浮出来的那几个小时。',
-        audioUrl: '/audio/slow-morning.mp3',
+        audioUrl: assetUrl('audio/slow-morning.mp3'),
         duration: 720,
         pubDate: '2026-10-30T18:00:00+08:00',
         episodeNumber: 32,
