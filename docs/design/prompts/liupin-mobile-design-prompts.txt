@@ -1,0 +1,59 @@
+留频 · 手机端主播放页参考设计
+生成方式：内置 image_gen 图像生成与编辑工具。
+四种外观：亮色拟物、暗色拟物、亮色扁平、暗色扁平。
+手机端采用单列布局，保留外观与主题两个独立切换入口；章节及完整文字稿通过入口展开，播放控制位于下方。
+本次交付为静态参考图。
+
+LIGHT SKEUOMORPHIC — Final prompt
+Use case: ui-mockup.
+Create ONE beautiful MOBILE app primary playback screen for the Chinese podcast app "留频", translating the attached desktop design to a genuinely mobile layout. Attachment is a visual style and branding reference, not an edit target to shrink. This is the LIGHT SKEUOMORPHIC mobile appearance.
+Target design viewport 390 x 844 logical pixels, render sharply at 780 x 1688 if possible, exact portrait ratio. Output APP CONTENT ONLY, edge to edge; NO device body, bezel, notch, OS status bar, home indicator, browser chrome, external frame, captions or multiple screens. One coherent mobile screen, all content fits without clipping.
+
+Preserve brand identity and calm Braun/Dieter Rams functional industrial design: warm ivory background #F7F6F0, charcoal typography, muted olive details, vermilion #C85235 accent. Clean Chinese sans-serif, readable body 15-16px logical, title 24px, timecodes monospaced. Horizontal page margins24px. Purposeful whitespace, no nested cards, no gratuitous drop shadows outside radio. Current date anchor November14 2026, do not add dates.
+
+COMPOSITION in 390x844 logical coordinates:
+Top app header approx y20-64: small tuning-dial outline logo with orange vertical needle and wordmark "留频" on left. Right compact two-segment selector "拟物" / "扁平", "拟物" selected with subtle orange tinted fill, then small moon icon for dark theme. All fit neatly.
+Episode block y84-174: small olive/ivory architectural cover thumbnail 32px beside metadata "日常之间 · EP.128"; below, clear two-line title "在忙碌的世界里，" / "重新找回专注". Avoid big extra badges.
+Hero radio approx x24,y194,width342,height218: compact horizontal Braun-inspired radio maintaining reference speaker left, tuning scale and two knobs right. Realistic ivory ABS chassis with shallow visible top, beveled edges, soft grounded shadow, perforated grille, brushed silver radial-metal knobs, recessed chapter tuning scale marked 01 02 03, orange needle, dark olive display "18:42", tactile keys with one orange pause key. Tiny brand "留频". Keep proportion like desktop radio, do not squish. It must feel like a carefully rendered physical object and be the visual focus. Fine details may be decorative; large playback controls below handle touch.
+Below radio approx y430-476: compact fine chapter tick scale with orange section and labels "章节调谐", current "02 专注与留白" and a chevron to access chapter sheet. All text comfortably readable.
+Transcript preview approx y495-594: small heading "文字稿" with right link "查看全部 ›". Narrow orange line marks current spoken passage, rendered in two or three short readable lines: "给自己一点不被打扰的时间，" / "让注意力，慢慢回到生活本身。" No long transcript list and no nested text cards.
+Seek area approx y622-659: slim olive seek line with orange thumb at36%, then "18:42" at left and "52:16" at right.
+Transport row y686-748: circular-arrow15 rewind icon, large central orange circular PAUSE button 64px, circular-arrow30 forward icon. Clear touch areas at least44px.
+Supporting controls y774-818: "1.0×", moon icon "定时", heart outline "收藏", queue icon "队列", balanced understated row. No volume slider, no bottom global navigation needed on this full playback page.
+
+One polished, implementable mobile primary listening screen. Retain same familiar desktop episode and program identity; rethink hierarchy for mobile rather than shrinking desktop two columns. No new features, no giant cover replacing the radio, no repeated content.
+
+DARK SKEUOMORPHIC — Final prompt
+Use case: style-transfer / ui-mockup.
+Edit the attached mobile "留频" listening screen into its DARK SKEUOMORPHIC theme. Output ONE single full-screen portrait mobile app UI, same dimensions/aspect ratio as attached. Design target is 390 x 844 logical mobile viewport; match reference actual framing rather than stretching. APP CONTENT ONLY: no bezel, device, OS status bar or home indicator, no collage, no external annotations.
+Keep all layout, all positions, all Chinese text, typography, architectural cover artwork, logo, exact app name "留频", chapter scale, transcript, progress18:42/52:16, central pause and15/30 skip controls unchanged. Header style selector "拟物 / 扁平" remains with "拟物" selected. Change the moon at upper right to a sun icon, indicating switch to light theme.
+
+Theme: warm near-black background #181B17, slightly differentiated charcoal surfaces, soft ivory primary text #EFEEE6, clearly legible warm-grey secondary text #B2B7A7, muted olive functional accents, single vermilion #D55C36 for active needle, pause key, transcript marker and seek thumb. Keep artwork un-inverted in its original ivory/olive colors.
+
+Radio retains strong skeuomorphic Braun/Dieter Rams character: real shallow enclosure thickness and visible top plane, fine bevel, recessed dial and display, dark graphite matte ABS body, black perforated grille with controlled soft highlights, brushed gunmetal-metallic large tuning knob and small volume knob, dark raised mechanical key row with one orange key, tiny realistic black feet and soft grounding shadow. Retain small "留频" lettering. Use subtle physical lighting, no neon, no gold, no blue or purple tint.
+Bottom pause button remains orange with clean ivory pause bars and restrained tactile depth. Header selected拟物 appearance control has subtle orange tint. All reading text bright enough in dark theme, no huge new cards or content. One polished dark skeuomorphic mobile counterpart of this same exact screen. Current date anchor2026-11-14; do not add dates.
+
+LIGHT FLAT — Final prompt
+Use case: style-transfer / ui-mockup.
+Create the FLAT LIGHT appearance of the attached mobile podcast player "留频". Output one single full portrait mobile app screenshot, SAME actual dimensions and aspect ratio as the reference, nominal logical target390x844. Only app content, no device body, bezel, OS status bar, home indicator, browser chrome, external captions or collage.
+
+Preserve EXACT layout and all text, artwork, identity, sizes, hierarchy, radio bounding box, knob/dial positions, chapter scale, transcript excerpt, seek18:42/52:16, 15/30 skip icons, pause control and bottom tools. Keep exact "留频" name in header and radio. Change header segmented style selector from "拟物" selected to "扁平" selected. Keep a clean small moon outline at top right for theme switch. The flat appearance and light/dark theme are independent choices.
+
+Make the app genuinely FLAT GRAPHIC DESIGN:
+Remove visible radio top plane, thickness, all feet, all physical shadows, all bevels, all metallic radial texture, highlights, gradients, reflections and depth. Radio is a simple warm grey ivory rectangular front face with gently rounded corners and one crisp fine charcoal border. Left grille a flat array of identical small charcoal circular dots with no inner shadows or extra frame. Dial a flat ivory rectangular field with thin outline, charcoal ticks01/02/03 and one orange vertical needle. Solid muted olive display with warm ivory "正在播放" and "18:42". Main knob a plain solid pale grey-green disc with a thin dark outline and one dark indicator line, no shading. Smaller knob the same. Radio keys simple aligned flat outlined rectangles, orange flat pause key. Brand printed simply. This is a clean Braun-inspired diagrammatic product face, not a faintly flattened 3D object.
+
+Light warm ivory page #F7F6F0, radio #E7E6DE, primary charcoal #30342E, secondary muted olive-grey, orange-red accent #C85235. No glossy material anywhere. Main central pause circle pure solid orange with white pause bars and zero shadow. Header selector pure flat fields; "扁平" has subtle pale orange fill and orange text.
+Cover architecture photo remains exactly in original colors; only artwork can be photographic. Chinese body text clear and readable, thoughtful whitespace. Keep the title "在忙碌的世界里，重新找回专注" and show "日常之间 · EP.128", current transcript "给自己一点不被打扰的时间，让注意力，慢慢回到生活本身。". No new UI. Current date anchor2026-11-14, no need for dates.
+One coherent polished mobile FLAT LIGHT reference design of exactly the same playback screen.
+
+DARK FLAT — Final prompt
+Use case: style-transfer / ui-mockup.
+Create the FLAT DARK appearance of the attached mobile "留频" podcast player screen. Attachment is edit target. ONE complete portrait mobile app content image, exactly same framing, dimensions/aspect ratio and geometry as reference, nominal mobile viewport390x844. No hardware, no bezel, no OS status bar, no home indicator, no browser UI, no collage and no external captions.
+
+Preserve all layout, sizes, positions, Chinese text, typography, podcast cover photo in original colors, program and episode names, exact brand"留频", chapter dial, current transcript, progress18:42/52:16, main pause and15/30 skip controls, footer tools. Header style switch "拟物 / 扁平" stays with "扁平" active, orange tint and orange label. Replace upper-right moon with a simple sun outline indicating light theme.
+
+Dark flat palette: warm nearly black page #181B17; radio body single solid charcoal-grey-green #343B30, thin muted olive outline; solid dark small fields with warm ivory text. Primary copy #EFEEE6, secondary muted grey #B5BBAB, restrained muted olive functional accents, single orange-red #D55C36 accent for needle, transcript marker, radio pause key, central pause circle and seek thumb. Keep pale-grey secondary labels comfortably legible. Cover artwork stays original, un-inverted.
+
+Genuinely FLAT and diagrammatic Braun-inspired radio: no side/top plane, no thickness, no feet, no bevel, no physical depth, no shadows or highlights, no brushed metal or texture, no gradients. Flat speaker dot array on solid charcoal front, simple outlined flat dial01/02/03, orange needle, solid dark olive rectangular digital display, plain unshaded muted olive-grey circular tuning and volume knobs with thin ivory outlines and one ivory indicator line, flat outlined buttons. Main playback button pure flat solid orange circle with ivory pause bars, zero shadow. UI icon lines consistent and clean.
+No new features or navigation, no nested cards, no blue/purple neon, no gold. Keep the exact calm functional identity from the reference and make it match the mobile flat-light design as one theme pair. Current date anchor2026-11-14, no added dates.
+

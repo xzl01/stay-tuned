@@ -1,0 +1,509 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+
+/* ==========================================================================
+   Mobile / tablet interface — a separate composition, not a squeezed desktop
+   ========================================================================== */
+
+@media (max-width: 1023px) {
+  .desktop-app,
+  .site-header--desktop,
+  .desktop-stage {
+    display: none;
+  }
+
+  .mobile-app {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .site-header--mobile {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: calc(16px + env(safe-area-inset-top)) 22px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    animation: header-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .mobile-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+    position: relative;
+    flex: none;
+    color: var(--ink);
+  }
+
+  .mobile-brand .brand-word {
+    font-size: 26px;
+  }
+
+  .mobile-brand .brand-mark {
+    width: 33px;
+    height: 33px;
+  }
+
+  .mobile-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mobile-header-actions .mode-toggle {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--surface-raised) 55%, transparent);
+  }
+
+  .mobile-header-actions .mode-toggle button {
+    border-radius: 999px;
+  }
+
+  .mobile-header-actions .header-icon-button {
+    width: 32px;
+    height: 32px;
+    color: var(--ink-2);
+  }
+
+  .mobile-stage {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 12px 22px 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ----------------------------------------------------------------------- */
+  /* Hero                                                                   */
+  /* ----------------------------------------------------------------------- */
+
+  .mobile-hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 6px 0 22px;
+    animation: rise-in 0.6s 0.06s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .mobile-hero-cover {
+    width: clamp(82px, 21vw, 118px);
+    border-radius: 3px;
+    box-shadow: 0 20px 34px -28px rgba(42, 33, 18, 0.45);
+  }
+
+  .mobile-hero-copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .mobile-hero-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 7px;
+    color: var(--ink-2);
+    font-size: 10px;
+    line-height: 1.3;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mini-live {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--ink-3);
+    flex: none;
+  }
+
+  .mini-live.is-live {
+    background: var(--accent);
+    animation: soft-pulse 1.8s ease-in-out infinite;
+  }
+
+  .mobile-hero h1 {
+    color: var(--ink);
+    font-size: clamp(22px, 5.4vw, 30px);
+    font-weight: 700;
+    line-height: 1.32;
+    letter-spacing: -0.025em;
+    white-space: pre-line;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .mobile-hero--empty {
+    padding: 12px 0 20px;
+  }
+
+  .mobile-hero--empty h1 {
+    font-size: clamp(28px, 7vw, 38px);
+    margin-bottom: 8px;
+  }
+
+  .mobile-hero--empty p {
+    color: var(--ink-3);
+    font-size: 12.5px;
+  }
+
+  /* ----------------------------------------------------------------------- */
+  /* Receiver                                                               */
+  /* ----------------------------------------------------------------------- */
+
+  .receiver--mobile {
+    animation: rise-in 0.7s 0.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* ----------------------------------------------------------------------- */
+  /* Mobile transcript                                                      */
+  /* ----------------------------------------------------------------------- */
+
+  .mobile-transcript-card {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 18px 0 20px;
+    border-top: 1px solid var(--line);
+    text-align: left;
+    color: var(--ink);
+  }
+
+  .mobile-transcript-card--radio {
+    cursor: default;
+  }
+
+  .mobile-transcript-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .mobile-transcript-title {
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+
+  .mobile-transcript-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--ink-3);
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
+  }
+
+  .mobile-transcript-quote {
+    position: relative;
+    display: block;
+    margin-top: 12px;
+    padding-left: 13px;
+    border-left: 2px solid var(--accent);
+    color: var(--ink);
+    font-size: clamp(15.5px, 4.3vw, 19px);
+    font-weight: 600;
+    line-height: 1.72;
+    letter-spacing: 0.005em;
+    white-space: pre-line;
+  }
+
+  .mobile-transcript-quote.is-muted {
+    border-left-color: var(--line-strong);
+    color: var(--ink-2);
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+
+  .mobile-transcript-card .live-badge {
+    margin: 0;
+  }
+
+  .mobile-wave {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 30px;
+    margin-top: 14px;
+    padding-left: 13px;
+    color: var(--accent);
+  }
+
+  .mobile-wave i {
+    display: block;
+    width: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    opacity: 0.55;
+    animation: live-line-pulse 2.4s ease-in-out infinite;
+  }
+
+  .mobile-wave i:nth-child(3n) {
+    animation-delay: -0.8s;
+  }
+
+  .mobile-wave i:nth-child(4n) {
+    animation-delay: -1.4s;
+  }
+
+  /* ----------------------------------------------------------------------- */
+  /* Mobile transport                                                       */
+  /* ----------------------------------------------------------------------- */
+
+  .transport--mobile {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    width: calc(100% + 44px);
+    margin: auto -22px 0;
+    padding: 10px 22px calc(10px + env(safe-area-inset-bottom));
+    background: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--page) 96%, transparent) 0%,
+      color-mix(in srgb, var(--page) 88%, transparent) 62%,
+      color-mix(in srgb, var(--page) 0%, transparent) 100%
+    );
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+  }
+
+  .transport--mobile .progress-rail {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    gap: 10px;
+    padding: 0 1px 9px;
+  }
+
+  .transport--mobile .progress-time {
+    font-size: 11px;
+  }
+
+  .transport--mobile .progress-time--duration {
+    font-size: 11px;
+  }
+
+  .transport--mobile .range-shell {
+    height: 24px;
+  }
+
+  .transport--mobile .range-thumb {
+    width: 9px;
+    height: 9px;
+    margin-left: -4.5px;
+  }
+
+  .transport--mobile .live-rail-note {
+    display: none;
+  }
+
+  .mobile-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(28px, 11vw, 54px);
+    padding: 4px 0 6px;
+  }
+
+  .mobile-skip {
+    width: 45px;
+    height: 45px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    color: var(--ink-2);
+    transition: color 0.2s ease, background-color 0.2s ease, transform 0.18s ease;
+  }
+
+  .mobile-skip svg {
+    width: 35px;
+    height: 35px;
+  }
+
+  .mobile-skip:hover:not(:disabled) {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--surface-3) 48%, transparent);
+    transform: scale(1.035);
+  }
+
+  .mobile-skip:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+
+  .mobile-skip:disabled {
+    opacity: 0.28;
+  }
+
+  .mobile-play {
+    width: clamp(56px, 14.6vw, 70px);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-ink);
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 54%, #532513),
+      0 16px 28px -18px color-mix(in srgb, var(--accent) 70%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.2s ease;
+  }
+
+  .mobile-play:hover {
+    background: var(--accent-deep);
+  }
+
+  .mobile-play:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 54%, #532513),
+      0 8px 16px -16px color-mix(in srgb, var(--accent) 70%, transparent);
+  }
+
+  html[data-mode='flat'] .mobile-play {
+    box-shadow: none;
+  }
+
+  .mobile-play .pill-spinner {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mobile-utilities {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+    padding-top: 9px;
+    border-top: 1px solid var(--line);
+  }
+
+  .mobile-utilities > .menu-root,
+  .mobile-utilities > .mobile-tool {
+    flex: 1;
+  }
+
+  .mobile-utilities > .menu-root {
+    justify-content: center;
+  }
+
+  .mobile-utilities .transport-action {
+    width: 100%;
+    height: 26px;
+    justify-content: center;
+    gap: 5px;
+    font-size: 11.5px;
+    color: var(--ink-2);
+  }
+
+  .mobile-tool {
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    color: var(--ink-2);
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+  }
+
+  .mobile-tool.is-active {
+    color: var(--accent);
+  }
+
+  .mobile-tool-text {
+    white-space: nowrap;
+  }
+
+  .mobile-tool-divider {
+    width: 1px;
+    height: 15px;
+    background: var(--line-strong);
+    opacity: 0.5;
+    flex: none;
+  }
+
+  .on-air-label {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+  }
+
+  .mobile-utilities .menu-popover {
+    min-width: 148px;
+  }
+
+  .mobile-safety {
+    height: 10px;
+    flex: none;
+  }
+
+  /* Sheets are already adapted in overlays.css, keep the body scrim visible. */
+}
+
+@media (max-width: 390px) {
+  .site-header--mobile {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .mobile-stage {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .transport--mobile {
+    width: calc(100% + 36px);
+    margin-left: -18px;
+    margin-right: -18px;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .mobile-header-actions .mode-toggle button {
+    min-width: 47px;
+    padding: 0 10px;
+  }
+
+  .mobile-hero {
+    gap: 13px;
+  }
+}
+
+/* Keep all appearance controls reachable on compact phones. The brand remains
+   the library entry as before; no control is hidden or moved off-screen. */
+@media (max-width: 340px) {
+  .site-header--mobile {
+    padding-left: 14px;
+    padding-right: 14px;
+    gap: 8px;
+  }
+
+  .mobile-brand { gap: 7px; }
+  .mobile-brand .brand-word { font-size: 22px; }
+  .mobile-brand .brand-mark { width: 26px; height: 26px; }
+  .mobile-header-actions { gap: 3px; }
+  .mobile-header-actions .header-icon-button { width: 27px; height: 30px; }
+  .mobile-header-actions .mode-toggle button {
+    min-width: 40px;
+    padding: 0 6px;
+    font-size: 11px;
+  }
+}
+
+.mobile-wave.has-spectrum i {
+  animation: none;
+  opacity: 0.78;
+  transition: height 0.08s linear;
+  will-change: height;
+}

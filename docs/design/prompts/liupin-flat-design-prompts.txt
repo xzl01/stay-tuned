@@ -1,0 +1,39 @@
+留频 · 扁平外观参考稿
+生成方式：内置 image_gen 图像编辑工具
+
+外观设计：拟物 / 扁平切换独立于亮色 / 暗色主题，共四种组合。切换时保持节目、播放进度、章节、文字稿位置与控件布局。
+当前文件为参考设计图，切换入口展示其选中状态。
+
+LIGHT FLAT — Final prompt
+Use case: style-transfer / ui-mockup.
+Edit the attached "留频" podcast player into its true FLAT LIGHT appearance mode. Output one full desktop UI reference screen at the same approximately 1580 x 996 dimensions and aspect ratio. No collage or external captions.
+
+Keep the exact product identity "留频", tuning-needle logo, typography, episode artwork, two-column listening layout, transcript, all Chinese text and timecodes, chapter selector and bottom transport controls. Keep radio bounding box, speaker/knob/dial positions and control positions aligned to the original so this can be a skin switch of the same app.
+
+REQUIRED NEW CONTROL:
+In the empty header space immediately LEFT of "我的订阅", add a small refined two-segment style selector with exact readable text "拟物" and "扁平". Show "扁平" active using a pale vermilion tint and dark orange text; "拟物" is neutral. Maintain comfortable gaps to subscriptions and queue; keep whole header uncrowded. This selector is the only added UI. It switches appearance style, distinct from light/dark theme.
+
+TRUE FLAT STYLE across the interface, NOT merely less realistic:
+Remove all shadows, highlights, texture, physical bevels, raised rims, brushed metal, realistic reflections, top planes and radio feet. All radio and control graphics use clean solid fills and crisp thin outlines, genuinely two-dimensional and vector-like. Radio is a clean warm-grey rectangle with restrained 12px corners and ONE fine border. Speaker is a neatly spaced array of small identical charcoal dots on an untextured flat ivory field; no raised grille frame. Tuning scale is a flat outlined field with charcoal ticks and an orange needle. Information display a solid muted dark olive rectangle with clear ivory text. Main knob a plain solid pale grey-green disc with one dark radial indicator and fine outline, no shading. Volume knob likewise. Mechanical key row becomes aligned simple flat rectangles with clear icons, orange pause key; zero depth. Keep "留频" branding on radio front.
+Radio must still be recognizable as Braun/Dieter Rams inspired and preserve its original functional organization. Do not replace it with generic podcast artwork or an abstract waveform.
+
+PALETTE:
+Light warm grey outer app canvas #ECEBE5, ivory central panel #FAF9F4, flat ivory-grey radio #E5E4DC, charcoal text #30342E, muted olive secondary controls, single orange-red #C85235 accent. Preserve the same warm, calm personality. Main listening panel can retain reference corner radius but remove drop shadow; plain flat surfaces and subtle dividers throughout. Orange bottom pause button becomes a clean solid fill with white icon/text and no glossy material. Artwork itself remains photographic; do not flatten the actual podcast cover photo.
+
+Preserve "在忙碌的世界里，重新找回专注", show "日常之间", playback 18:42 / 52:16, active transcript and all other content. Active tab and timeline use orange accent. All text readable, clear hierarchy, generous space.
+No additional features, no new sidebar, no decorative gradients, no texture, no neumorphism. This is ONE polished FLAT LIGHT reference design with visible "拟物 / 扁平" switch, "扁平" selected.
+
+DARK FLAT — Final prompt
+Use case: style-transfer / ui-mockup.
+Create the FLAT DARK theme counterpart of the attached "留频" desktop podcast player. Attached image is the edit target. Output one complete app screenshot, approximately 1580 x 996, same dimensions and aspect ratio. Not a collage.
+
+Preserve the exact flat design, positions, layout, typography, logo, episode artwork, Chinese content, two-column proportions, radio dimensions and all controls from the reference. Preserve the visible header appearance selector: exact text "拟物" and "扁平", with "扁平" selected in muted orange fill and warm orange text. This is a switch between skins, independent of light/dark theme. Do not remove this control. Brand must stay "留频" both in header and on radio.
+
+Use genuinely FLAT 2D rendering, solid colors and thin crisp outlines. No raised edges, no top plane, no feet, no metallic brush textures, no realistic highlights, no gradients, no shadows, no physical depth. Simple geometric speaker perforation dots, a flat outlined dial, solid plain tuning and volume circles with one indicator line, and flat rectangular keys. Clean Braun-inspired functional graphic minimalism.
+
+DARK PALETTE: warm almost-black outer surface #181B17; solid charcoal main listening panel #242820; radio body solid muted grey-green charcoal #32382E; radio border subtle olive-grey #646C5C; speaker perforations dark near-black with no shadows; primary text warm ivory #EFEEE6; secondary text clearly legible warm grey #B5BBAB. Tuning-scale fill slightly lighter than body with readable pale ticks and orange vertical needle. Knobs solid muted grey-green #58614E with light thin outlines and warm ivory indicator lines, unshaded. Radio buttons solid charcoal with pale icons and thin muted borders, orange pause key. Dark olive display with warm ivory "正在播放" and "18:42".
+
+Keep the restrained orange-red #D55C36 accent for selected transcript rule, chapter highlight, seek thumb, radio needle, pause key and large bottom pause button. All orange buttons flat solid fills, zero shine. Muted olive progress and secondary controls. Preserve exact architectural cover artwork in original colors, do not invert photo. Reading area remains clearly legible; primary active sentence brightest, surrounding sentences subdued but readable. Backgrounds clean flat fields.
+
+Retain title "在忙碌的世界里，重新找回专注", show "日常之间", progress 18:42 / 52:16, chapter dial and transcript. Current date anchor 2026-11-14, no extra dates. Do not add features, navigation, labels or external captions. Produce a refined complete flat dark reference design, compatible with the flat light and earlier skeuomorphic skins.
+

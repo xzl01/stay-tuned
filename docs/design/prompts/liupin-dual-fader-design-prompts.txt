@@ -1,0 +1,32 @@
+留频 · 章节与音量双推杆参考设计
+生成方式：内置 image_gen 图像编辑工具。
+范围：桌面端与手机端亮色拟物稿。
+设计：上方章节推杆采用橙色指示线，按章节吸附；下方音量推杆采用灰绿色指示线，连续调节，显示音量百分比。桌面底部保留音量数值及静音入口，音量调整集中在收音机推杆。本次交付为静态设计图。
+
+MOBILE — Final prompt
+Use case: precise-object-edit / ui-mockup.
+Edit the attached LIGHT SKEUOMORPHIC mobile "留频" podcast player, which is the EDIT TARGET. Add a second HORIZONTAL VOLUME FADER in the radio right-hand control area, underneath the existing chapter fader. Output ONE complete portrait mobile app screenshot, exactly the same framing and dimensions/aspect ratio as the reference. No device, OS chrome, collage, captions or annotations.
+
+Preserve the entire existing composition and identity: "留频" name and logo, "拟物 / 扁平" selector with拟物 selected, theme icon, title, artwork, current chapter summary, transcript, seek18:42/52:16 and large bottom playback controls. Keep the existing ivory Braun/Dieter Rams radio body, left perforated speaker grille, soft ABS bevels, top plane, tiny feet, soft contact shadow and mechanical key row. No circular rotary knobs.
+
+FOCUSED RADIO CONTROL REVISION:
+Keep slim dark olive information strip at top-right "正在播放   18:42".
+Keep existing chapter fader with01/02/03 scale and silver rectangular sliding handle with orange indicator at02. Compress excessive vertical spacing in its module slightly so another fader fits without changing radio dimensions.
+Under the chapter caption "章节 | 02 专注与留白", insert a separate clearly labeled volume strip. At left a small speaker outline icon and exact label "音量"; at right exact value "68%". Beneath the label line a horizontal slim charcoal recessed slot, same width/alignment as chapter track, with a smaller satin silver RECTANGULAR sliding handle resting at68% of travel. Its indicator stripe is dark grey or muted olive, distinguishing it from the chapter fader's orange stripe. Subtle tiny0/100 endpoint marks optional; do not clutter. This volume fader is continuous, not three chapter stops. It should look like a refined tactile Braun linear fader, visually lighter than chapter control yet readable and draggable. Ensure the two faders are separated clearly by whitespace or a fine divider, generous usable row spacing.
+Arrange top display, chapter module, volume module, and existing previous/pause/next/menu physical key row neatly within the same right panel. Keep everything fully inside the radio. No crowding or overlapping labels. Do not place the volume fader outside the radio or in bottom footer.
+Keep warm ivory, charcoal, muted olive and orange color scheme. The volume slider is the only new function. All other app elements and text remain as close to reference as possible. No extra settings or waveform. This is a precise controlled iteration of the current design, not a general redesign.
+
+DESKTOP — Final prompt
+Use case: precise-object-edit / ui-mockup.
+Image1 is the desktop LIGHT SKEUOMORPHIC "留频" podcast player EDIT TARGET. Image2 is the supporting mobile reference showing the new dual-fader radio layout. Add the matching horizontal VOLUME FADER to the desktop radio beneath its chapter fader. Output ONE complete desktop app screenshot, same dimensions and aspect ratio as Image1. No collage or external captions.
+
+Preserve all global layout, radio bounding box, grille, tactile ivory enclosure, shallow top plane, bevels, feet, shadow, physical previous/pause/next/menu keys, "留频" branding and logo, podcast artwork/title, transcript, header navigation, chapter-summary row and continuous seek18:42/52:16. Keep exact palette and typography. No circular knobs.
+
+RADIO RIGHT CONTROL PANEL:
+Dark olive display at top "正在播放   18:42".
+Under display keep01/02/03 chapter ticks, chapter fader with broad rectangular silver grip and orange indicator at02, and caption "章节 | 02 专注与留白". Tighten extra vertical spacing slightly.
+Beneath this insert a slim aligned volume-fader row as shown in Image2: small speaker outline + "音量" at left, value "68%" at right. Below label line a long thin charcoal recessed horizontal slot, same left and right edges as chapter track. A slightly smaller satin silver rectangular sliding handle with grey-green indicator is positioned at68%. Tactile bevel and subtle grip ridges match chapter handle, but visual weight lower. One fine divider between chapter and volume groups, generous legible spacing. Existing physical key row remains below both faders inside radio.
+The upper chapter fader snaps to chapter stops; lower volume fader is continuous. No extra third fader inside radio.
+To avoid a redundant second volume slider, replace ONLY the tiny old volume track in bottom-right transport with compact speaker icon and text"68%". This is just a level readout/mute control; the radio's new volume fader is the single adjustment surface. Keep transport speed and timer controls in their original positions and maintain row balance.
+All other elements unchanged. One precise design iteration, no added settings or sidebars, no unrelated content. Braun/Dieter Rams materials remain warm premium and restrained.
+

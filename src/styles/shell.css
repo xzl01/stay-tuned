@@ -1,0 +1,462 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+
+/* ==========================================================================
+   Desktop shell, header & player card
+   ========================================================================== */
+
+.desktop-app {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.site-header--desktop {
+  position: relative;
+  z-index: 30;
+  width: min(1412px, calc(100vw - 96px));
+  margin: 0 auto;
+  padding: clamp(36px, 10vh, 100px) 38px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  animation: header-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.brand-cluster {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  min-width: 0;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  flex: none;
+}
+
+.brand-mark {
+  color: var(--ink);
+  flex: none;
+}
+
+.brand-word {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.brand-tagline {
+  font-size: 15.5px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.header-rule {
+  width: 1px;
+  height: 19px;
+  background: var(--line-strong);
+  opacity: 0.72;
+  flex: none;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.2vw, 20px);
+  flex: none;
+}
+
+.mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 3px;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--surface-raised) 74%, transparent);
+}
+
+.mode-toggle button {
+  min-width: 62px;
+  height: 28px;
+  padding: 0 16px;
+  border-radius: 3px;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  letter-spacing: 0.05em;
+  transition: color 0.22s ease, background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.mode-toggle button:hover {
+  color: var(--ink);
+}
+
+.mode-toggle button.is-active {
+  background: var(--accent-soft);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.mode-toggle--compact {
+  padding: 2px;
+}
+
+.mode-toggle--compact button {
+  min-width: 54px;
+  height: 28px;
+  padding: 0 13px;
+  font-size: 12px;
+}
+
+.header-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  color: var(--ink-2);
+  font-size: 15px;
+  letter-spacing: 0.035em;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.header-link svg {
+  opacity: 0.86;
+}
+
+.header-link:hover {
+  color: var(--ink);
+}
+
+.queue-badge {
+  min-width: 21px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--olive) 30%, transparent);
+  background: var(--olive-soft);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.header-icon-button {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--ink-2);
+  transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.header-icon-button:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+
+.header-icon-button:active {
+  transform: scale(0.93);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Stage & card                                                               */
+/* -------------------------------------------------------------------------- */
+
+.desktop-stage {
+  width: min(1412px, calc(100vw - 96px));
+  margin: 0 auto;
+  padding-bottom: 30px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.player-card {
+  position: relative;
+  padding: clamp(30px, 3.1vw, 49px) clamp(30px, 2.55vw, 40px) clamp(22px, 2.1vw, 28px);
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  isolation: isolate;
+  animation: card-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.player-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at 18% -6%, rgba(255, 255, 255, 0.55), transparent 48%);
+  opacity: 0.36;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.player-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  opacity: calc(var(--grain-opacity) * 0.2);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.player-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-theme='dark'] .player-card::before {
+  opacity: 0.16;
+}
+
+html[data-mode='flat'] .player-card::before {
+  opacity: 0.16;
+}
+
+.card-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 20px;
+  margin-top: 12px;
+  margin-bottom: 5px;
+}
+
+.topline-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+
+.listen-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-2);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.listen-status > i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--olive);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--olive) 12%, transparent);
+  flex: none;
+}
+
+.listen-status > i.is-live {
+  background: var(--olive);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--olive) 14%, transparent);
+  animation: soft-pulse 2.4s ease-in-out infinite;
+}
+
+.topline-rule {
+  width: 1px;
+  height: 13px;
+  background: var(--line-strong);
+  opacity: 0.7;
+  flex: none;
+}
+
+.topline-episode {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.topline-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desktop-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.19fr) minmax(380px, 1fr);
+  grid-template-columns: minmax(0, 1.16fr) minmax(380px, 1fr);
+  gap: clamp(38px, 4.35vw, 68px);
+  align-items: stretch;
+  min-height: 470px;
+}
+
+.desktop-left {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.desktop-right {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.desktop-right > .episode-panel {
+  position: absolute;
+  inset: 0;
+  height: auto;
+}
+
+.desktop-bottom {
+  margin-top: 12px;
+  padding-top: 40px;
+  border-top: 1px solid var(--line);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Compact desktop                                                            */
+/* -------------------------------------------------------------------------- */
+
+@media (min-width: 1024px) and (max-width: 1320px) {
+  .site-header--desktop,
+  .desktop-stage {
+    width: calc(100vw - 64px);
+  }
+
+  .site-header--desktop {
+    padding-top: clamp(28px, 5vh, 56px);
+    padding-bottom: 22px;
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+
+  .brand-word {
+    font-size: 25px;
+  }
+
+  .brand-cluster {
+    gap: 20px;
+  }
+
+  .header-actions {
+    gap: 15px;
+  }
+
+  .mode-toggle button {
+    min-width: 55px;
+    padding: 0 13px;
+  }
+
+  .player-card {
+    padding: 24px 26px 22px;
+    border-radius: 20px;
+  }
+
+  .desktop-columns {
+    grid-template-columns: minmax(0, 1.12fr) minmax(340px, 0.98fr);
+    gap: 36px;
+  }
+
+}
+
+@media (min-width: 1024px) and (max-height: 880px) {
+  .site-header--desktop {
+    padding-top: 26px;
+    padding-bottom: 18px;
+  }
+
+  .player-card {
+    padding-top: 20px;
+    padding-bottom: 18px;
+  }
+
+  .card-topline {
+    margin-bottom: 14px;
+  }
+
+}
+
+@media (min-width: 1024px) and (max-width: 1150px) {
+  .brand-tagline {
+    display: none;
+  }
+
+  .brand-cluster .header-rule {
+    display: none;
+  }
+
+  .header-actions {
+    gap: 10px;
+  }
+
+  .header-link {
+    font-size: 13px;
+  }
+
+
+  .header-actions .mode-toggle button {
+    min-width: 42px;
+    padding: 0 8px;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Keyframes                                                                  */
+/* -------------------------------------------------------------------------- */
+
+@keyframes header-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.header-appearance-trigger {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--ink-2);
+}
+
+.header-appearance-trigger:hover,
+.header-appearance-trigger.is-active {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}

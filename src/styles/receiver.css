@@ -1,0 +1,823 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+
+/* Braun-inspired hardware. Container units keep one physical object at every
+   size; mode and theme change its materials, never its control geometry. */
+.receiver {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  container-type: inline-size;
+  --rx-print: #34372e;
+  --rx-hole: #252b27;
+  --rx-hole-rim: rgba(255, 255, 249, 0.78);
+  --rx-grille: #e4e1d8;
+  --rx-cabinet: linear-gradient(155deg, #f0ede7 0%, #e9e5dc 40%, #dfd9cd 100%);
+  --rx-material-height: max(64cqw, 178px);
+  --rx-face-top: 3.6cqw;
+  --rx-face-radius: 3.1cqw;
+  --rx-cap: linear-gradient(180deg, #faf9f3 0%, #eeeDE4 12%, #dddcd0 48%, #d5d2c5 84%, #b9b6a7 100%);
+  --rx-cap-edge: #b1ad9e;
+  --rx-cap-shadow: rgba(55, 48, 32, 0.35);
+  --rx-grip-dark: rgba(103, 99, 81, 0.34);
+  --rx-grip-light: rgba(255, 255, 251, 0.9);
+  --rx-slot: #393c31;
+  --rx-slot-rim: #bbb8a7;
+}
+
+.receiver::after {
+  content: '';
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: -15px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(45, 39, 25, 0.38), rgba(45, 39, 25, 0.11) 48%, transparent 72%);
+  filter: blur(5px);
+  pointer-events: none;
+}
+
+.receiver-cabinet {
+  position: relative;
+  width: 100%;
+  z-index: 2;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 1.64;
+}
+
+/* A continuous moulded front, separate from the shallow top plane. Keeping the
+   shoulders outside this rounded face avoids a rectangular outline in the lid. */
+.receiver-cabinet::before {
+  content: '';
+  position: absolute;
+  inset: var(--rx-face-top) 0 0;
+  z-index: -1;
+  border: 1px solid #c5bfb1;
+  border-radius: var(--rx-face-radius);
+  background: var(--rx-cabinet);
+  /* Both faces sample one cabinet-sized paint field, not two differently
+     scaled gradients or a cropped image with baked-in lighting. */
+  background-size: 100cqw var(--rx-material-height);
+  background-position: 0 calc(-1 * var(--rx-face-top));
+  background-repeat: no-repeat;
+  box-shadow:
+    inset 0 1px 0 #fffdf6,
+    inset 0 0 0 2px rgba(255, 255, 250, 0.47),
+    inset 0 -2px 2px rgba(100, 88, 66, 0.14),
+    inset 3px 0 5px -4px rgba(255, 255, 255, 0.9),
+    inset -3px 0 5px -4px rgba(84, 72, 47, 0.35),
+    inset 0 -5px 5px -3px rgba(133, 119, 91, 0.2),
+    inset -6px 0 9px -7px rgba(116, 105, 78, 0.23),
+    0 2px 1px #c0b9a8,
+    0 5px 3px -2px rgba(60, 48, 27, 0.22),
+    0 13px 10px -10px rgba(52, 43, 27, 0.42),
+    0 15px 19px -11px rgba(53, 44, 27, 0.24);
+}
+
+/* Fine rolled lip: one highlight and a shallow seam, rather than stacked bands. */
+.receiver-cabinet::after {
+  content: '';
+  position: absolute;
+  inset: 4.3cqw 0.7cqw 0.7cqw;
+  z-index: 0;
+  border: 1px solid rgba(255, 255, 250, 0.56);
+  border-radius: 2.5cqw;
+  box-shadow: 0 0 0 1px rgba(142, 131, 109, 0.11), inset 0 -1px 1px rgba(129, 116, 90, 0.11);
+  pointer-events: none;
+}
+
+.receiver-top-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Behind the rounded front, not over it. The sloped sides meet the 3.1cqw
+     corner tangentially; their end stops inside the face, so neither an ear
+     nor a horizontal cut can protrude across the front panel. */
+  z-index: -2;
+  height: 5.2cqw;
+  /* Rounded rear shoulders retain the side slope and front tangent below. */
+  mask-image: url('/shapes/receiver-top.svg');
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 85%),
+    var(--rx-cabinet);
+  background-size: 100% 100%, 100cqw var(--rx-material-height);
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.receiver-side {
+  display: none;
+}
+
+.receiver-face {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.48fr) minmax(0, 1fr);
+  gap: 2cqw;
+  padding: 6.8cqw 3cqw 0;
+}
+
+.speaker-zone,
+.speaker-frame {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+.speaker-frame {
+  flex: 1;
+  padding: 0.45cqw;
+  border: 1px solid rgba(255, 255, 248, 0.64);
+  border-radius: 1.25cqw;
+  background: rgba(190, 183, 167, 0.13);
+  box-shadow: inset 0 1px 2px rgba(111, 103, 79, 0.11), 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+.speaker-grille {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border-radius: 0.75cqw;
+  overflow: hidden;
+  background-color: var(--rx-grille);
+  /* Offset rim below each dark aperture gives the sheet its perforated depth. */
+  background-image:
+    radial-gradient(circle, var(--rx-hole) 0 0.395cqw, rgba(30, 34, 29, 0.72) 0.405cqw, transparent 0.47cqw),
+    radial-gradient(circle, var(--rx-hole-rim) 0 0.47cqw, transparent 0.53cqw);
+  background-size: 1.42cqw 1.42cqw;
+  background-position: 0 0, 0 0.14cqw;
+  box-shadow: inset 0 1px 3px rgba(82, 77, 59, 0.12);
+}
+
+.speaker-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(118deg, rgba(255, 255, 248, 0.07), transparent 50%, rgba(64, 59, 44, 0.035));
+}
+
+/* Display is set into a moulded recess. The faceplate and gasket have different
+   materials; the small reflective glass never grows to fill this recess. */
+.control-zone {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0.4cqw 0 2.1cqw;
+}
+
+.lcd-bezel {
+  position: relative;
+  flex: none;
+  padding: 2.2cqw 3.3cqw;
+  border: 1px solid rgba(255, 255, 250, 0.57);
+  border-radius: 2.15cqw;
+  background: linear-gradient(150deg, rgba(162, 151, 127, 0.08), rgba(255, 255, 249, 0.14) 65%);
+  box-shadow: inset 0 1px 3px rgba(133, 123, 99, 0.09), 0 1px 0 rgba(132, 119, 95, 0.04);
+}
+
+.lcd {
+  position: relative;
+  height: 9cqw;
+  min-height: 33px;
+  padding: 0.85cqw 1.5cqw;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid #575d48;
+  border-radius: 0.85cqw;
+  color: var(--lcd-ink);
+  background:
+    linear-gradient(105deg, rgba(251, 249, 221, 0.12), transparent 43%, rgba(49, 58, 34, 0.08)),
+    var(--lcd-bg);
+  box-shadow:
+    inset 0 2px 3px rgba(37, 43, 26, 0.37),
+    inset 1px 0 2px rgba(42, 48, 30, 0.23),
+    inset 0 -1px 1px rgba(235, 235, 198, 0.35),
+    0 1px 0 rgba(255, 255, 249, 0.85),
+    0 0 0 1px rgba(139, 132, 109, 0.28);
+  overflow: hidden;
+}
+
+.lcd-row {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0.85cqw;
+  font-family: 'Receiver LCD', var(--font-mono);
+  font-weight: 400;
+  font-synthesis: none;
+  -webkit-font-smoothing: auto;
+  line-height: 1;
+}
+
+.lcd-row--top {
+  justify-content: space-between;
+}
+
+.lcd-time {
+  font-size: 18px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.lcd-index,
+.lcd-line {
+  font-size: 16px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.lcd-index {
+  flex: none;
+}
+
+.lcd-line {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lcd-status {
+  display: flex;
+  align-items: center;
+  width: 12px;
+  height: 12px;
+  opacity: 0.5;
+}
+
+.lcd-status svg {
+  fill: currentColor;
+  width: 10px;
+  height: 10px;
+}
+
+.lcd-status.is-playing,
+.lcd-status:has(.lcd-thinking) {
+  opacity: 1;
+}
+
+.lcd-dither,
+.lcd-glare {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.lcd-dither {
+  opacity: 0.12;
+  background-image: radial-gradient(circle, #535e3f 0.3px, transparent 0.45px);
+  background-size: 2px 2px;
+}
+
+.lcd-glare {
+  background: linear-gradient(112deg, rgba(255, 255, 245, 0.035), transparent 38%);
+}
+
+.lcd-thinking {
+  display: flex;
+  gap: 2px;
+}
+
+.lcd-thinking i {
+  width: 2px;
+  height: 2px;
+  background: currentColor;
+  animation: lcd-dot 1.1s ease-in-out infinite;
+}
+
+.lcd-thinking i:nth-child(2) { animation-delay: 0.16s; }
+.lcd-thinking i:nth-child(3) { animation-delay: 0.32s; }
+
+/* The track is an unfilled physical slot. A coloured progress fill would give
+   the volume an unnecessary second readout and make this look like a web range. */
+.fader-stack {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 3.7cqw;
+  margin-top: 4.6cqw;
+}
+
+.fader {
+  --fader-thumb-width: 10.5cqw;
+  --fader-thumb-height: 4cqw;
+  display: grid;
+  grid-template-columns: clamp(29px, 5cqw, 36px) minmax(0, 1fr);
+  column-gap: 0.8cqw;
+  align-items: end;
+  min-width: 0;
+}
+
+.fader--volume {
+  --fader-thumb-width: 7.4cqw;
+  --fader-thumb-height: 3.3cqw;
+}
+
+.fader-label {
+  display: flex;
+  align-items: center;
+  gap: 0.65cqw;
+  align-self: start;
+  padding-top: 0.1cqw;
+  color: var(--rx-print);
+  font-size: clamp(9px, 2.05cqw, 14px);
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 1px rgba(255, 255, 248, 0.3);
+}
+
+.fader-label svg {
+  width: 2.25cqw;
+  height: 2.25cqw;
+  min-width: 10px;
+  min-height: 10px;
+  flex: none;
+}
+
+.fader-body {
+  min-width: 0;
+}
+
+.fader-ticks {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  height: 1.4cqw;
+  /* Ticks and the native input use the same end stops as the cap's centre. */
+  margin: 0 calc(var(--fader-thumb-width) / 2);
+}
+
+.fader-ticks i {
+  width: 1px;
+  height: 0.85cqw;
+  background: var(--rx-print);
+  opacity: 0.55;
+  box-shadow: 0 1px rgba(255, 255, 248, 0.45);
+}
+
+.fader-ticks i.is-major {
+  height: 1.25cqw;
+  opacity: 0.8;
+}
+
+.fader-track {
+  position: relative;
+  height: 4.7cqw;
+}
+
+.fader-track::before,
+.fader-track::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 99px;
+  pointer-events: none;
+}
+
+.fader-track::after {
+  height: 1.8cqw;
+  background: linear-gradient(180deg, #a49f8c, #f8f7eb);
+  box-shadow: 0 1px 0 rgba(255, 255, 250, 0.65), inset 0 1px 1px rgba(118, 108, 85, 0.25);
+}
+
+.fader-track::before {
+  left: 0.35cqw;
+  right: 0.35cqw;
+  z-index: 1;
+  height: 1cqw;
+  background: var(--rx-slot);
+  box-shadow: inset 0 1px 3px rgba(7, 11, 5, 0.7), 0 1px 0 rgba(254, 254, 238, 0.62);
+}
+
+/* Both the native input's invisible cap and the painted cap travel from half a
+   cap width to the opposite half: pointer, keyboard and visual values coincide. */
+.fader-travel {
+  position: absolute;
+  inset: 0 calc(var(--fader-thumb-width) / 2);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.fader-thumb {
+  position: absolute;
+  left: var(--fader-position, 0%);
+  top: 50%;
+  width: var(--fader-thumb-width);
+  height: var(--fader-thumb-height);
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--rx-cap-edge);
+  border-top-color: #fffef6;
+  border-radius: 0.8cqw;
+  background: var(--rx-cap);
+  box-shadow:
+    inset 1px 0 1px rgba(255, 255, 250, 0.7),
+    inset -1px 0 1px rgba(106, 98, 75, 0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.75),
+    inset 0 -1px 1px rgba(113, 105, 80, 0.28),
+    0 1px 1px rgba(98, 88, 62, 0.24),
+    0 4px 5px -1px var(--rx-cap-shadow),
+    0 8px 9px -4px var(--rx-cap-shadow);
+}
+
+.fader-thumb::before,
+.fader-thumb::after {
+  content: '';
+  position: absolute;
+  top: 22%;
+  bottom: 22%;
+  width: 26%;
+  background: repeating-linear-gradient(180deg, var(--rx-grip-dark) 0 0.6px, var(--rx-grip-light) 0.6px 1.2px, transparent 1.2px 2.8px);
+  opacity: 0.8;
+  border-radius: 1px;
+}
+
+.fader-thumb::before { left: 3%; }
+.fader-thumb::after { right: 3%; }
+
+.fader-thumb i {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  left: 50%;
+  width: clamp(1.5px, 0.5cqw, 3px);
+  transform: translateX(-50%);
+  background: #6d775a;
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.35);
+}
+
+.fader--chapter .fader-thumb i { background: var(--accent); }
+
+.fader-input {
+  position: absolute;
+  z-index: 6;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: max(32px, 5cqw);
+  transform: translateY(-50%);
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  touch-action: none;
+  cursor: ew-resize;
+}
+
+.fader-input::-webkit-slider-runnable-track {
+  height: 100%;
+  background: transparent;
+}
+
+.fader-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: var(--fader-thumb-width);
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.fader-input::-moz-range-track { background: transparent; }
+.fader-input::-moz-range-thumb {
+  width: var(--fader-thumb-width);
+  height: 32px;
+  border: 0;
+  background: transparent;
+}
+
+.fader:has(.fader-input:focus-visible) .fader-thumb {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.fader.is-disabled { opacity: 0.4; }
+.fader-input:disabled { cursor: default; }
+
+/* Close-set piano keys have a lower lip and shared light direction. */
+.receiver-keys {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  flex: none;
+  gap: max(1px, 0.3cqw);
+  margin-top: auto;
+  padding-top: 3cqw;
+}
+
+.rx-key {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 4.5cqw;
+  min-height: 24px;
+  border: 1px solid #a9a28f;
+  border-top-color: #fffdf6;
+  border-radius: 0.65cqw;
+  color: #30392e;
+  background: linear-gradient(180deg, #faf8ef 0%, #f1eee3 54%, #dfd9ca 100%);
+  box-shadow:
+    inset 1px 0 1px rgba(255, 255, 250, 0.65),
+    inset -1px 0 1px rgba(99, 89, 65, 0.12),
+    inset 0 -1px 0 rgba(111, 101, 74, 0.24),
+    0 2px 0 #aaa38e,
+    0 4px 5px -2px rgba(65, 56, 32, 0.4);
+  transition: transform 0.12s, box-shadow 0.12s, filter 0.12s;
+}
+
+.rx-key svg { width: 2.4cqw; height: 2.4cqw; min-width: 12px; min-height: 12px; }
+.rx-key:hover { filter: brightness(1.04); }
+.rx-key:active {
+  transform: translateY(1.5px);
+  box-shadow: inset 0 1px 3px rgba(53, 45, 25, 0.2), 0 1px 0 #a9a28f;
+}
+
+.rx-key--play {
+  color: #fff7eb;
+  border-color: #a1401e;
+  border-top-color: #f5a16f;
+  background: linear-gradient(180deg, #e16d34, #d85821 55%, #bb4519);
+  box-shadow: inset 0 1px 0 rgba(255, 221, 170, 0.5), inset 0 -1px 0 rgba(111, 43, 12, 0.35), 0 2px 0 #934021, 0 4px 5px -2px rgba(77, 43, 16, 0.45);
+}
+
+.rx-key--play .rx-spinner { width: 14px; height: 14px; border-width: 1.4px; }
+
+.receiver-footer {
+  position: relative;
+  z-index: 1;
+  height: 6.6cqw;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4.2cqw 2.3cqw;
+  color: var(--rx-print);
+}
+
+.receiver-brand {
+  font-size: 2.3cqw;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.12em;
+}
+
+.receiver-edition {
+  font-family: var(--font-mono);
+  font-size: 1.35cqw;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.09em;
+  white-space: nowrap;
+}
+
+.receiver-feet {
+  position: absolute;
+  z-index: 1;
+  bottom: -1.65cqw;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 9cqw;
+  pointer-events: none;
+}
+
+.receiver-feet i {
+  width: 5.5cqw;
+  height: 1.8cqw;
+  border-radius: 0 0 45% 45%;
+  background: linear-gradient(180deg, #44463a, #22251d 72%, #15180f);
+  box-shadow: inset 0 -1px 1px rgba(255, 255, 255, 0.1), 0 3px 4px rgba(32, 32, 21, 0.32);
+}
+
+/* The same object in graphite. Perforations remain dark holes, not bright dots. */
+html[data-theme='dark'] .receiver {
+  --rx-print: #c9cdbf;
+  --rx-hole: #0d100c;
+  --rx-hole-rim: rgba(153, 164, 141, 0.22);
+  --rx-grille: #30362d;
+  --rx-cabinet: linear-gradient(155deg, #42483d, #333a30 48%, #272e24);
+  --rx-cap: linear-gradient(180deg, #a1a497, #7c8272 18%, #626957 55%, #535b48 90%, #343d2d);
+  --rx-cap-edge: #343c2c;
+  --rx-cap-shadow: rgba(0, 0, 0, 0.5);
+  --rx-grip-dark: rgba(13, 22, 9, 0.45);
+  --rx-grip-light: rgba(209, 220, 195, 0.4);
+  --rx-slot: #11170e;
+}
+
+html[data-theme='dark'] .receiver-cabinet::before {
+  border-color: #171e12;
+  box-shadow: inset 0 1px 0 rgba(224, 231, 213, 0.25), inset 0 0 0 2px rgba(199, 212, 186, 0.04), inset 0 -2px 2px rgba(0, 0, 0, 0.4), 0 2px 1px #131a10, 0 5px 3px -2px #0c1208, 0 15px 19px -11px rgba(0, 0, 0, 0.6);
+}
+
+html[data-theme='dark'] .receiver-cabinet::after {
+  border-color: rgba(204, 214, 189, 0.13);
+  box-shadow: 0 0 0 1px rgba(5, 11, 2, 0.22);
+}
+
+html[data-theme='dark'] .receiver::after { background: radial-gradient(ellipse, rgba(0, 0, 0, 0.55), transparent 72%); }
+html[data-theme='dark'] .speaker-frame {
+  border-color: rgba(183, 196, 166, 0.15);
+  background: rgba(8, 16, 2, 0.11);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme='dark'] .lcd-bezel {
+  border-color: rgba(196, 210, 179, 0.12);
+  background: linear-gradient(150deg, rgba(0, 0, 0, 0.1), rgba(211, 224, 195, 0.025));
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.14);
+}
+
+html[data-theme='dark'] .lcd {
+  border-color: #1b2413;
+  box-shadow: inset 0 2px 3px rgba(4, 12, 0, 0.45), 0 1px 0 rgba(205, 220, 186, 0.14), 0 0 0 1px #4b5540;
+}
+
+html[data-theme='dark'] .fader-label { text-shadow: 0 1px rgba(0, 0, 0, 0.25); }
+html[data-theme='dark'] .fader-ticks i { box-shadow: 0 1px rgba(0, 0, 0, 0.35); }
+html[data-theme='dark'] .fader-track::after { background: linear-gradient(180deg, #11180c, #536047); box-shadow: none; }
+html[data-theme='dark'] .fader-track::before { box-shadow: inset 0 1px 3px #030900, 0 1px 0 rgba(205, 220, 185, 0.13); }
+html[data-theme='dark'] .fader-thumb { border-top-color: #c4ceba; }
+html[data-theme='dark'] .fader-thumb i { background: #b5c39d; }
+html[data-theme='dark'] .fader--chapter .fader-thumb i { background: #ed8653; }
+html[data-theme='dark'] .rx-key {
+  color: #d9dfce;
+  border-color: #182011;
+  border-top-color: #5c6850;
+  background: linear-gradient(180deg, #4a5440, #39432f 55%, #2c3523);
+  box-shadow: inset 1px 0 1px rgba(211, 225, 195, 0.11), inset 0 -1px 0 rgba(0, 0, 0, 0.45), 0 2px 0 #10180a, 0 4px 5px -2px rgba(0, 0, 0, 0.5);
+}
+html[data-theme='dark'] .rx-key--play {
+  color: #fff1df;
+  border-top-color: #eb986d;
+  background: linear-gradient(180deg, #d97743, #bb5929 60%, #9a431a);
+}
+
+/* Flat is the same layout with depth/materials removed, including every shadow
+   on the shell and apertures. State is still owned by the shared React store. */
+html[data-mode='flat'] .receiver-top-face,
+html[data-mode='flat'] .receiver-feet,
+html[data-mode='flat'] .receiver::after,
+html[data-mode='flat'] .receiver-cabinet::after,
+html[data-mode='flat'] .speaker-sheen,
+html[data-mode='flat'] .fader-thumb::before,
+html[data-mode='flat'] .fader-thumb::after,
+html[data-mode='flat'] .lcd-dither,
+html[data-mode='flat'] .lcd-glare { display: none; }
+
+html[data-mode='flat'] .receiver-cabinet::before {
+  inset: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 2cqw;
+  background: var(--radio-flat-bg);
+  box-shadow: none;
+}
+html[data-mode='flat'] .speaker-frame { border-color: transparent; background: none; box-shadow: none; }
+html[data-mode='flat'] .speaker-grille {
+  background-color: transparent;
+  background-image: radial-gradient(circle, var(--ink) 0 0.39cqw, transparent 0.43cqw);
+  box-shadow: none;
+}
+html[data-mode='flat'] .lcd-bezel { border-color: transparent; background: none; box-shadow: none; }
+html[data-mode='flat'] .lcd { background: var(--lcd-bg); border: 1px solid var(--line-strong); box-shadow: none; }
+html[data-mode='flat'] .fader-label,
+html[data-mode='flat'] .fader-ticks i { text-shadow: none; box-shadow: none; }
+html[data-mode='flat'] .fader-label { color: var(--ink); }
+html[data-mode='flat'] .fader-ticks i { background: var(--ink-2); }
+html[data-mode='flat'] .fader-track::after { display: none; }
+html[data-mode='flat'] .fader-track::before { background: var(--line-strong); height: 2px; box-shadow: none; }
+html[data-mode='flat'] .fader-thumb {
+  background: var(--surface-2);
+  border: 1px solid var(--ink-3);
+  box-shadow: none;
+  border-radius: 2px;
+}
+html[data-mode='flat'] .rx-key { background: transparent; border-color: var(--line-strong); box-shadow: none; color: var(--ink); }
+html[data-mode='flat'] .rx-key--play { background: var(--accent); color: var(--accent-ink); }
+html[data-mode='flat'] .rx-key:active { transform: none; box-shadow: none; }
+
+/* Dark flat is a separate graphic palette, not an inversion of light ink.
+   Quiet dark apertures keep the speaker from becoming a luminous dot matrix. */
+html[data-mode='flat'][data-theme='dark'] .speaker-grille {
+  background-color: #343c31;
+  background-image: radial-gradient(circle, #151c13 0 0.39cqw, transparent 0.43cqw);
+}
+
+html[data-mode='flat'][data-theme='dark'] .receiver-cabinet::before {
+  border-color: var(--radio-border);
+}
+
+html[data-mode='flat'][data-theme='dark'] .fader-track::before {
+  background: #68755f;
+}
+
+html[data-mode='flat'][data-theme='dark'] .fader-thumb {
+  background: #4b5842;
+  border-color: #839176;
+}
+
+html[data-mode='flat'][data-theme='dark'] .fader-thumb i {
+  background: #d0dac3;
+  box-shadow: none;
+}
+
+html[data-mode='flat'][data-theme='dark'] .fader--chapter .fader-thumb i {
+  background: #ef8b5c;
+}
+
+html[data-mode='flat'][data-theme='dark'] .atmosphere-glow,
+html[data-mode='flat'][data-theme='dark'] .atmosphere-grain,
+html[data-mode='flat'][data-theme='dark'] .atmosphere-vignette,
+html[data-mode='flat'][data-theme='dark'] .player-card::before,
+html[data-mode='flat'][data-theme='dark'] .player-card::after {
+  display: none;
+}
+
+/* Keep the existing current-chapter UI outside the physical receiver. */
+.current-chapter {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 4px 20px;
+  color: var(--ink);
+  text-align: left;
+}
+.current-chapter:hover .current-chapter-kicker,
+.current-chapter:hover .current-chapter-value { color: var(--accent); }
+.current-chapter-kicker { flex: none; font-size: 17px; font-weight: 500; line-height: 1.3; letter-spacing: 0.02em; }
+.current-chapter-value {
+  display: flex;
+  align-items: baseline;
+  flex: 1;
+  min-width: 0;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.current-chapter-number { color: var(--ink-2); font-family: var(--font-mono); font-size: 13px; font-weight: 400; letter-spacing: 0.03em; }
+.current-chapter > svg { flex: none; color: var(--ink-3); }
+.current-chapter-value.is-empty { color: var(--ink-3); font-weight: 400; }
+.current-chapter--desktop { margin-top: 34px; }
+.current-chapter--desktop .current-chapter-kicker { flex-basis: 246px; }
+.current-chapter--mobile { margin-top: 22px; padding: 16px 2px 12px; gap: 12px; }
+.current-chapter--mobile .current-chapter-kicker { font-size: 15px; }
+.current-chapter--mobile .current-chapter-value { justify-content: flex-end; font-size: 15px; gap: 7px; }
+.current-chapter--mobile .current-chapter-number { font-size: 11px; }
+
+.receiver--mobile::after { bottom: -8px; height: 18px; filter: blur(3px); }
+.receiver--mobile .receiver-cabinet { aspect-ratio: 1.66; }
+.receiver--mobile .lcd { padding: 1cqw 1.5cqw; }
+.receiver--mobile .lcd-time,
+.receiver--mobile .lcd-index,
+.receiver--mobile .lcd-line { font-size: 12px; }
+.receiver--mobile .lcd-status,
+.receiver--mobile .lcd-status svg { width: 8px; height: 8px; }
+.receiver--mobile .fader-stack { margin-top: 1.4cqw; gap: 1.2cqw; }
+.receiver--mobile .fader-body { min-height: 29px; }
+.receiver--mobile .fader-label { padding-top: 0; }
+.receiver--mobile .receiver-keys { padding-top: 1.8cqw; }
+.receiver--mobile .rx-key { min-height: 22px; }
+
+@keyframes lcd-dot {
+  0%, 100% { opacity: 0.18; }
+  50% { opacity: 1; }
+}
+
+@media (min-width: 1024px) and (max-width: 1320px) {
+  .lcd-time, .lcd-index, .lcd-line { font-size: 12px; }
+  .current-chapter--desktop { padding: 18px 2px 15px; }
+  .current-chapter--desktop .current-chapter-kicker { flex-basis: 165px; font-size: 14px; }
+  .current-chapter--desktop .current-chapter-value { font-size: 15px; gap: 8px; }
+  .current-chapter--desktop .current-chapter-number { font-size: 11px; }
+}
+
+@media (max-width: 360px) {
+  .receiver--mobile .receiver-cabinet { aspect-ratio: 1.56; min-height: 178px; }
+  .receiver--mobile .fader-stack { gap: 2cqw; }
+}
+
+@media (max-width: 320px) {
+  .receiver--mobile .lcd-time,
+  .receiver--mobile .lcd-index,
+  .receiver--mobile .lcd-line { font-size: 10px; }
+}

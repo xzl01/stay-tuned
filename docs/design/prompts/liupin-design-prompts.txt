@@ -1,0 +1,42 @@
+留频 · 暗色与亮色拟物设计参考稿
+生成方式：内置 image_gen 图像编辑工具
+
+LIGHT THEME — Final prompt
+Use case: precise-object-edit / ui-mockup.
+Create the LIGHT THEME reference design for the desktop podcast app "留频", using Image 1 as the EDIT TARGET and Image 2 only as the branding reference. Output ONE complete desktop app screenshot, not a collage, matching Image 1 dimensions and aspect ratio (approximately 1580 x 996).
+
+CRITICAL STYLE: use the ORIGINAL skeuomorphic radio from Image 1, with its visible shallow top plane, convincing ivory ABS enclosure thickness, rounded beveled edges, small black feet, soft grounded contact shadow, recessed tuning scale, genuinely brushed aluminum knobs with radial highlights, and tactile raised mechanical buttons. Preserve its exact silhouette, proportions and material richness. Do not use the flattened radio styling of Image 2. This light design should look as close as possible to Image 1 except for the requested brand changes.
+
+BRAND CHANGES:
+Replace "慢调" with the exact Chinese name "留频" in BOTH locations: the top-left header wordmark and bottom-left printing on the radio chassis.
+Use the NEW logo seen in Image 2 at top left: small charcoal thin-line rounded-square outline, 5 short tuning tick marks, one vermilion vertical tuning needle. No antenna. Same icon footprint and clear spacing to wordmark.
+
+Preserve the warm ivory and cream theme: warm grey outer surface, ivory central panel and radio, charcoal readable text, muted olive secondary controls, vermilion orange accent. Preserve the restrained Braun/Dieter Rams industrial design aesthetic.
+Preserve ALL original layout, Chinese episode title, artwork, transcript content and timestamps, playback state, chapter dial, header navigation, transport controls, and typography from Image 1. Header reads "留频 | 播客播放器". Podcast title "在忙碌的世界里，重新找回专注", show "日常之间". Keep the original 18:42 of 52:16 playback position and orange pause button. Current date anchor is 2026-11-14 but do not add dates. No new content, sidebars, labels, light-theme badges, presentation headers or external annotations.
+The result must be a polished readable production-quality LIGHT theme with the earlier more three-dimensional tactile radio.
+
+DARK THEME — Final prompt
+Use case: style-transfer / ui-mockup.
+Create the DARK THEME counterpart of the attached "留频" desktop podcast player LIGHT design. The attached image is the EDIT TARGET. Output exactly ONE complete app screenshot, not a split screen or comparison sheet. Match its dimensions and aspect ratio (approximately 1580 x 996).
+
+PRESERVE GEOMETRY AND CONTENT:
+Keep the EXACT layout, spacing, UI hierarchy, radio silhouette, view angle, dimensions, title, Chinese typography, cover artwork, transcript, timestamps 18:42 of 52:16, chapter scale, and controls. Preserve the correct app name "留频" in the header AND printed on the radio bottom-left. Preserve the new small tuning-scale logo with its orange-red vertical needle in the header; adapt only its charcoal lines to warm ivory for visibility.
+
+DARK THEME ART DIRECTION:
+This must be a fully designed elegant dark version with premium Braun/Dieter Rams skeuomorphic radio materials, not a photographic negative and not a glowing gaming interface.
+Outer app background warm near-black #171916.
+Main large listening panel charcoal #222520, with very subtle edge definition against background, faint restrained shadows.
+Primary text soft ivory #EEEDE5, secondary text warm grey #ABAFA1, tertiary text still readable with sufficient contrast. Fine dividers in muted charcoal-grey.
+Keep vermilion orange #D6603C as the single saturated accent for tuning needle, current transcript marker, active text-tab underline, pause key and seek thumb.
+Muted olive accents on chapter ticks, playback progress, volume and small status indicator.
+
+RADIO MATERIALS:
+Keep the earlier strong skeuomorphic appearance: visible shallow top plane, rounded beveled rim, black feet, recesses, realistic knobs and soft grounded shadow.
+Transform the ivory chassis into luxurious matte graphite ABS / dark anodized-metal grey #353933. Clearly show the front-versus-top plane with soft studio highlights and controlled gradients from physical lighting only. Add a thin satin graphite bevel, charcoal perforated speaker grille with dark circular holes, refined warm-grey inner perforation edges, a low-glare recessed dark chapter tuning scale with legible ivory tick markings and orange needle.
+Display window very dark desaturated olive with warm off-white "正在播放" and "18:42". Large tuning knob and smaller volume knob in brushed gunmetal / satin silver, with readable radial texture and realistic restrained metallic highlights, dark indicator line, enough contrast to stand out from chassis. Row of dark graphite tactile mechanical buttons with ivory symbols and orange-red pause button. "留频" printed in warm light grey at the radio bottom-left. Keep it realistically tangible and premium; no flattening, no extra lights, no copper, no wood.
+
+REST OF APP:
+Keep the artwork as the exact original cream architecture and olive artwork without color inversion. Preserve right transcript contents; highlight active sentence with brighter warm ivory and orange margin rule, preceding and next sentences readable muted grey. The large bottom orange pause control retains tactile material and clear white text. Match header and control positions precisely to light variant.
+No new sidebar, no theme labels or presentation captions, no new content, no neon, no purple or blue tint, no gold accents. Current date anchor 2026-11-14; no need to add dates.
+One finished high fidelity DARK theme of the same app, suitable for side-by-side comparison with the original light theme.
+

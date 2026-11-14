@@ -1,0 +1,39 @@
+留频 · 推杆方案参考图
+生成方式：内置 image_gen 图像编辑工具。
+范围：桌面端与手机端亮色拟物参考稿，替换旋钮为章节推杆。
+交互建议：拖动时预览章节，松手吸附到所选章节后切换；支持点击刻度选择章节。下方播放进度条用于连续时间定位。桌面端保留底部音量滑条，手机端音量使用系统控制。本次交付为静态设计图。
+
+MOBILE — Final prompt
+Use case: precise-object-edit / ui-mockup.
+Edit the attached mobile "留频" LIGHT SKEUOMORPHIC podcast playback screen with one focused usability redesign: replace the physical circular rotary tuning and volume knobs with a clearly usable HORIZONTAL LINEAR CHAPTER FADER. Output ONE complete portrait mobile app reference screenshot, same actual dimensions and framing as input (977 x 1610). App content only, no phone body, OS chrome, captions, or collage.
+
+PRESERVE:
+Exact brand "留频", tuning-needle logo, header with "拟物 / 扁平" and拟物 selected, moon theme icon, show artwork and title, global vertical composition, warm ivory/olive/vermilion palette, transcript contents,18:42/52:16 seek and bottom playback controls.
+Preserve the recognizable Braun/Dieter Rams tactile radio with ivory ABS enclosure, shallow top plane, beveled perimeter, soft grounded shadow, tiny feet, left perforated speaker grille, physical rectangular key row. Do not flatten the overall radio.
+
+REDESIGN ONLY RADIO RIGHT CONTROL AREA:
+Remove BOTH circular knobs completely. There must be NO circular rotary controls anywhere on the radio.
+Remove the separate duplicate top tuning meter and combine chapter scale and actuator into ONE direct-manipulation horizontal fader.
+At upper right put the dark olive slim information display "正在播放   18:42".
+Below it, create an elegant large shallow recessed rectangular horizontal chapter-fader module spanning almost the full right control-panel width. Three clear evenly spaced snap positions labeled "01", "02", "03" above the slot, with tiny intermediate ticks. One long charcoal recessed horizontal slot. A substantial rectangular satin-silver sliding handle with an orange vertical indicator stripe sits at the middle "02" stop; handle has subtle grip lines and tactile bevel, obvious left/right sliding motion, not a circular thumb and not a rocker switch. Give it abundant padding and a large implied touch target: approx44 logical px tall. It should feel like a Braun mixer-style linear mechanical fader, refined not heavy. Module label below "章节" and current caption "02 专注与留白", readable.
+Below module keep aligned physical previous/pause/next/menu keys with orange pause key. Fit within existing radio dimensions; no resize or moving whole radio. No "音量" knob or fader in mobile, mobile volume is controlled by system.
+Under radio simplify the existing duplicate chapter-tick row to a single quiet chapter summary row "当前章节" at left and "02 专注与留白  ›" at right, no second tuning scale. The radio fader is the chapter selector. Preserve spacing and full transcript preview below.
+The bottom normal continuous seek bar remains unchanged and handles playback time, distinct from the chapter fader.
+No new features or extra duplicate sliders. No extra explanatory text in the actual image. Clear, plausible touch-first controls, original warm skeuomorphic product character.
+
+DESKTOP — Final prompt
+Use case: precise-object-edit / ui-mockup.
+Image1 is the desktop LIGHT SKEUOMORPHIC "留频" app EDIT TARGET. Image2 is a supporting reference showing the newly approved direction of a horizontal chapter fader on the MOBILE radio. Translate that specific control redesign into Image1. Output ONE full desktop screenshot with the same actual dimensions/aspect ratio as Image1. No collage and no external annotations.
+
+Keep exact desktop app composition, two-column layout, all Chinese typography, "留频" brand and tuning-needle logo, title and artwork, transcript, progress18:42/52:16 and bottom playback transport, existing volume slider, header navigation and palette. Keep radio overall bounding box, speaker position, ivory chassis, top-plane thickness, tactile bevels, grille, tiny feet, and warm Braun/Dieter Rams industrial design.
+
+RADIO CONTROL CHANGE:
+Replace BOTH original circular rotary knobs completely. NO circular rotary controls remain on the radio.
+At upper right place a slim dark olive display "正在播放   18:42".
+Below it place ONE large recessed horizontal chapter-fader module matching Image2. Combine the original separate tuning meter with the fader, so no duplicated tuning meter remains. It has three snap positions01/02/03 and small ticks above a horizontal charcoal slot. A broad rectangular satin silver sliding handle with subtle grip ridges and one orange vertical indicator rests at02. Clearly a linear fader capable of left-right dragging, no circular thumb. It must be generous in size and visually obvious to use with mouse or touch. The lower caption of the module reads "章节 | 02 专注与留白". Preserve the row of physical rectangular previous/pause/next/menu keys with orange pause key beneath, within the existing right control area. Preserve radio brand printing at bottom-left.
+No separate radio volume knob or extra volume fader: the desktop volume slider already exists in the bottom-right transport bar.
+
+Under the radio remove the old duplicate chapter timeline and helper "转动旋钮，切换章节". Replace with a quiet single-line chapter summary: left "当前章节", center "02 专注与留白", right a small chevron. Do not create another slider or tick scale here. Preserve row placement/overall layout.
+Keep the existing lower continuous playback seek bar unchanged, with 18:42/52:16 times. This is distinct from the chapter fader.
+All other features and styling remain unchanged. No extra buttons, no new sidebar, no new labels outside app, no English brand additions. Preserve tactile mechanical material quality. Current date anchor2026-11-14; do not add dates.
+

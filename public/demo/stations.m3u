@@ -1,0 +1,11 @@
+#EXTM3U
+#EXTINF:-1 tvg-logo="https://somafm.com/img3/groovesalad-400.jpg" group-title="环境 · 电子",SomaFM · Groove Salad
+https://ice1.somafm.com/groovesalad-128-mp3
+#EXTINF:-1 tvg-logo="https://somafm.com/img3/dronezone-400.jpg" group-title="氛围 · 深空",SomaFM · Drone Zone
+https://ice1.somafm.com/dronezone-128-mp3
+#EXTINF:-1 group-title="爵士 · 巴黎",FIP · Jazz
+https://icecast.radiofrance.fr/fipjazz-midfi.mp3
+#EXTINF:-1 group-title="独立 · 西雅图",KEXP · 90.3 FM
+https://kexp-mp3-128.streamguys1.com/kexp128.mp3
+#EXTINF:-1 group-title="古典 · 巴黎",France Musique · Classique
+https://icecast.radiofrance.fr/francemusique-midfi.mp3

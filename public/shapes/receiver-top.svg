@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 52" preserveAspectRatio="none">
+  <!-- Curves meet the rear edge and sloped sides tangentially. The lower
+       endpoints stay tucked behind the rounded front of the cabinet. -->
+  <path fill="white" d="M44 0H956Q967.44 0 973 10.1L996.04 52H3.96L27 10.1Q32.56 0 44 0Z"/>
+</svg>

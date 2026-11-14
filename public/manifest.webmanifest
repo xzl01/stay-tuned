@@ -1,0 +1,19 @@
+{
+  "name": "留频 · 播客与电台调谐器",
+  "short_name": "留频",
+  "description": "订阅 RSS 播客，调谐 M3U 电台。把声音留在身边。",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#efece4",
+  "theme_color": "#efece4",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

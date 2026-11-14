@@ -1,0 +1,14 @@
+留频 · 双推杆与简化液晶屏参考稿 v2
+生成方式：内置 image_gen 图像编辑工具。
+本次范围：移除液晶屏中的音量图标及条格。音量大小仅由音量滑块位置表达，无百分比、数字或重复音量读数。屏幕保留播放状态、时间、章节名称；静态机身标签、推杆、其他界面不变。交付为亮色拟物静态参考图。
+
+MOBILE — Final prompt
+Precise minimal edit of the attached mobile "留频" LIGHT SKEUOMORPHIC design. Output ONE full portrait screen with identical framing and dimensions. Change ONLY the radio LCD contents: completely REMOVE the bottom row containing the tiny speaker icon and all filled/outlined rectangular volume-level cells. Show NO volume data, no bar meter, no number, no percentage in the LCD. Retain only two clear rows: "正在播放" left / "18:42" right in first row, and "02 专注与留白" in second row. Vertically balance those two rows within the existing LCD window without changing its physical bounds. Preserve its green monochrome dot-matrix look, recessed bezel and subtle glass reflection.
+
+Keep everything else exactly as close as possible: both chapter and volume faders and their positions, the FIXED speaker icon and "音量" label beside the lower fader, generic physical tick marks, chassis, grille, brand, app header, appearance toggle, artwork/title, current chapter summary, transcript, seek, playback controls and footer. The physical volume fader handle position is the ONLY volume-level indicator. Do not remove the volume fader. Do not add any substitute volume readout anywhere. Do not redesign the radio or app. No external captions or collage.
+
+DESKTOP — Final prompt
+Precise minimal edit of the attached DESKTOP "留频" LIGHT SKEUOMORPHIC radio app. Output ONE complete desktop screenshot, identical framing and dimensions/aspect ratio. Change ONLY the LCD screen contents on the radio:
+Completely remove the bottom volume meter row: tiny speaker icon, all filled rectangular cells, all outlined cells. No volume bar, level number, percentage or substitute indicator in the LCD. The LCD should show only two rows: "正在播放" left and "18:42" right on first row; "02 专注与留白" on second row. Balance those rows neatly inside existing physical screen bounds, retaining green monochrome dot-matrix typography, olive glass window, inset bezel and reflection. Do not change radio hardware dimensions.
+All other elements must remain as close as possible: both physical faders and their exact handle positions, fixed "章节" and speaker icon+"音量" labels, fixed tick scales, grille, enclosure materials, previous/pause/next/menu keys, brand "留频", app layout/title/artwork/transcript/chapter summary/progress18:42/52:16/transport/header. Keep lower-right speaker mute button unchanged. Volume level is expressed ONLY by lower fader position, not a separate readout. Do not add volume information anywhere. No new features or arbitrary redesign. No collage or external captions.
+

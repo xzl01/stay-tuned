@@ -1,0 +1,27 @@
+Stay Tuned (留频)
+Copyright (C) 2026 HarryLoong
+
+SPDX-License-Identifier: GPL-3.0-only
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, version 3 of the License.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program. If not, see <https://www.gnu.org/licenses/>.
+
+The complete GPL-3.0 text is in LICENSE.
+
+Third-party software, fonts and asset provenance are documented in
+THIRD_PARTY_NOTICES.md and third-party-licenses/. Those components remain
+under their own licenses; this GPL notice does not relicense them.
+
+Source repository: https://github.com/xzl01/stay-tuned
+
+Trademarks: “Braun”, “Dieter Rams”, SomaFM, FIP, KEXP and other names are
+used only for descriptive or nominative purposes. This project is independent
+and is not affiliated with or endorsed by those rights holders.

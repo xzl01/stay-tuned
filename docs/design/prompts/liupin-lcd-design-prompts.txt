@@ -1,0 +1,48 @@
+留频 · 液晶屏与双推杆拟物参考稿
+生成方式：内置 image_gen 图像编辑工具。
+设计：动态播放状态、时间、章节名称及音量条格集中于凹入式液晶屏；机身仅保留固定功能标签、图标及无数字刻度。移除所有音量百分比。保留上下两根章节及音量推杆。本次交付为静态亮色拟物设计图。
+
+MOBILE — Final prompt
+Use case: precise-object-edit / ui-mockup.
+Edit the attached MOBILE LIGHT SKEUOMORPHIC "留频" dual-fader design. Precise goal: dynamic chapter name, playback state/time, and volume state must live INSIDE the radio's recessed LCD, never appear as changeable ink printed on the physical case. Remove ALL volume percentages everywhere. Output ONE complete portrait screenshot with same dimensions/aspect ratio/framing as reference, app content only, no device or collage.
+
+Preserve the composition, name "留频", logo, header style/theme controls, artwork, episode title, speaker grille, ivory ABS enclosure thickness/bevels/feet/shadow, two horizontal mechanical faders with silver rectangular handles, orange chapter indicator and muted grey-green volume indicator, and physical key row. Keep outside-radio page content, chapter summary row, transcript,18:42/52:16 progress and large playback controls unchanged.
+
+RADIO RIGHT PANEL:
+Increase the existing recessed dark olive LCD at the upper right from a thin single-line strip to a compact but clearly readable THREE-LINE information screen, same width as existing. It must be visibly an actual electronic display behind a dark protective window, fine dark bezel, slight inset/glass reflection. All dynamic text and graphics inside the LCD use ONE consistent pale warm-green monochrome LCD/dot-matrix-style display treatment.
+Inside screen render:
+top row "正在播放" left and "18:42" right.
+middle row exact "02 专注与留白", prominent and legible.
+bottom row a tiny speaker icon followed by a compact volume level bar made of 8 small rectangular cells, about5 filled and3 subdued outlines. This is a visual volume indicator, NO number and NO percent.
+No extra metadata or overfull screen.
+
+Below screen arrange the two tactile faders cleanly:
+Upper fader has only a small FIXED chassis label "章节", generic printed tick marks, long recessed horizontal slot and substantial silver handle atmiddle, orange vertical indicator stripe. Remove original changing title "02 专注与留白" from the physical case completely; that title is ONLY in LCD within the radio. Also remove printed01/02/03 chapter numbers from chassis, use unnumbered tick marks so physical case markings are plausible fixed scale.
+Lower fader has a small FIXED speaker icon and label "音量", generic low-to-high tick marks, same-width slot and smaller silver handle at abouttwo-thirds travel with grey-green stripe. REMOVE "68%" entirely. No numeric volume value anywhere. No "百分比" text.
+Use consistent restrained dark charcoal silkscreen for ONLY static labels/ticks/icons on ivory chassis. No dynamic title printed on metal or plastic.
+Retain the physical previous/pause/next/menu key row below the faders. Fit screen and both faders inside original right control area by reducing unnecessary vertical whitespace; avoid tiny illegible text, collisions and overlaps. Keep radio bounding box unchanged.
+Preserve warm ivory, muted olive and orange Braun/Dieter Rams character, physically convincing materials. No unrelated redesign or new functions.
+
+DESKTOP — Final prompt
+Use case: precise-object-edit / ui-mockup.
+Image1 is the DESKTOP LIGHT SKEUOMORPHIC "留频" dual-fader app EDIT TARGET. Image2 is the revised MOBILE reference showing the desired hardware-authentic LCD treatment. Apply that same specific treatment to the desktop radio. Output ONE complete desktop screenshot with same dimensions, aspect ratio and composition as Image1, no collage/captions.
+
+Keep all surrounding app content and styling unchanged: brand "留频" and logo, header, title/artwork, transcript, chapter row,18:42/52:16 seek, bottom playback controls, radio bounding box, left perforated grille, ivory ABS shallow top/bevels/feet/shadow, two horizontal silver mechanical faders, physical button row.
+
+CORE HARDWARE RULE:
+Dynamic changing chapter title, playback time/state and volume state must be INSIDE the real electronic display, not printed as dynamic text on plastic or metal. Fixed labels and unnumbered ticks can remain silkscreened on chassis. Remove ALL volume percentage text anywhere in image, including bottom-right old68%.
+
+RADIO RIGHT PANEL:
+Expand the dark olive upper display from single strip into a legible compact three-row recessed monochrome dot-matrix LCD with protective dark window, thin bezel, restrained glass reflection, matching Image2. Same width as current radio control panel.
+LCD top line "正在播放" left and "18:42" right.
+LCD second line exact "02 专注与留白", clear and prominent.
+LCD third line speaker icon and8 small rectangular volume cells,5 filled and3 outlined dim, in consistent pale warm-green display color. No numeric volume value, no percentage.
+Below LCD position two tactile faders with ample spacing:
+Upper one: FIXED small printed label "章节", generic unnumbered tick marks, charcoal recessed horizontal track, substantial silver rectangular handle atmiddle with orange vertical indicator.
+Lower one: FIXED speaker icon + "音量", generic low-to-high ticks, same-width recessed track and smaller silver rectangular handle at abouttwo-thirds, grey-green indicator stripe.
+REMOVE existing "02 专注与留白" chapter caption from physical radio chassis and REMOVE printed01/02/03 numbers from tuning scale; they are changing chapter information now represented ONLY inside LCD. No shifting episode-specific words printed on material.
+Keep the previous/pause/next/menu physical key row underneath and original enclosure size. Compact previous whitespace cleanly, no collisions or overcrowding.
+
+In bottom-right app transport remove old"68%" readout, retain only a clean speaker outline button as mute control. Other bottom elements remain. No volume digits or % symbol anywhere. Outside the radio the current chapter summary row remains ordinary app text unchanged.
+Maintain exact warm ivory/charcoal/olive/orange Braun/Dieter Rams design with realistic tactile materials, no arbitrary redesign.
+

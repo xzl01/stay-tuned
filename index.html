@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#efece4" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="description" content="留频 — 一档可以订阅 RSS 播客，也可以调谐 M3U 电台的播客播放器。PC 与移动双端界面。" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="preload" href="/fonts/maple-mono-regular.woff" as="font" type="font/woff" crossorigin />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>留频 · 播客与电台调谐器</title>
+    <script>
+      try {
+        const saved = JSON.parse(localStorage.getItem('stay-tuned:v1') || 'null');
+        const theme = saved && saved.preferences && saved.preferences.theme;
+        const mode = saved && saved.preferences && saved.preferences.mode;
+        document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light';
+        document.documentElement.dataset.mode = mode === 'flat' ? 'flat' : 'skeuo';
+      } catch (_) {
+        document.documentElement.dataset.theme = 'light';
+        document.documentElement.dataset.mode = 'skeuo';
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

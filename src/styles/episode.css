@@ -1,0 +1,817 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+
+/* ==========================================================================
+   Episode panel, transcript, chapters and radio info
+   ========================================================================== */
+
+.episode-panel {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.episode-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 34px;
+  gap: clamp(14px, 1.6vw, 23px);
+  align-items: start;
+  flex: none;
+}
+
+.episode-cover {
+  width: clamp(92px, 8.35vw, 132px);
+  border-radius: 4px;
+  box-shadow: 0 18px 34px -26px rgba(44, 35, 20, 0.55);
+}
+
+.episode-head-copy {
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.episode-show {
+  display: block;
+  margin-bottom: clamp(5px, 0.8vh, 9px);
+  color: var(--ink-2);
+  font-size: 15.5px;
+  line-height: 1.3;
+  letter-spacing: 0.035em;
+}
+
+.episode-title {
+  color: var(--ink);
+  font-size: clamp(22px, 2.05vw, 32px);
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: -0.022em;
+  white-space: pre-line;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: break-word;
+}
+
+.episode-meta {
+  display: block;
+  margin-top: clamp(8px, 1.2vh, 13px);
+  color: var(--ink-3);
+  font-size: 13.5px;
+  line-height: 1.4;
+  letter-spacing: 0.035em;
+}
+
+.favorite-button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-2);
+  border-radius: 50%;
+  justify-self: end;
+  transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.favorite-button:hover {
+  color: var(--accent);
+  background: var(--accent-ghost);
+}
+
+.favorite-button.is-favorite {
+  color: var(--accent);
+}
+
+.favorite-button:active {
+  transform: scale(0.88);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Tabs                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.episode-transcript {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: clamp(18px, 2.4vh, 28px);
+}
+
+.episode-tabs {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(24px, 2.6vw, 38px);
+  height: 36px;
+  border-bottom: 1px solid var(--line);
+}
+
+.episode-tabs > button[role='tab'] {
+  position: relative;
+  height: 100%;
+  padding: 0 2px 9px;
+  color: var(--ink-2);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  transition: color 0.22s ease;
+}
+
+.episode-tabs > button[role='tab']::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color 0.22s ease;
+}
+
+.episode-tabs > button[role='tab']:hover {
+  color: var(--ink);
+}
+
+.episode-tabs > button[role='tab'].is-active {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.episode-tabs > button[role='tab'].is-active::after {
+  background: var(--accent);
+}
+
+.episode-tabs--single {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.episode-tabs--single > button[role='tab'] {
+  align-self: flex-end;
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 11px;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 99px;
+  background: var(--accent-ghost);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  line-height: 1.4;
+  letter-spacing: 0.12em;
+}
+
+.live-badge i,
+.signal-legend i,
+.station-pick-live i,
+.queue-live-badge i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: inline-block;
+  flex: none;
+}
+
+.live-badge i,
+.signal-legend i.is-live,
+.station-pick-live i,
+.queue-live-badge i {
+  animation: soft-pulse 1.7s ease-in-out infinite;
+}
+
+.episode-tab-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Transcript                                                                 */
+/* -------------------------------------------------------------------------- */
+
+.transcript-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px 10px 22px 0;
+  scrollbar-gutter: stable;
+  mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 calc(100% - 20px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 calc(100% - 20px), transparent 100%);
+}
+
+.transcript-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.transcript-line {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  gap: clamp(10px, 1.3vw, 18px);
+  align-items: start;
+  padding: 9px 8px 9px 12px;
+  border-left: 2px solid transparent;
+  border-radius: 2px;
+  text-align: left;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.transcript-line:hover {
+  background: color-mix(in srgb, var(--surface-3) 62%, transparent);
+}
+
+.transcript-time {
+  padding-top: 3px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.transcript-text {
+  color: var(--ink-2);
+  font-size: clamp(15px, 1.32vw, 19px);
+  line-height: 1.8;
+  letter-spacing: 0.01em;
+  white-space: pre-line;
+  transition: color 0.25s ease;
+}
+
+.transcript-list li.is-active .transcript-line {
+  border-left-color: var(--accent);
+  background: transparent;
+}
+
+.transcript-list li.is-active .transcript-time {
+  color: var(--accent);
+}
+
+.transcript-list li.is-active .transcript-text {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.transcript-empty {
+  padding: 8px 18px 8px 12px;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.85;
+  overflow-y: auto;
+}
+
+.transcript-empty-title {
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.transcript-start {
+  margin: 6px 0 0 12px;
+  color: var(--accent);
+  font-size: 11px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Chapters                                                                   */
+/* -------------------------------------------------------------------------- */
+
+.chapter-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 10px 18px 0;
+}
+
+.chapter-list li {
+  position: relative;
+}
+
+.chapter-list li > button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 20px;
+  gap: 11px;
+  align-items: start;
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--line);
+  border-left: 2px solid transparent;
+  text-align: left;
+  color: var(--ink-2);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.chapter-list li > button:hover {
+  background: color-mix(in srgb, var(--surface-3) 55%, transparent);
+}
+
+.chapter-list li.is-active > button {
+  background: var(--accent-ghost);
+  border-left-color: var(--accent);
+}
+
+.chapter-list-number {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+}
+
+.chapter-list li.is-active .chapter-list-number {
+  color: var(--accent);
+}
+
+.chapter-list-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  position: relative;
+}
+
+.chapter-list-title {
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.chapter-list li.is-active .chapter-list-title {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.chapter-list-time {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.chapter-list-progress {
+  display: block;
+  height: 1.5px;
+  margin-top: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.7;
+  transition: width 0.3s linear;
+}
+
+.chapter-list-play {
+  color: var(--ink-3);
+  display: grid;
+  place-items: center;
+  padding-top: 1px;
+}
+
+.chapter-list li.is-active .chapter-list-play {
+  color: var(--accent);
+}
+
+.chapters-empty {
+  padding: 14px 18px 14px 12px;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.chapters-empty p {
+  color: var(--ink-2);
+  margin-bottom: 4px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Footer                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.episode-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: clamp(10px, 1.4vh, 16px);
+}
+
+.host-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.host-avatar {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--olive) 32%, transparent);
+  background: var(--olive-soft);
+  color: var(--olive-deep);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  flex: none;
+}
+
+.host-role {
+  color: var(--ink-3);
+}
+
+.follow-control {
+  flex: none;
+}
+
+.episode-footer .switch-label {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.signal-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-3);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.signal-legend i {
+  background: var(--ink-3);
+}
+
+.signal-legend i.is-live {
+  background: var(--accent);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Radio info                                                                 */
+/* -------------------------------------------------------------------------- */
+
+.episode-panel--radio .episode-title {
+  font-size: clamp(20px, 1.8vw, 28px);
+}
+
+.radio-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 14px 16px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.radio-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+  margin-bottom: 20px;
+}
+
+.radio-info-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.radio-info-label {
+  color: var(--ink-3);
+  font-size: 9px;
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.radio-info-value {
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.radio-live-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.radio-live-value i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+
+.radio-live-value i.is-live {
+  background: var(--accent);
+  animation: soft-pulse 1.8s ease-in-out infinite;
+}
+
+.radio-note {
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.9;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 14px 0 0;
+}
+
+.tag {
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.03em;
+}
+
+.radio-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Empty state                                                                */
+/* -------------------------------------------------------------------------- */
+
+.episode-panel--empty {
+  justify-content: center;
+  align-items: flex-start;
+  padding: clamp(10px, 2vh, 30px) 0;
+}
+
+.episode-empty-art {
+  width: 112px;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 22px 40px -28px rgba(42, 33, 18, 0.55);
+}
+
+.episode-panel--empty h1 {
+  margin-top: 22px;
+  font-size: 26px;
+  line-height: 1.35;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.episode-panel--empty p {
+  margin-top: 8px;
+  max-width: 360px;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Compact desktop                                                            */
+/* -------------------------------------------------------------------------- */
+
+@media (min-width: 1024px) and (max-width: 1320px) {
+  .episode-cover {
+    width: clamp(82px, 7.2vw, 104px);
+  }
+
+  .episode-title {
+    font-size: clamp(19px, 1.72vw, 24px);
+  }
+
+  .episode-show {
+    font-size: 12px;
+  }
+
+  .episode-meta {
+    font-size: 10.5px;
+  }
+
+  .episode-transcript {
+    margin-top: 16px;
+  }
+
+  .transcript-line {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 10px;
+    padding: 8px 6px 8px 10px;
+  }
+
+  .transcript-text {
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .transcript-time {
+    font-size: 9.5px;
+  }
+
+  .radio-note {
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  .episode-footer .switch-label {
+    display: none;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Live signal scope                                                          */
+/* -------------------------------------------------------------------------- */
+
+.radio-scope {
+  margin: 16px 0 8px;
+  padding: 13px 14px 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--surface-2) 58%, transparent);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+}
+
+.radio-scope-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  line-height: 1.4;
+  letter-spacing: 0.1em;
+}
+
+.radio-scope-head span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+}
+
+.radio-scope-head i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+
+.radio-scope.is-playing .radio-scope-head i {
+  background: var(--accent);
+  animation: soft-pulse 1.6s ease-in-out infinite;
+}
+
+.radio-scope-bars {
+  height: 58px;
+  margin: 9px 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.radio-scope-bars i {
+  flex: 1;
+  min-width: 1px;
+  max-width: 3px;
+  border-radius: 1px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--olive) 100%);
+  opacity: 0.52;
+  transform-origin: center;
+  animation: scope-breathe 3.2s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+
+.radio-scope.is-playing .radio-scope-bars i {
+  animation-play-state: running;
+}
+
+.radio-scope-scale {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 7px;
+  letter-spacing: 0.04em;
+}
+
+@keyframes scope-breathe {
+  from {
+    transform: scaleY(0.72);
+    opacity: 0.35;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 0.7;
+  }
+}
+
+/* Episode show notes & remote extras --------------------------------------- */
+
+.show-notes {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 18px 18px 12px;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.9;
+  letter-spacing: 0.01em;
+  overscroll-behavior: contain;
+}
+
+.show-notes p {
+  white-space: pre-line;
+}
+
+.show-notes-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.show-notes-meta a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-3);
+}
+
+.show-notes-meta a:hover {
+  color: var(--accent);
+}
+
+.transcript-empty.is-loading,
+.chapters-empty.is-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.transcript-empty.is-loading .spinner,
+.chapters-empty.is-loading .spinner {
+  opacity: 0.65;
+}
+
+.transcript-retry {
+  margin-top: 10px;
+  padding: 0;
+  color: var(--accent);
+  font-size: 11px;
+}
+
+/* Live analyser state replaces the decorative breathing animation. */
+.radio-scope-bars.has-spectrum i {
+  animation: none;
+  transform: none;
+  opacity: 0.78;
+  transition: height 0.08s linear;
+  will-change: height;
+}

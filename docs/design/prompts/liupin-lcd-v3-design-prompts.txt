@@ -1,0 +1,36 @@
+留频 · 克制的反射式液晶屏参考稿 v3
+生成方式：内置 image_gen 图像编辑工具。
+调整：缩小屏幕，改为灰绿色低亮度基底、深色点阵字、细边框及轻微内凹，弱化玻璃反光；播放状态简化为三角符号，保留时间和章节名称。音量大小仅由滑块位置表达。其他界面沿用前版。交付为手机端及桌面端亮色拟物静态参考图。
+
+MOBILE — Final prompt
+Use case: precise-object-edit / ui-mockup.
+Edit the attached mobile "留频" LIGHT SKEUOMORPHIC reference screenshot. User requests a SMALLER, MORE REALISTIC, MORE RESTRAINED radio LCD. Output ONE complete portrait app screenshot with same actual dimensions/aspect ratio as input, no collage/device/captions.
+
+Change ONLY the radio LCD hardware and its displayed typography:
+Shrink its visible width to about88% of current and height to about65-70% of current, reducing its overall area about40%. It should read as a compact horizontal two-line instrument display, not a large glowing green screen. Center this smaller display neatly in the same radio right control area, align it harmoniously above the two faders, leaving an intentional ivory chassis margin around it. Radio enclosure and all fader/control positions stay unchanged.
+
+AUTHENTIC REFLECTIVE MONOCHROME LCD:
+Use a muted pale grey-sage/khaki LCD substrate, approximately #A5AC91, with DARK charcoal-olive pixels #35402E, like an unlit real low-power reflective STN LCD under ambient daylight. No luminous lime text on dark green. No glow, no bright green backlight, no glossy diagonal light streaks. Slight natural glass tint, very fine inset shadow along top edge, a tiny barely-visible glass surface reflection only, thin dark recessed gasket and fine subdued bezel. No stacked thick raised borders. Rectangular display with only tiny corner radius, integrated into matte ivory ABS. Convincing quiet physical realism, no sci-fi screen.
+
+LCD CONTENT: just two restrained, well-spaced rows in smaller authentic uniform dot-matrix pixel text:
+top row a tiny play triangle at left and "18:42" at right, showing playback status with the play symbol instead of the long "正在播放" label.
+second row "02 专注与留白".
+Thin modest dark pixel strokes, small crisp pixel grid; text must fit comfortably without being large/bold. Adequate legibility on sage substrate. No volume data, no bars, no %.
+Use the now-simpler content to make the smaller screen feel naturally proportioned rather than cramped.
+
+PRESERVE EVERYTHING ELSE as close as possible: name "留频", header logo/style selector/theme icon, cover and title, radio body thickness/grille/feet/keys, fixed chapter and volume labels and tick marks, orange chapter fader and grey-green volume fader with EXACT same handle positions, outside chapter summary, transcript, progress18:42/52:16, playback and footer. No new information, no arbitrary UI layout changes. The only substantive refinement is a smaller, subtle, believable unlit LCD.
+
+DESKTOP — Final prompt
+Use case: precise-object-edit / ui-mockup.
+Image1 is the DESKTOP "留频" light skeuomorphic UI EDIT TARGET. Image2 is the supporting MOBILE reference of the refined compact reflective LCD. Update only the desktop radio screen to match Image2. Output ONE complete desktop screenshot, same original dimensions/aspect ratio and overall layout. No collage, devices or annotations.
+
+Screen redesign:
+Make the screen about88% of current width and65-70% of current height; reduce visible area around40%. Compact horizontal rectangular two-line display centered within right control panel above existing faders, leaving generous ivory chassis margin.
+Replicate authentic non-backlit reflective monochrome LCD from Image2: subdued pale grey-sage/khaki substrate #A5AC91 with dark charcoal-olive pixels #35402E. No bright green luminous lettering, no dark glowing screen, no LED halo, no dramatic glossy diagonal reflections. Fine subtle recessed dark gasket, tiny corner radii, one delicate rim, shallow top-edge shadow, very mild surface reflection, integrated physically into matte ivory ABS. Avoid thick stacked bevels or a huge dark frame.
+In small consistent real dot-matrix typography show exactly:
+First row: tiny right-pointing play triangle at left, "18:42" at right. Use symbol instead of text"正在播放".
+Second row: "02 专注与留白".
+Smaller modestly weighted dark pixels with generous padding, readable but discreet. This is a quiet physical LCD instrument, not a graphic UI card. No volume information, no volume bars, no percentage.
+
+Preserve ALL other original contents and geometry: both mechanical faders and handle positions, static chassis labels "章节"/"音量" and fixed tick marks, radio shell/grille/top-plane/feet/keys, orange accents, "留频" logo/name, podcast cover/title, header, transcript, chapter-summary row, progress18:42/52:16, bottom transport and speaker mute button. Do not move faders closer together or alter the app layout. Only change LCD size, materials and screen contents as specified. Preserve existing Braun/Dieter Rams restrained industrial warmth.
+

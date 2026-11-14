@@ -1,0 +1,227 @@
+{
+  "project": "留频 · Stay Tuned",
+  "archived_on": "2026-11-14",
+  "source": "Design discussion and built-in image_gen outputs; original assets copied without re-encoding.",
+  "latest_constraints": "constraints.md",
+  "priority": "Latest user corrections and constraints.md supersede historical images and prompts.",
+  "files": [
+    {
+      "path": "references/explorations/liupin-dark-flat-v1.png",
+      "original_filename": "liupin-dark-flat-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1508312,
+      "sha256": "1802332224f025f8c0e330776aa98e236ce46f24d588133316469cfaeb75530d",
+      "width": 1579,
+      "height": 996
+    },
+    {
+      "path": "references/explorations/liupin-dark-skeuomorphic-v1.png",
+      "original_filename": "liupin-dark-skeuomorphic-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1807688,
+      "sha256": "213d4d4ebf199a563a6a640c5422322e029508aedda88cb72b79f2b116e6d1f3",
+      "width": 1578,
+      "height": 996
+    },
+    {
+      "path": "prompts/liupin-design-prompts.txt",
+      "original_filename": "liupin-design-prompts.txt",
+      "role": "historical-generation-record",
+      "bytes": 5857,
+      "sha256": "fafe5d446880963d1c2e28c6e8165e294f8faeac16991eb8c2fa3802a2ddd1fa"
+    },
+    {
+      "path": "references/explorations/liupin-desktop-light-dual-fader-v1.png",
+      "original_filename": "liupin-desktop-light-dual-fader-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1860703,
+      "sha256": "25efb0d7265a62b3895b1df9d55da94fb64dd9559393c8b4ee1dd9491b0a7c70",
+      "width": 1579,
+      "height": 996
+    },
+    {
+      "path": "references/explorations/liupin-desktop-light-fader-v1.png",
+      "original_filename": "liupin-desktop-light-fader-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1848287,
+      "sha256": "9ff462f847a5c2478b414a6cfe35d536dcfcd442aebd3a6b3af6aa5344d023ce",
+      "width": 1578,
+      "height": 996
+    },
+    {
+      "path": "references/explorations/liupin-desktop-light-lcd-v1.png",
+      "original_filename": "liupin-desktop-light-lcd-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1875068,
+      "sha256": "a4b2ece7b7f2d9d7a69201235de94f82e4009f2ca9607dbcf4670bf9ac5ed721",
+      "width": 1578,
+      "height": 996
+    },
+    {
+      "path": "references/explorations/liupin-desktop-light-lcd-v2.png",
+      "original_filename": "liupin-desktop-light-lcd-v2.png",
+      "role": "historical-exploration",
+      "bytes": 1859987,
+      "sha256": "073b99d80450ac097e5d79f37d2cf907acacb14017c29bde06787a512def741c",
+      "width": 1579,
+      "height": 996
+    },
+    {
+      "path": "references/current/desktop-light-skeuomorphic.png",
+      "original_filename": "liupin-desktop-light-lcd-v3.png",
+      "role": "current-design-reference",
+      "bytes": 1853597,
+      "sha256": "a84abba3f231d47817013883c6e2d5a54f11db8565dead788ba4aaad7f8eb306",
+      "width": 1578,
+      "height": 996
+    },
+    {
+      "path": "prompts/liupin-dual-fader-design-prompts.txt",
+      "original_filename": "liupin-dual-fader-design-prompts.txt",
+      "role": "historical-generation-record",
+      "bytes": 5371,
+      "sha256": "0a6604abfafd0ef537feefb519cb56a5e408e67d49908198a087f52a64f5b5cf"
+    },
+    {
+      "path": "prompts/liupin-fader-design-prompts.txt",
+      "original_filename": "liupin-fader-design-prompts.txt",
+      "role": "historical-generation-record",
+      "bytes": 6082,
+      "sha256": "22773433b3a51f010c06a16cee21a29d04f32b6c37d9ee271b6f819805a8b59d"
+    },
+    {
+      "path": "prompts/liupin-flat-design-prompts.txt",
+      "original_filename": "liupin-flat-design-prompts.txt",
+      "role": "historical-generation-record",
+      "bytes": 6304,
+      "sha256": "f1750ae6e886f79f3afb8e9e5b0622bcbde4144b045a8b8a4ad4575f6a4274ca"
+    },
+    {
+      "path": "prompts/liupin-lcd-design-prompts.txt",
+      "original_filename": "liupin-lcd-design-prompts.txt",
+      "role": "historical-generation-record",
+      "bytes": 6393,
+      "sha256": "5fad5b1b9a08e633f4d2b03217cd47c92118fd129fd5518c6e3d9818c259a1ef"
+    },
+    {
+      "path": "prompts/liupin-lcd-v2-design-prompts.txt",
+      "original_filename": "liupin-lcd-v2-design-prompts.txt",
+      "role": "historical-generation-record",
+      "bytes": 3034,
+      "sha256": "3b16e7364a11bc5e3a66a7c84795928db334d1e5a4cb718ca04bd2ce3dcd5b78"
+    },
+    {
+      "path": "prompts/liupin-lcd-v3-design-prompts.txt",
+      "original_filename": "liupin-lcd-v3-design-prompts.txt",
+      "role": "historical-generation-record",
+      "bytes": 5134,
+      "sha256": "959155c0068917312543322f56189694cb43f9f8af1983853d9efb6e3846c3ef"
+    },
+    {
+      "path": "references/explorations/liupin-light-flat-v1.png",
+      "original_filename": "liupin-light-flat-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1549169,
+      "sha256": "a3e2804dcaf3916ceb508fb2f5911ca77d86212d3d9c9145b53bf850c98794fb",
+      "width": 1578,
+      "height": 996
+    },
+    {
+      "path": "references/explorations/liupin-light-skeuomorphic-v1.png",
+      "original_filename": "liupin-light-skeuomorphic-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1865736,
+      "sha256": "4d409fab652a6a8866185ec6a244d0e4a43cf206aa5598a21ea28e7231e20230",
+      "width": 1579,
+      "height": 996
+    },
+    {
+      "path": "references/explorations/liupin-mobile-dark-flat-v1.png",
+      "original_filename": "liupin-mobile-dark-flat-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1621692,
+      "sha256": "5f2872fea9c70581c1c7b7a13c70d3d90c83d40a90dac0990f9676c69763e029",
+      "width": 977,
+      "height": 1610
+    },
+    {
+      "path": "references/explorations/liupin-mobile-dark-skeuomorphic-v1.png",
+      "original_filename": "liupin-mobile-dark-skeuomorphic-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1863739,
+      "sha256": "5adc4c38da5796ce22b75c9ff1412a225064b4bfadcc30d70f6378205895d782",
+      "width": 977,
+      "height": 1609
+    },
+    {
+      "path": "prompts/liupin-mobile-design-prompts.txt",
+      "original_filename": "liupin-mobile-design-prompts.txt",
+      "role": "historical-generation-record",
+      "bytes": 10954,
+      "sha256": "c822679ac7e0828aa7e893adcffbfa0dedcec2e375496bb53f7c2634a73c10b3"
+    },
+    {
+      "path": "references/explorations/liupin-mobile-light-dual-fader-v1.png",
+      "original_filename": "liupin-mobile-light-dual-fader-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1884450,
+      "sha256": "aa159d8400b38844c22864c1c358799ca78b1375a3cc9779f364dc54de42ed03",
+      "width": 978,
+      "height": 1609
+    },
+    {
+      "path": "references/explorations/liupin-mobile-light-fader-v1.png",
+      "original_filename": "liupin-mobile-light-fader-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1857663,
+      "sha256": "e7b587f07443e0535bf147975256b7b3cecc47fc1e66af4adbfbb0b6da070c9c",
+      "width": 978,
+      "height": 1609
+    },
+    {
+      "path": "references/explorations/liupin-mobile-light-flat-v1.png",
+      "original_filename": "liupin-mobile-light-flat-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1594660,
+      "sha256": "eee4e88c7e40cfb70b40844865541f0b2783b242fecd47b4e1eaf74ce0bfd0cf",
+      "width": 977,
+      "height": 1610
+    },
+    {
+      "path": "references/explorations/liupin-mobile-light-lcd-v1.png",
+      "original_filename": "liupin-mobile-light-lcd-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1876501,
+      "sha256": "b218e2091cefbe1825b79fd4f14aa4b9926eb29584dd407c844c3ec53f5d0ecf",
+      "width": 978,
+      "height": 1609
+    },
+    {
+      "path": "references/explorations/liupin-mobile-light-lcd-v2.png",
+      "original_filename": "liupin-mobile-light-lcd-v2.png",
+      "role": "historical-exploration",
+      "bytes": 1871136,
+      "sha256": "aa22ba62538019956e5cea54b141627aa817edaa6f51441974757de5cfcba8a7",
+      "width": 978,
+      "height": 1609
+    },
+    {
+      "path": "references/current/mobile-light-skeuomorphic.png",
+      "original_filename": "liupin-mobile-light-lcd-v3.png",
+      "role": "current-design-reference",
+      "bytes": 1838687,
+      "sha256": "3d13109ccfaff4499f8672d8ec6b28ec3d75eebb2edfa9a56f8dc9de98fdccb6",
+      "width": 978,
+      "height": 1609
+    },
+    {
+      "path": "references/explorations/liupin-mobile-light-skeuomorphic-v1.png",
+      "original_filename": "liupin-mobile-light-skeuomorphic-v1.png",
+      "role": "historical-exploration",
+      "bytes": 1656358,
+      "sha256": "c5576a947875976deff40de2a14163922ce694cb1cb3712aeac5683eab886dc0",
+      "width": 977,
+      "height": 1610
+    }
+  ]
+}

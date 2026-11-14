@@ -1,0 +1,125 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+
+import type { Chapter, FeedResponse, PodcastSearchResult, Station, TranscriptLine } from '../types';
+
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status = 0) {
+    super(message);
+    this.status = status;
+  }
+}
+
+async function request<T>(path: string, params?: Record<string, string>, signal?: AbortSignal): Promise<T> {
+  const url = new URL(path, window.location.origin);
+  for (const [key, value] of Object.entries(params ?? {})) {
+    if (value != null) url.searchParams.set(key, value);
+  }
+  let response: Response;
+  try {
+    response = await fetch(url, { signal, headers: { accept: 'application/json' } });
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') throw err;
+    throw new ApiError('无法连接本地服务，请确认 API 服务已启动。');
+  }
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+  if (!response.ok) {
+    const message =
+      body && typeof body === 'object' && 'error' in body
+        ? String((body as { error: unknown }).error)
+        : `请求失败（${response.status}）`;
+    throw new ApiError(message, response.status);
+  }
+  return body as T;
+}
+
+export function fetchFeed(url: string, signal?: AbortSignal, refresh = false): Promise<FeedResponse> {
+  return request<FeedResponse>('/api/feed', refresh ? { url, refresh: '1' } : { url }, signal);
+}
+
+export function fetchChapters(url: string, signal?: AbortSignal): Promise<{ chapters: Chapter[] }> {
+  return request<{ chapters: Chapter[] }>('/api/chapters', { url }, signal);
+}
+
+export function fetchTranscript(
+  url: string,
+  type?: string,
+  signal?: AbortSignal,
+): Promise<{ lines: TranscriptLine[]; type: string }> {
+  return request<{ lines: TranscriptLine[]; type: string }>(
+    '/api/transcript',
+    type ? { url, type } : { url },
+    signal,
+  );
+}
+
+export function fetchPlaylist(url: string, signal?: AbortSignal): Promise<{ stations: Station[]; playlistUrl: string }> {
+  return request<{ stations: Station[]; playlistUrl: string }>('/api/playlist', { url }, signal);
+}
+
+export async function parsePlaylistText(text: string): Promise<Station[]> {
+  const response = await fetch('/api/playlist/parse', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+  if (!response.ok) {
+    const message =
+      body && typeof body === 'object' && 'error' in body
+        ? String((body as { error: unknown }).error)
+        : 'M3U 文件解析失败。';
+    throw new ApiError(message, response.status);
+  }
+  return (body as { stations: Station[] }).stations;
+}
+
+export async function searchPodcasts(query: string, signal?: AbortSignal): Promise<PodcastSearchResult[]> {
+  const data = await request<{ results: PodcastSearchResult[] }>('/api/podcast/search', { q: query }, signal);
+  return data.results;
+}
+
+export async function searchRadio(query: string, signal?: AbortSignal): Promise<Station[]> {
+  const data = await request<{ results: Station[] }>('/api/radio/search', { q: query }, signal);
+  return data.results;
+}
+
+export async function featuredRadio(signal?: AbortSignal): Promise<Station[]> {
+  const data = await request<{ results: Station[] }>('/api/radio/featured', undefined, signal);
+  return data.results;
+}
+
+export function isHlsUrl(url: string): boolean {
+  try {
+    return new URL(url, window.location.origin).pathname.toLowerCase().endsWith('.m3u8');
+  } catch {
+    return /\.m3u8(\?|$)/i.test(url);
+  }
+}
+
+export function proxiedImage(url?: string): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith('/') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  if (!/^https?:/i.test(url)) return undefined;
+  return `/api/image?url=${encodeURIComponent(url)}`;
+}
+
+export function audioSource(url: string): string {
+  if (!url) return '';
+  if (url.startsWith('/') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  return `/api/audio?url=${encodeURIComponent(url)}`;
+}
+
+export function hlsSource(url: string): string {
+  return `/api/hls?url=${encodeURIComponent(url)}`;
+}
