@@ -59,6 +59,7 @@ public class MediaBridgePlugin extends Plugin {
         double position = call.getDouble("position", 0.0);
         double duration = call.getDouble("duration", 0.0);
         boolean live = Boolean.TRUE.equals(call.getBoolean("isLive", false));
+        String artwork = call.getString("artwork", "");
 
         Context context = getContext();
         SharedPreferences prefs = context.getSharedPreferences(WIDGET_PREFS, Context.MODE_PRIVATE);
@@ -77,6 +78,7 @@ public class MediaBridgePlugin extends Plugin {
         intent.putExtra("position", position);
         intent.putExtra("duration", duration);
         intent.putExtra("live", live);
+        intent.putExtra("artwork", artwork == null ? "" : artwork);
         try {
             ContextCompat.startForegroundService(context, intent);
         } catch (Exception ignored) {

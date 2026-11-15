@@ -14,6 +14,7 @@ import android.graphics.drawable.Icon;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.util.LruCache;
 import android.media.MediaMetadata;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
@@ -49,6 +50,11 @@ public class PlaybackService extends Service {
     private long positionMs = 0;
     private long durationMs = 0;
     private boolean foreground = false;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final LruCache<String, Bitmap> artworkCache = new LruCache<>(6);
+    private String artworkUrl = "";
+    private String loadingArtworkUrl = "";
+    private Bitmap artwork;
 
     @Override
     public void onCreate() {
@@ -87,11 +93,57 @@ public class PlaybackService extends Service {
             live = intent.getBooleanExtra("live", true);
             positionMs = (long) (intent.getDoubleExtra("position", 0) * 1000);
             durationMs = (long) (intent.getDoubleExtra("duration", 0) * 1000);
+            String nextArtwork = intent.getStringExtra("artwork");
+            loadArtwork(nextArtwork == null ? "" : nextArtwork);
             if (title == null) title = "";
             if (subtitle == null) subtitle = "";
         }
         publish();
         return START_STICKY;
+    }
+
+    /** Cover art for the current item, cached so progress updates stay cheap. */
+    private void loadArtwork(String url) {
+        if (url.equals(artworkUrl)) return;
+        artworkUrl = url;
+        artwork = url.isEmpty() ? null : artworkCache.get(url);
+        if (artwork != null || url.isEmpty() || url.equals(loadingArtworkUrl)) {
+            publish();
+            return;
+        }
+        loadingArtworkUrl = url;
+        new Thread(() -> {
+            Bitmap downloaded = null;
+            try {
+                java.net.HttpURLConnection connection =
+                        (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+                connection.setConnectTimeout(8000);
+                connection.setReadTimeout(8000);
+                connection.setInstanceFollowRedirects(true);
+                connection.setRequestProperty("accept", "image/*");
+                try (java.io.InputStream stream = connection.getInputStream()) {
+                    Bitmap raw = BitmapFactory.decodeStream(stream);
+                    if (raw != null) {
+                        int max = 512;
+                        float scale = Math.min(1f, (float) max / Math.max(raw.getWidth(), raw.getHeight()));
+                        downloaded = scale < 1f
+                                ? Bitmap.createScaledBitmap(raw, Math.round(raw.getWidth() * scale),
+                                        Math.round(raw.getHeight() * scale), true)
+                                : raw;
+                    }
+                }
+            } catch (Exception ignored) {
+                downloaded = null;
+            }
+            final Bitmap result = downloaded;
+            mainHandler.post(() -> {
+                if (!url.equals(artworkUrl)) return;
+                loadingArtworkUrl = "";
+                if (result != null) artworkCache.put(url, result);
+                artwork = result;
+                publish();
+            });
+        }, "stay-tuned-artwork").start();
     }
 
     private void safeDispatch(String action) {
@@ -110,11 +162,17 @@ public class PlaybackService extends Service {
                 .putString(MediaMetadata.METADATA_KEY_TITLE, title)
                 .putString(MediaMetadata.METADATA_KEY_ARTIST, subtitle)
                 .putString(MediaMetadata.METADATA_KEY_ALBUM, "留频");
-        Drawable icon = loadDrawable(R.mipmap.ic_launcher);
-        if (icon instanceof BitmapDrawable) {
-            Bitmap art = ((BitmapDrawable) icon).getBitmap();
-            if (art != null) meta.putBitmap(MediaMetadata.METADATA_KEY_ART, art);
+        Bitmap art = artwork;
+        if (art == null) {
+            Drawable icon = loadDrawable(R.mipmap.ic_launcher);
+            if (icon instanceof BitmapDrawable) art = ((BitmapDrawable) icon).getBitmap();
         }
+        if (art != null) {
+            meta.putBitmap(MediaMetadata.METADATA_KEY_ART, art);
+            meta.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, art);
+        }
+        meta.putBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON,
+                BitmapFactory.decodeResource(getResources(), R.drawable.ic_stat_tuned));
         if (!live && durationMs > 0) meta.putLong(MediaMetadata.METADATA_KEY_DURATION, durationMs);
         session.setMetadata(meta.build());
 
@@ -156,6 +214,8 @@ public class PlaybackService extends Service {
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setOngoing(playing)
                 .setOnlyAlertOnce(true);
+        Bitmap large = artwork;
+        if (large != null) builder.setLargeIcon(large);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             builder.addAction(action(R.drawable.ic_media_prev, "上一集", ACTION_PREV));

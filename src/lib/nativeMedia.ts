@@ -9,6 +9,8 @@ export interface MediaStatePayload {
   position: number;
   duration: number;
   isLive: boolean;
+  /** Cover image URL for the media session / dynamic island. */
+  artwork: string;
 }
 
 interface MediaBridgePlugin {
@@ -25,10 +27,25 @@ const MediaBridge = registerPlugin<MediaBridgePlugin>('MediaBridge');
 
 export const nativeMediaAvailable = (): boolean => Capacitor.getPlatform() !== 'web';
 
+function absoluteArtwork(url: string): string {
+  if (!url) return '';
+  if (/^https?:/i.test(url)) return url;
+  if (url.startsWith('/')) {
+    try {
+      return new URL(url, window.location.origin).toString();
+    } catch {
+      return '';
+    }
+  }
+  return '';
+}
+
 /** Push the current item to the Android media session and home screen widget. */
 export function pushMediaState(payload: MediaStatePayload): void {
   if (!nativeMediaAvailable()) return;
-  void MediaBridge.updateState(payload).catch(() => undefined);
+  void MediaBridge.updateState({ ...payload, artwork: absoluteArtwork(payload.artwork) }).catch(
+    () => undefined,
+  );
 }
 
 export function clearMediaState(): void {

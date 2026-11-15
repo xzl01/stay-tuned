@@ -39,6 +39,7 @@ import { chapterIndexAt, transcriptIndexAt } from '../lib/episode';
 import { clamp } from '../lib/format';
 import { feedUrlKey } from '../lib/urls';
 import { showDisplayTitle } from '../lib/shows';
+import { stationImage } from '../lib/stations';
 import { assetUrl, STATIC_DEMO } from '../lib/env';
 import { isNativePlatform } from '../lib/serverConfig';
 import { clearMediaState, onMediaAction, pushMediaState, takePendingMediaAction } from '../lib/nativeMedia';
@@ -1258,6 +1259,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       position: playback.currentTime,
       duration: isEpisode ? current.episode.duration || playback.duration : 0,
       isLive: !isEpisode,
+      artwork: isEpisode
+        ? current.episode.image || current.show.image || ''
+        : stationImage(current.station) || '',
     };
     pushMediaState(payload);
     return undefined;
@@ -1276,6 +1280,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         position: playbackRef.current.currentTime,
         duration: isEpisode ? target.episode.duration || playbackRef.current.duration : 0,
         isLive: !isEpisode,
+        artwork: isEpisode
+          ? target.episode.image || target.show.image || ''
+          : stationImage(target.station) || '',
       });
     }, 5000);
     return () => window.clearInterval(timer);
