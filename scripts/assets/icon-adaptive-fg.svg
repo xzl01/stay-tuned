@@ -1,13 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
-  <!-- Adaptive foreground: content kept inside the 72dp safe zone (18..90). -->
-  <rect x="19" y="19" width="70" height="70" rx="16" fill="none" stroke="#26281f" stroke-width="3.2"/>
-  <g stroke="#3a4030" stroke-width="3.1" stroke-linecap="round" opacity=".72">
-    <path d="M38 46.5v17"/>
-    <path d="M47 40v30"/>
-    <path d="M56 48.5v13"/>
+  <!-- Adaptive foreground. Launchers reveal roughly the central 72dp of this
+       108dp canvas, and some mask it to a circle, so the mark stays inside a
+       50dp box (29..79) at the centre. -->
+  <rect x="29" y="29" width="50" height="50" rx="14" fill="none" stroke="#26281f" stroke-width="3.2"/>
+  <g stroke="#3a4030" stroke-width="2.7" stroke-linecap="round" opacity=".74">
+    <path d="M39 48.5v11"/>
+    <path d="M46 42.5v23"/>
+    <path d="M53 50.5v7"/>
   </g>
-  <g stroke="#c05a32" stroke-width="3.5" stroke-linecap="round">
-    <path d="M66 34v42"/>
-    <path d="M75.5 42.5v27"/>
+  <g stroke="#c05a32" stroke-width="3.1" stroke-linecap="round">
+    <path d="M61 38v32"/>
+    <path d="M68.5 44.5v19"/>
   </g>
 </svg>
