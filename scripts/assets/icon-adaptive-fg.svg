@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
+  <!-- Adaptive foreground: content kept inside the 72dp safe zone (18..90). -->
+  <rect x="19" y="19" width="70" height="70" rx="16" fill="none" stroke="#26281f" stroke-width="3.2"/>
+  <g stroke="#3a4030" stroke-width="3.1" stroke-linecap="round" opacity=".72">
+    <path d="M38 46.5v17"/>
+    <path d="M47 40v30"/>
+    <path d="M56 48.5v13"/>
+  </g>
+  <g stroke="#c05a32" stroke-width="3.5" stroke-linecap="round">
+    <path d="M66 34v42"/>
+    <path d="M75.5 42.5v27"/>
+  </g>
+</svg>
