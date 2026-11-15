@@ -393,8 +393,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   // lazily during the first play so browsers treat it as user-initiated, then
   // the live bars read from it without putting spectrum data into React state.
   const ensureSpectrum = useCallback(() => {
-    // The GitHub Pages demo has no server to route audio through.
-    if (STATIC_DEMO) return;
+    // Creating a MediaElementAudioSource reroutes the element through Web Audio.
+    // On Android the context stays suspended, which silences playback entirely,
+    // and the analyser cannot read cross-origin media there anyway.
+    if (STATIC_DEMO || isNativePlatform()) return;
     const context = audioContextRef.current;
     if (context) {
       if (context.state === 'suspended') void context.resume().catch(() => undefined);

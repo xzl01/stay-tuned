@@ -276,7 +276,7 @@ npm run build     # TypeScript 类型检查 + 生产构建
 
 - 这是一个**本地优先的单用户应用**：没有账号、云同步或跨设备进度合并。
 - Android 应用内置解析引擎，无需服务端；浏览器端仍需要 Node 服务作为跨域代理。
-- 电台频谱：桌面浏览器（经本机代理，同源）显示真实频谱；Android 应用为装饰动画。Android WebView 会对带 `crossorigin` 的媒体强制 CORS，多数真实电台和局域网媒体服务器不返回该响应头，一旦以 CORS 模式请求就无法播放，因此 App 内一律按普通方式加载，优先保证可播。
+- 电台频谱：桌面浏览器（经本机代理，同源）显示真实频谱；Android 应用固定使用装饰动画——App 内不会创建 Web Audio 图，否则会接管音频输出并导致 Android 上只剩进度、没有声音。Android WebView 会对带 `crossorigin` 的媒体强制 CORS，多数真实电台和局域网媒体服务器不返回该响应头，一旦以 CORS 模式请求就无法播放，因此 App 内一律按普通方式加载，优先保证可播。
 - Android 工程的 WebView 源是 `http://localhost`，便于直接播放局域网 http 媒体；从 1.1.x 升级时，旧来源下的本地订阅属于另一个 origin，需要重新订阅一次。
 - APK 面向 Android 7.0+（minSdk 24）；未签名的 release 包不能直接安装，需要按上文配置签名。
 - 音频直链、封面和 RSS 都由本机 Node 代理转发；如果把服务暴露到公网，请自行增加鉴权、限流和 SSRF 防护。
