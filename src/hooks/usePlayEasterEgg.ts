@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, type ButtonHTMLAttributes } from 'react';
 import { useAppStore } from '../state/AppStore';
+import { pulse } from '../lib/haptics';
 
 export const Receiver3DEggContext = createContext<{ active: boolean; open: () => void; close: () => void } | null>(null);
 
@@ -15,6 +16,8 @@ export function usePlayEasterEgg(onPress: () => void) {
   const latest = useRef({ enabled, open, onPress });
   latest.current = { enabled, open, onPress };
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const holdStart = useRef(0);
   const active = useRef<{ pointerId?: number; element?: HTMLButtonElement; key?: string } | null>(null);
   const suppressClick = useRef(false);
   const [holding, setHolding] = useState(false);
@@ -22,6 +25,8 @@ export function usePlayEasterEgg(onPress: () => void) {
   function clear() {
     if (timer.current !== null) clearTimeout(timer.current);
     timer.current = null;
+    if (holdTimer.current !== null) clearInterval(holdTimer.current);
+    holdTimer.current = null;
     const gesture = active.current;
     active.current = null;
     if (gesture?.pointerId != null && gesture.element?.hasPointerCapture(gesture.pointerId)) {
@@ -44,11 +49,19 @@ export function usePlayEasterEgg(onPress: () => void) {
     suppressClick.current = false;
     active.current = gesture;
     setHolding(true);
+    holdStart.current = Date.now();
+    // Escalating ticks while the key is held: the motor says "keep going".
+    holdTimer.current = window.setInterval(() => {
+      if (!active.current) return;
+      const progress = Math.min(1, (Date.now() - holdStart.current) / 5000);
+      pulse('holdTick', { amplitude: 70 + Math.round(150 * progress) });
+    }, 700);
     timer.current = setTimeout(() => {
       timer.current = null;
       if (!active.current || !latest.current.enabled || document.hidden) return;
       suppressClick.current = true;
       setHolding(false);
+      pulse('powerOn');
       latest.current.open?.();
     }, 5000);
   }
@@ -69,6 +82,7 @@ export function usePlayEasterEgg(onPress: () => void) {
     document.addEventListener('visibilitychange', hide);
     return () => {
       if (timer.current !== null) clearTimeout(timer.current);
+      if (holdTimer.current !== null) clearInterval(holdTimer.current);
       window.removeEventListener('pointerup', release);
       window.removeEventListener('pointercancel', cancel);
       window.removeEventListener('blur', cancel);
@@ -116,7 +130,10 @@ export function usePlayEasterEgg(onPress: () => void) {
       if (active.current?.key !== event.key) return;
       const shouldPlay = !suppressClick.current;
       clear();
-      if (shouldPlay) latest.current.onPress();
+      if (shouldPlay) {
+        pulse('lever');
+        latest.current.onPress();
+      }
     },
     onClick(event) {
       if (suppressClick.current) {
@@ -124,6 +141,8 @@ export function usePlayEasterEgg(onPress: () => void) {
         suppressClick.current = false;
         return;
       }
+      const native = event.nativeEvent as PointerEvent;
+      pulse('lever', { pointerType: typeof native.pointerType === 'string' ? native.pointerType : undefined });
       latest.current.onPress();
     },
   };

@@ -11,6 +11,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   volume: 0.72,
   rate: 1,
   followTranscript: true,
+  haptics: true,
   history: [],
 };
 
@@ -72,6 +73,9 @@ function sanitize(input: unknown): PersistedState | null {
   preferences.volume = Math.min(1, Math.max(0, Number(preferences.volume) || 0));
   preferences.rate = Math.min(2, Math.max(0.5, Number(preferences.rate) || 1));
   preferences.followTranscript = Boolean(preferences.followTranscript);
+  // Older backups have no `haptics` field; keep the switch on unless it was
+  // explicitly turned off.
+  preferences.haptics = preferences.haptics !== false;
   if (!Array.isArray(preferences.history)) preferences.history = [];
 
   const current =

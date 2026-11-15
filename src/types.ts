@@ -123,6 +123,8 @@ export interface Preferences {
   volume: number;
   rate: number;
   followTranscript: boolean;
+  /** Linear-motor haptics on the Android build. Defaults to on. */
+  haptics: boolean;
   history: string[];
 }
 

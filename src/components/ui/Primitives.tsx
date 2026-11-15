@@ -12,6 +12,7 @@ import {
 import { createPortal } from 'react-dom';
 import { Icon, type IconName } from '../Icon';
 import { useAppStore } from '../../state/AppStore';
+import { pulse } from '../../lib/haptics';
 
 /* -------------------------------------------------------------------------- */
 /* Sheet / drawer                                                             */
@@ -46,7 +47,23 @@ export function Sheet({
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const closeHandlerRef = useRef(onClose);
   closeHandlerRef.current = onClose;
+  const settleTimer = useRef<number | null>(null);
   const titleId = useId();
+
+  // Let the panel finish sliding in, then seat it with a soft tick.
+  useEffect(() => {
+    if (!open) return undefined;
+    settleTimer.current = window.setTimeout(() => pulse('sheetOpen'), 240);
+    return () => {
+      if (settleTimer.current !== null) window.clearTimeout(settleTimer.current);
+      settleTimer.current = null;
+    };
+  }, [open]);
+
+  const dismiss = useCallback(() => {
+    pulse('sheetClose');
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     if (open) {
@@ -101,7 +118,7 @@ export function Sheet({
 
   return createPortal(
     <div className={`sheet-layer ${open ? 'is-open' : ''} sheet-layer--${side}`}>
-      <div className="sheet-scrim" onClick={onClose} aria-hidden="true" />
+      <div className="sheet-scrim" onClick={dismiss} aria-hidden="true" />
       <section
         ref={panelRef}
         className={`sheet-panel ${className}`}
@@ -115,7 +132,7 @@ export function Sheet({
             {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
             {title ? <h2 id={titleId}>{title}</h2> : null}
           </div>
-          <button ref={closeRef} type="button" className="icon-button" onClick={onClose} aria-label="关闭">
+          <button ref={closeRef} type="button" className="icon-button" onClick={dismiss} aria-label="关闭">
             <Icon name="close" size={18} />
           </button>
         </header>
@@ -146,7 +163,10 @@ export function Switch({ checked, onChange, label, hideLabel = false }: SwitchPr
       aria-checked={checked}
       aria-label={label}
       className={`switch ${checked ? 'is-on' : ''}`}
-      onClick={() => onChange(!checked)}
+      onClick={() => {
+        pulse(checked ? 'toggleOff' : 'toggleOn');
+        onChange(!checked);
+      }}
     >
       <span className="switch-thumb" />
       {hideLabel ? null : <span className="switch-label">{label}</span>}
@@ -240,6 +260,7 @@ export function MenuPopover({
               aria-checked={option.active}
               className={`menu-option ${option.active ? 'is-active' : ''}`}
               onClick={() => {
+                pulse('press');
                 option.onSelect();
                 setOpen(false);
               }}

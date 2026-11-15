@@ -282,6 +282,7 @@ export function createSeedState(): PersistedState {
       volume: 0.72,
       rate: 1,
       followTranscript: true,
+      haptics: true,
       history: [],
     },
   };

@@ -8,6 +8,7 @@ import { Icon } from './Icon';
 import { MenuPopover, type MenuOption } from './ui/Primitives';
 import { LiveSpectrum } from './LiveSpectrum';
 import { usePlayEasterEgg } from '../hooks/usePlayEasterEgg';
+import { pulse } from '../lib/haptics';
 
 function useScrubber(max: number) {
   const { playback, seek } = useAppStore();
@@ -24,6 +25,7 @@ function useScrubber(max: number) {
       seek(draftRef.current);
       draftRef.current = null;
       setDraft(null);
+      pulse('snap');
     }
   }, [seek]);
 
@@ -126,6 +128,7 @@ function ProgressRail({ variant }: { variant: 'desktop' | 'mobile' }) {
           aria-label="播放进度"
           aria-valuetext={`${formatTime(value)} / ${formatTime(duration)}`}
           onChange={(event) => scrub.setDraftValue(Number(event.target.value))}
+          onPointerDown={(event) => pulse('dragStart', { pointerType: event.pointerType })}
           onPointerUp={scrub.commit}
           onTouchEnd={scrub.commit}
           onKeyUp={(event) => {
@@ -224,7 +227,10 @@ function DesktopTransport() {
           className="skip-button"
           aria-label={isRadio ? '直播节目无法后退' : '后退 15 秒'}
           title={isRadio ? '直播节目无法后退' : !current ? '尚未选择节目' : '后退 15 秒'}
-          onClick={() => skip(-15)}
+          onClick={() => {
+            pulse('press');
+            skip(-15);
+          }}
           disabled={!current || isRadio}
         >
           <Icon name="rewind15" size={38} strokeWidth={1.45} />
@@ -248,7 +254,10 @@ function DesktopTransport() {
           className="skip-button"
           aria-label={isRadio ? '直播节目无法前进' : '前进 30 秒'}
           title={isRadio ? '直播节目无法前进' : !current ? '尚未选择节目' : '前进 30 秒'}
-          onClick={() => skip(30)}
+          onClick={() => {
+            pulse('press');
+            skip(30);
+          }}
           disabled={!current || isRadio}
         >
           <Icon name="forward30" size={38} strokeWidth={1.45} />
@@ -290,7 +299,10 @@ function DesktopTransport() {
           className="volume-button"
           aria-label={prefs.volume > 0 ? '静音' : '取消静音'}
           title={prefs.volume > 0 ? '静音' : '取消静音'}
-          onClick={toggleMute}
+          onClick={() => {
+            pulse(prefs.volume > 0 ? 'toggleOff' : 'toggleOn');
+            toggleMute();
+          }}
         >
           <Icon name={prefs.volume > 0 ? 'volume' : 'volumeOff'} size={19} />
         </button>
@@ -348,7 +360,10 @@ function MobileTransport({ onOpenQueue }: { onOpenQueue: () => void }) {
         <button
           type="button"
           className="mobile-skip"
-          onClick={() => skip(-15)}
+          onClick={() => {
+            pulse('press');
+            skip(-15);
+          }}
           disabled={!current || isRadio}
           aria-label={isRadio ? '直播节目无法后退' : '后退 15 秒'}
           title={isRadio ? '直播节目无法后退' : !current ? '尚未选择节目' : '后退 15 秒'}
@@ -371,7 +386,10 @@ function MobileTransport({ onOpenQueue }: { onOpenQueue: () => void }) {
         <button
           type="button"
           className="mobile-skip"
-          onClick={() => skip(30)}
+          onClick={() => {
+            pulse('press');
+            skip(30);
+          }}
           disabled={!current || isRadio}
           aria-label={isRadio ? '直播节目无法前进' : '前进 30 秒'}
           title={isRadio ? '直播节目无法前进' : !current ? '尚未选择节目' : '前进 30 秒'}
@@ -407,7 +425,11 @@ function MobileTransport({ onOpenQueue }: { onOpenQueue: () => void }) {
         <button
           type="button"
           className={`mobile-tool ${favorite ? 'is-active' : ''}`}
-          onClick={() => currentKey && toggleFavorite(currentKey)}
+          onClick={() => {
+            if (!currentKey) return;
+            pulse(favorite ? 'toggleOff' : 'toggleOn');
+            toggleFavorite(currentKey);
+          }}
           aria-pressed={favorite}
         >
           <Icon name="heart" size={18} filled={favorite} />
@@ -417,7 +439,10 @@ function MobileTransport({ onOpenQueue }: { onOpenQueue: () => void }) {
         <button
           type="button"
           className="mobile-tool"
-          onClick={onOpenQueue}
+          onClick={() => {
+            pulse('press');
+            onOpenQueue();
+          }}
         >
           <Icon name="queue" size={19} />
           <span className="mobile-tool-text">队列</span>

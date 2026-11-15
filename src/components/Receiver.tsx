@@ -8,6 +8,7 @@ import { Lcd } from './hardware/Lcd';
 import { Fader } from './hardware/Fader';
 import { Receiver3DEggContext, usePlayEasterEgg } from '../hooks/usePlayEasterEgg';
 import { Receiver3DEasterEgg } from './Receiver3DEasterEgg';
+import { pulse } from '../lib/haptics';
 
 interface ReceiverProps {
   variant: 'desktop' | 'mobile';
@@ -131,7 +132,16 @@ export function Receiver({ variant, onOpenQueue }: ReceiverProps) {
             </div>
 
             <div className="receiver-keys">
-              <button type="button" className="rx-key" onClick={previous} aria-label="上一段" title="上一段">
+              <button
+                type="button"
+                className="rx-key"
+                onClick={() => {
+                  pulse('press');
+                  previous();
+                }}
+                aria-label="上一段"
+                title="上一段"
+              >
                 <Icon name="skipBack" size={17} />
               </button>
               <button
@@ -148,13 +158,25 @@ export function Receiver({ variant, onOpenQueue }: ReceiverProps) {
                   <Icon name={playback.isPlaying ? 'pause' : 'play'} size={19} />
                 )}
               </button>
-              <button type="button" className="rx-key" onClick={next} aria-label="下一段" title="下一段">
+              <button
+                type="button"
+                className="rx-key"
+                onClick={() => {
+                  pulse('press');
+                  next();
+                }}
+                aria-label="下一段"
+                title="下一段"
+              >
                 <Icon name="skipForward" size={17} />
               </button>
               <button
                 type="button"
                 className="rx-key rx-key--menu"
-                onClick={onOpenQueue}
+                onClick={() => {
+                  pulse('press');
+                  onOpenQueue();
+                }}
                 aria-label="打开播放队列"
                 title="播放队列"
               >

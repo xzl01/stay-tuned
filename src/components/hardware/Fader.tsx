@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { Icon, type IconName } from '../Icon';
 import { clamp } from '../../lib/format';
+import { pulse } from '../../lib/haptics';
 
 export interface FaderProps {
   label: string;
@@ -50,6 +51,7 @@ export function Fader({
 }: FaderProps) {
   const [draft, setDraft] = useState<number | null>(null);
   const draftRef = useRef<number | null>(null);
+  const pointerRef = useRef(false);
   const displayValue = draft ?? value;
   const span = Math.max(1, max - min);
   const position = clamp((displayValue - min) / span, 0, 1) * 100;
@@ -58,14 +60,20 @@ export function Fader({
     if (draftRef.current == null) return;
     const next = draftRef.current;
     draftRef.current = null;
+    // Only a real drag gets the detent snap; keyboard commits stay silent.
+    if (pointerRef.current && variant === 'chapter') pulse('snap');
+    pointerRef.current = false;
     setDraft(null);
     onCommit?.(next);
     onPreview?.(null);
-  }, [onCommit, onPreview]);
+  }, [onCommit, onPreview, variant]);
 
   useEffect(() => {
     if (draft == null) return;
-    const finish = () => commit();
+    const finish = () => {
+      commit();
+      pointerRef.current = false;
+    };
     window.addEventListener('pointerup', finish, { once: true });
     window.addEventListener('touchend', finish, { once: true });
     window.addEventListener('pointercancel', finish, { once: true });
@@ -77,6 +85,10 @@ export function Fader({
   }, [draft, commit]);
 
   const handleChange = (next: number) => {
+    // Ticks come from the drag itself; keyboard steps are silent.
+    if (pointerRef.current && next !== displayValue) {
+      pulse(variant === 'chapter' ? 'detent' : 'slide');
+    }
     if (onCommit) {
       draftRef.current = next;
       setDraft(next);
@@ -133,6 +145,11 @@ export function Fader({
               // Range inputs handle drag themselves. Prevent a long-press context
               // menu on touch without disabling normal page scrolling elsewhere.
               if (event.pointerType === 'touch') event.currentTarget.focus();
+              pointerRef.current = true;
+              pulse('dragStart', { pointerType: event.pointerType });
+            }}
+            onPointerCancel={() => {
+              pointerRef.current = false;
             }}
           />
         </div>

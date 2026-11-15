@@ -25,6 +25,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(MediaBridgePlugin.class);
+        registerPlugin(HapticsPlugin.class);
         super.onCreate(savedInstanceState);
         readIntent(getIntent());
     }

@@ -37,6 +37,7 @@ export type IconName =
   | 'arrowDown'
   | 'grip'
   | 'signal'
+  | 'haptics'
   | 'spark'
   | 'headphones'
   | 'list';
@@ -203,6 +204,13 @@ const paths: Record<IconName, React.ReactNode> = {
   signal: (
     <>
       <path d="M4 18.5v-2M8 18.5v-5M12 18.5v-8M16 18.5v-11M20 18.5v-14" />
+    </>
+  ),
+  haptics: (
+    <>
+      <rect x="9.1" y="5" width="5.8" height="14" rx="1.5" />
+      <path d="M6.1 8.4c-1.1.9-1.8 2.2-1.8 3.6s.7 2.7 1.8 3.6" />
+      <path d="M17.9 8.4c1.1.9 1.8 2.2 1.8 3.6s-.7 2.7-1.8 3.6" />
     </>
   ),
   spark: <path d="M12 3.5c.6 4.6 2.4 6.4 7 7-4.6.6-6.4 2.4-7 7-.6-4.6-2.4-6.4-7-7 4.6-.6 6.4-2.4 7-7Z" />,

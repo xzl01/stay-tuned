@@ -38,6 +38,7 @@ import { resolvePlayable } from '../lib/refs';
 import { chapterIndexAt, transcriptIndexAt } from '../lib/episode';
 import { clamp } from '../lib/format';
 import { feedUrlKey } from '../lib/urls';
+import { initHaptics, pulse, setHapticsEnabled, setHapticsMode } from '../lib/haptics';
 import { showDisplayTitle } from '../lib/shows';
 import { stationImage } from '../lib/stations';
 import { assetUrl, STATIC_DEMO } from '../lib/env';
@@ -88,6 +89,8 @@ interface AppStoreValue {
   currentKey: string | null;
   favorites: string[];
   prefs: Preferences;
+  /** Whether this device can play haptics at all (Android build with a motor). */
+  hapticsAvailable: boolean;
   playback: PlaybackSnapshot;
   sleep: SleepOption;
   sleepRemaining: number | null;
@@ -117,6 +120,7 @@ interface AppStoreValue {
   setTheme: (theme: Theme) => void;
   setMode: (mode: Mode) => void;
   setFollowTranscript: (value: boolean) => void;
+  setHaptics: (value: boolean) => void;
   setSleepMinutes: (minutes: number | null) => void;
   setSleepAtEpisodeEnd: () => void;
   retryCurrentExtras: () => void;
@@ -181,6 +185,26 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [extrasRetryToken, setExtrasRetryToken] = useState(0);
   const [spectrumReady, setSpectrumReady] = useState(false);
   const [spectrumBlocked, setSpectrumBlocked] = useState(false);
+  const [hapticsAvailable, setHapticsAvailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void initHaptics().then((result) => {
+      if (!cancelled) setHapticsAvailable(Boolean(result?.hasVibrator));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    setHapticsEnabled(data.preferences.haptics);
+  }, [data.preferences.haptics]);
+
+  useEffect(() => {
+    // The flat appearance plays the same cues one notch lighter.
+    setHapticsMode(data.preferences.mode);
+  }, [data.preferences.mode]);
 
   const audioEl = useRef<HTMLAudioElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -258,6 +282,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const notify = useCallback((message: string, tone: ToastMessage['tone'] = 'default') => {
     const id = ++toastIdRef.current;
     setToasts((list) => [...list.slice(-2), { id, message, tone }]);
+    if (tone === 'success') pulse('success');
+    else if (tone === 'error') pulse('error');
     window.setTimeout(() => {
       setToasts((list) => list.filter((toast) => toast.id !== id));
     }, 3600);
@@ -876,6 +902,17 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       preferences: { ...state.preferences, followTranscript: value },
     }));
   }, []);
+  const setHaptics = useCallback((value: boolean) => {
+    setData((state) => ({
+      ...state,
+      preferences: { ...state.preferences, haptics: value },
+    }));
+    if (value) {
+      // Confirm the switch on the spot, even if haptics were off a moment ago.
+      setHapticsEnabled(true);
+      pulse('toggleOn');
+    }
+  }, []);
 
   const setSleepMinutes = useCallback((minutes: number | null) => {
     if (!minutes) {
@@ -1335,6 +1372,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       currentKey,
       favorites: data.favorites,
       prefs: data.preferences,
+      hapticsAvailable,
       playback,
       sleep,
       sleepRemaining,
@@ -1363,6 +1401,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       setTheme,
       setMode,
       setFollowTranscript,
+      setHaptics,
       setSleepMinutes,
       setSleepAtEpisodeEnd,
       retryCurrentExtras,
