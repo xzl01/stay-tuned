@@ -127,9 +127,19 @@ npm run android:apk    # 产出 android/app/build/outputs/apk/debug/app-debug.ap
 
 配置后 workflow 会自动签名 `app-release.apk`；缺少这些 Secrets 时仍会构建未签名包，不会失败。
 
-**连接服务端**：Android 应用打包的是纯前端，RSS 解析、M3U/HLS 处理、跨域代理都在 Node 服务里。首次打开后点「我的订阅」底部的「连接服务端」，填入运行 `npm start` 的机器地址（例如 `http://192.168.1.10:8787`）。地址只保存在本机；内置示例节目与本地音频无需服务端即可播放。
+**内置解析引擎**：APK 里打包了完整的解析层，`server/feed.mjs`、`playlist.mjs`、`extras.mjs`、`catalog.mjs` 等纯 ESM 模块被前端直接复用，网络请求通过 CapacitorHttp 走原生通道，因此**不需要任何服务端**：
 
-服务端已内置 CORS 支持以适配 WebView 的 `https://localhost` 源。如果部署在公网，建议用 `CORS_ORIGINS` 收窄允许来源，并自行增加鉴权与限流。
+| 能力 | 是否内置 |
+| --- | --- |
+| RSS / Atom 订阅与刷新 | ✅ |
+| 播客搜索（Apple Podcasts） | ✅ |
+| 电台搜索（Radio Browser） | ✅ |
+| M3U / 本地 .m3u 文件导入 | ✅ |
+| HLS 串流 | ✅ 交给 Android WebView 原生播放 |
+| Podcasting 2.0 章节与文字稿 | ✅ |
+| 封面 / 音频 | ✅ 由手机直接加载 |
+
+浏览器端仍然走 Node API（公共订阅源不返回 CORS 头）。如果想把手机的解析交给远端，可在「我的订阅」底部填一个服务端地址覆盖默认行为。
 
 ### GitHub Pages 静态演示
 
@@ -264,7 +274,8 @@ npm run build     # TypeScript 类型检查 + 生产构建
 ## 已知边界
 
 - 这是一个**本地优先的单用户应用**：没有账号、云同步或跨设备进度合并。
-- Android 应用是 WebView 外壳，本身不含解析服务；需要连接自建的 Node 服务端，或在浏览器里使用完整版。
+- Android 应用内置解析引擎，无需服务端；浏览器端仍需要 Node 服务作为跨域代理。
+- Android 上电台频谱会退化为装饰动画：没有同源代理时，Web Audio 无法读取跨域音频的频谱。
 - APK 面向 Android 7.0+（minSdk 24）；未签名的 release 包不能直接安装，需要按上文配置签名。
 - 音频直链、封面和 RSS 都由本机 Node 代理转发；如果把服务暴露到公网，请自行增加鉴权、限流和 SSRF 防护。
 - HLS 依赖 `hls.js`；Safari 原生 HLS 也会被代理转发。

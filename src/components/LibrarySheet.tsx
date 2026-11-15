@@ -15,6 +15,7 @@ import { showDisplayTitle } from '../lib/shows';
 import { stationImage } from '../lib/stations';
 import { imageFileToDataUrl } from '../lib/images';
 import { getServerBase, isNativePlatform } from '../lib/serverConfig';
+import { LOCAL_ENGINE } from '../lib/api';
 
 interface LibrarySheetProps {
   open: boolean;
@@ -1082,7 +1083,11 @@ export function LibrarySheet({ open, onClose, onOpenServer }: LibrarySheetProps)
         <div className="library-footer">
           <button type="button" className="library-server-button" onClick={onOpenServer}>
             <Icon name="signal" size={13} />
-            {getServerBase() ? getServerBase().replace(/^https?:\/\//, '') : isNativePlatform() ? '连接服务端' : '同源服务'}
+            {getServerBase()
+              ? getServerBase().replace(/^https?:\/\//, '')
+              : LOCAL_ENGINE
+                ? '本地解析引擎'
+                : '同源服务'}
           </button>
           <span className="mono">RSS 2.0 · ATOM · M3U · HLS</span>
         </div>

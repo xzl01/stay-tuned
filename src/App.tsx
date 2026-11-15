@@ -11,7 +11,6 @@ import { ServerSheet } from './components/ServerSheet';
 import { ToastStack } from './components/ui/Primitives';
 import { Receiver3DEggContext } from './hooks/usePlayEasterEgg';
 import { STATIC_DEMO } from './lib/env';
-import { getServerBase, isNativePlatform } from './lib/serverConfig';
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -57,20 +56,6 @@ function AppShell() {
     const meta = document.querySelector('meta[name="theme-color"]');
     meta?.setAttribute('content', prefs.theme === 'dark' ? '#121410' : '#efece4');
   }, [prefs.theme, prefs.mode]);
-
-  // The packaged app ships without a backend; ask for the server address once.
-  useEffect(() => {
-    if (!isNativePlatform() || getServerBase()) return;
-    const key = 'stay-tuned:server-prompted';
-    try {
-      if (window.localStorage.getItem(key)) return;
-      window.localStorage.setItem(key, '1');
-    } catch {
-      // Storage may be unavailable; still show the prompt once per session.
-    }
-    const timer = window.setTimeout(() => setServerOpen(true), 900);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     if (!STATIC_DEMO) return;

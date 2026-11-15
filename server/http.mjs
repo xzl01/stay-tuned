@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
-import crypto from 'node:crypto';
+import { sha1Hex } from './hash.mjs';
 
 // Some podcast CDNs reject unknown clients outright. A conventional browser-like
 // UA keeps public feeds fetchable without pretending to be a browser for anything else.
@@ -8,6 +8,23 @@ export const USER_AGENT =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 StayTuned/1.0';
 
 const DEFAULT_TIMEOUT = 18_000;
+
+/**
+ * Transport indirection: the Node server uses the platform `fetch`, while the
+ * packaged app swaps in a CapacitorHttp-backed implementation so the exact same
+ * parser code can run inside the WebView without CORS restrictions.
+ */
+let transport = (input, init) => fetch(input, init);
+let installedTransport = null;
+
+export function setFetchTransport(next) {
+  installedTransport = next;
+  transport = next ?? ((input, init) => fetch(input, init));
+}
+
+export function getFetchTransport() {
+  return installedTransport;
+}
 
 /** Throws a readable error for anything that is not a public http(s) URL. */
 export function assertHttpUrl(raw, label = '链接') {
@@ -34,7 +51,7 @@ export async function fetchText(url, { timeout = DEFAULT_TIMEOUT, headers = {} }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
   try {
-    const res = await fetch(url, {
+    const res = await transport(url, {
       redirect: 'follow',
       signal: controller.signal,
       headers: {
@@ -49,8 +66,13 @@ export async function fetchText(url, { timeout = DEFAULT_TIMEOUT, headers = {} }
         `远程服务器返回 ${res.status}。请确认链接可公开访问，或稍后再试。`,
       );
     }
-    const buf = Buffer.from(await res.arrayBuffer());
-    return { text: buf.toString('utf8'), buffer: buf, contentType: res.headers.get('content-type') || '', finalUrl: res.url };
+    const buffer = new Uint8Array(await res.arrayBuffer());
+    return {
+      text: new TextDecoder('utf-8').decode(buffer),
+      buffer,
+      contentType: res.headers.get('content-type') || '',
+      finalUrl: res.url || String(url),
+    };
   } catch (err) {
     if (err instanceof HttpError) throw err;
     if (err.name === 'AbortError') throw new HttpError(504, '远程服务响应超时，请稍后重试。');
@@ -64,7 +86,7 @@ export async function fetchJson(url, { timeout = DEFAULT_TIMEOUT, headers = {} }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
   try {
-    const res = await fetch(url, {
+    const res = await transport(url, {
       signal: controller.signal,
       redirect: 'follow',
       headers: { 'user-agent': USER_AGENT, accept: 'application/json', ...headers },
@@ -81,11 +103,7 @@ export async function fetchJson(url, { timeout = DEFAULT_TIMEOUT, headers = {} }
 }
 
 export function hashId(...parts) {
-  return crypto
-    .createHash('sha1')
-    .update(parts.filter(Boolean).join('|'))
-    .digest('hex')
-    .slice(0, 14);
+  return sha1Hex(parts.filter(Boolean).join('|')).slice(0, 14);
 }
 
 export function clampText(value, max = 500) {

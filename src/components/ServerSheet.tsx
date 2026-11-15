@@ -65,12 +65,14 @@ export function ServerSheet({ open, onClose }: ServerSheetProps) {
     }
   };
 
+  const localEngine = isNativePlatform() && !getServerBase();
+
   return (
     <Sheet
       open={open}
       onClose={onClose}
-      eyebrow="CONNECTION"
-      title="连接服务端"
+      eyebrow="ENGINE"
+      title={localEngine ? '解析引擎' : '数据来源'}
       className="server-sheet"
       footer={
         <div className="library-footer">
@@ -79,9 +81,18 @@ export function ServerSheet({ open, onClose }: ServerSheetProps) {
         </div>
       }
     >
+      {localEngine ? (
+        <div className="engine-card">
+          <span className="engine-card-title">
+            <Icon name="check" size={14} /> 本地解析引擎（已内置）
+          </span>
+          <p>RSS、搜索、M3U / HLS、章节与文字稿都在手机本地解析，不需要电脑上的服务端。</p>
+        </div>
+      ) : null}
+
       <form className="server-form" onSubmit={submit}>
         <label className="field-label" htmlFor="server-base">
-          服务地址
+          {localEngine ? '可选：改用远程代理地址' : '服务地址'}
         </label>
         <div className="field-row">
           <input
@@ -99,8 +110,8 @@ export function ServerSheet({ open, onClose }: ServerSheetProps) {
           </button>
         </div>
         <p className="field-hint">
-          在运行 Node 服务的电脑上执行 <code>npm start</code>，然后填入它的地址。手机与电脑需要在同一局域网；
-          远程使用请填公网 HTTPS 地址。
+          留空时使用{localEngine ? '本机内置引擎' : '同源服务'}。填写运行 <code>npm start</code> 的机器地址可以把解析交给远端，
+          例如 <code>http://192.168.1.10:8787</code>。
         </p>
         {probe.state === 'ok' ? <p className="server-probe is-ok">{probe.message}</p> : null}
         {probe.state === 'error' ? <p className="form-error" role="alert">{probe.message}</p> : null}
@@ -113,21 +124,22 @@ export function ServerSheet({ open, onClose }: ServerSheetProps) {
               setProbe({ state: 'idle' });
             }}
           >
-            清空（使用同源）
+            清空（使用默认引擎）
           </button>
           {native ? <span className="server-badge">Android 应用</span> : null}
         </div>
       </form>
 
       <section className="server-help">
-        <h3>完整功能需要服务端</h3>
+        <h3>{localEngine ? '内置引擎覆盖' : '服务端提供'}</h3>
         <ul>
-          <li>RSS 订阅、播客与电台搜索</li>
-          <li>M3U / HLS 播放列表解析</li>
-          <li>跨域音频与封面代理</li>
-          <li>Podcasting 2.0 章节与文字稿读取</li>
+          <li>RSS / Atom 订阅与刷新</li>
+          <li>播客目录搜索（Apple Podcasts）</li>
+          <li>电台目录搜索（Radio Browser）</li>
+          <li>M3U 播放列表与 HLS 串流</li>
+          <li>Podcasting 2.0 章节与文字稿</li>
         </ul>
-        <p>内置示例节目与本地音频无需服务端即可播放。</p>
+        <p>{localEngine ? '音频、封面直接由手机加载，不再经过代理。' : '浏览器受跨域限制，需要服务端代理才能读取多数订阅源。'}</p>
       </section>
     </Sheet>
   );

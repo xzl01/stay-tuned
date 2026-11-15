@@ -3,6 +3,34 @@
 import type { Chapter, FeedResponse, PodcastSearchResult, Station, TranscriptLine } from '../types';
 import { STATIC_DEMO } from './env';
 import { apiUrl, absolutize, getServerBase, isNativePlatform } from './serverConfig';
+import type * as LocalEngine from './engine/local';
+
+/**
+ * The packaged app runs every parser on-device (see lib/engine/local), so no
+ * backend is required. Browsers keep using the Node API because public feeds
+ * do not send CORS headers.
+ */
+export const LOCAL_ENGINE = isNativePlatform();
+
+/**
+ * Load the in-app engine on demand so browsers never download the parsers.
+ */
+async function engine(): Promise<typeof LocalEngine> {
+  return import('./engine/local');
+}
+
+/** Wrap engine failures in ApiError so the UI can show one error shape. */
+async function local<T>(produce: (mod: typeof LocalEngine) => Promise<T> | T): Promise<T> {
+  const mod = await engine();
+  mod.installLocalTransport();
+  try {
+    return await produce(mod);
+  } catch (error) {
+    const status = (error as { status?: number }).status ?? 0;
+    const message = error instanceof Error ? error.message : '本地解析失败。';
+    throw new ApiError(message, status);
+  }
+}
 
 export class ApiError extends Error {
   status: number;
@@ -15,9 +43,6 @@ export class ApiError extends Error {
 async function request<T>(path: string, params?: Record<string, string>, signal?: AbortSignal): Promise<T> {
   if (STATIC_DEMO) {
     throw new ApiError('GitHub Pages 是静态演示版；RSS、搜索和 M3U 导入请在本机运行完整版。');
-  }
-  if (isNativePlatform() && !getServerBase()) {
-    throw new ApiError('还没有连接服务端。请在「我的订阅」底部打开「连接」，填入运行 Node 服务的地址。');
   }
   const url = apiUrl(path);
   for (const [key, value] of Object.entries(params ?? {})) {
@@ -51,10 +76,12 @@ async function request<T>(path: string, params?: Record<string, string>, signal?
 }
 
 export function fetchFeed(url: string, signal?: AbortSignal, refresh = false): Promise<FeedResponse> {
+  if (LOCAL_ENGINE) return local((engine) => engine.localFetchFeed(url, refresh));
   return request<FeedResponse>('/api/feed', refresh ? { url, refresh: '1' } : { url }, signal);
 }
 
 export function fetchChapters(url: string, signal?: AbortSignal): Promise<{ chapters: Chapter[] }> {
+  if (LOCAL_ENGINE) return local((engine) => engine.localFetchChapters(url));
   return request<{ chapters: Chapter[] }>('/api/chapters', { url }, signal);
 }
 
@@ -63,6 +90,7 @@ export function fetchTranscript(
   type?: string,
   signal?: AbortSignal,
 ): Promise<{ lines: TranscriptLine[]; type: string }> {
+  if (LOCAL_ENGINE) return local((engine) => engine.localFetchTranscript(url, type));
   return request<{ lines: TranscriptLine[]; type: string }>(
     '/api/transcript',
     type ? { url, type } : { url },
@@ -71,10 +99,12 @@ export function fetchTranscript(
 }
 
 export function fetchPlaylist(url: string, signal?: AbortSignal): Promise<{ stations: Station[]; playlistUrl: string }> {
+  if (LOCAL_ENGINE) return local((engine) => engine.localFetchPlaylist(url));
   return request<{ stations: Station[]; playlistUrl: string }>('/api/playlist', { url }, signal);
 }
 
 export async function parsePlaylistText(text: string): Promise<Station[]> {
+  if (LOCAL_ENGINE) return local((engine) => engine.localParsePlaylistText(text));
   if (STATIC_DEMO) {
     throw new ApiError('GitHub Pages 是静态演示版；本地 M3U 导入请在本机运行完整版。');
   }
@@ -100,16 +130,19 @@ export async function parsePlaylistText(text: string): Promise<Station[]> {
 }
 
 export async function searchPodcasts(query: string, signal?: AbortSignal): Promise<PodcastSearchResult[]> {
+  if (LOCAL_ENGINE) return local((engine) => engine.localSearchPodcasts(query));
   const data = await request<{ results: PodcastSearchResult[] }>('/api/podcast/search', { q: query }, signal);
   return data.results;
 }
 
 export async function searchRadio(query: string, signal?: AbortSignal): Promise<Station[]> {
+  if (LOCAL_ENGINE) return local((engine) => engine.localSearchRadio(query));
   const data = await request<{ results: Station[] }>('/api/radio/search', { q: query }, signal);
   return data.results;
 }
 
 export async function featuredRadio(signal?: AbortSignal): Promise<Station[]> {
+  if (LOCAL_ENGINE) return local((engine) => engine.localFeaturedRadio());
   const data = await request<{ results: Station[] }>('/api/radio/featured', undefined, signal);
   return data.results;
 }
@@ -124,7 +157,7 @@ export function isHlsUrl(url: string): boolean {
 
 export function proxiedImage(url?: string): string | undefined {
   if (!url) return undefined;
-  if (STATIC_DEMO) return url;
+  if (STATIC_DEMO || LOCAL_ENGINE) return url;
   if (url.startsWith('/') || url.startsWith('data:') || url.startsWith('blob:')) return url;
   if (!/^https?:/i.test(url)) return undefined;
   return absolutize(`/api/image?url=${encodeURIComponent(url)}`);
@@ -132,12 +165,13 @@ export function proxiedImage(url?: string): string | undefined {
 
 export function audioSource(url: string): string {
   if (!url) return '';
-  if (STATIC_DEMO) return url;
+  if (STATIC_DEMO || LOCAL_ENGINE) return url;
   if (url.startsWith('/') || url.startsWith('data:') || url.startsWith('blob:')) return url;
   return absolutize(`/api/audio?url=${encodeURIComponent(url)}`);
 }
 
 export function hlsSource(url: string): string {
-  if (STATIC_DEMO) return url;
+  // Android's WebView plays HLS natively, so no manifest rewriting is needed.
+  if (STATIC_DEMO || LOCAL_ENGINE) return url;
   return absolutize(`/api/hls?url=${encodeURIComponent(url)}`);
 }

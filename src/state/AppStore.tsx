@@ -30,6 +30,7 @@ import {
   fetchTranscript,
   hlsSource,
   isHlsUrl,
+  LOCAL_ENGINE,
   proxiedImage,
 } from '../lib/api';
 import { resolvePlayable } from '../lib/refs';
@@ -388,8 +389,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   // lazily during the first play so browsers treat it as user-initiated, then
   // the live bars read from it without putting spectrum data into React state.
   const ensureSpectrum = useCallback(() => {
-    // GitHub Pages has no CORS proxy; do not taint direct audio with an analyser.
-    if (STATIC_DEMO) return;
+    // Without a same-origin proxy the analyser would taint the stream, so the
+    // bars fall back to their decorative animation.
+    if (STATIC_DEMO || LOCAL_ENGINE) return;
     const context = audioContextRef.current;
     if (context) {
       if (context.state === 'suspended') void context.resume().catch(() => undefined);
@@ -504,7 +506,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
     const sourceUrl = current.kind === 'episode' ? current.episode.audioUrl : current.station.url;
 
-    if (isHlsUrl(sourceUrl)) {
+    // Android's WebView plays HLS natively; hls.js would need CORS on segments.
+    if (isHlsUrl(sourceUrl) && !LOCAL_ENGINE) {
       hlsPendingRef.current = true;
       void (async () => {
         try {
@@ -1304,7 +1307,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         ref={audioEl}
         preload="metadata"
         playsInline
-        crossOrigin={STATIC_DEMO ? undefined : 'anonymous'}
+        crossOrigin={STATIC_DEMO || LOCAL_ENGINE ? undefined : 'anonymous'}
         onPlay={() => {
           const context = audioContextRef.current;
           if (context?.state === 'suspended') void context.resume().catch(() => undefined);
