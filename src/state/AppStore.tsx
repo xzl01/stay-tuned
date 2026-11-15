@@ -91,6 +91,7 @@ interface AppStoreValue {
   currentTranscriptIndex: number;
   currentExtraStatus: EpisodeExtraStatus | null;
   spectrumReady: boolean;
+  spectrumBlocked: boolean;
   readSpectrum: (data: Uint8Array) => boolean;
   toasts: ToastMessage[];
 
@@ -173,11 +174,13 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [episodeExtras, setEpisodeExtras] = useState<Record<string, EpisodeExtras>>({});
   const [extrasRetryToken, setExtrasRetryToken] = useState(0);
   const [spectrumReady, setSpectrumReady] = useState(false);
+  const [spectrumBlocked, setSpectrumBlocked] = useState(false);
 
   const audioEl = useRef<HTMLAudioElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const spectrumInitRef = useRef(false);
+  const corsFallbackRef = useRef<string | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const hlsPendingRef = useRef(false);
   const pendingSeekRef = useRef<number | null>(null);
@@ -389,9 +392,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   // lazily during the first play so browsers treat it as user-initiated, then
   // the live bars read from it without putting spectrum data into React state.
   const ensureSpectrum = useCallback(() => {
-    // Without a same-origin proxy the analyser would taint the stream, so the
-    // bars fall back to their decorative animation.
-    if (STATIC_DEMO || LOCAL_ENGINE) return;
+    // The GitHub Pages demo has no server to route audio through.
+    if (STATIC_DEMO) return;
     const context = audioContextRef.current;
     if (context) {
       if (context.state === 'suspended') void context.resume().catch(() => undefined);
@@ -505,6 +507,17 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     }));
 
     const sourceUrl = current.kind === 'episode' ? current.episode.audioUrl : current.station.url;
+
+    // CORS-clean media lets the Web Audio analyser drive the live bars. Sources
+    // that reject the anonymous request are retried without it in onError, and
+    // LiveSpectrum then falls back to its decorative animation.
+    corsFallbackRef.current = null;
+    setSpectrumBlocked(false);
+    if (STATIC_DEMO) {
+      audio.removeAttribute('crossorigin');
+    } else {
+      audio.crossOrigin = 'anonymous';
+    }
 
     // Android's WebView plays HLS natively; hls.js would need CORS on segments.
     if (isHlsUrl(sourceUrl) && !LOCAL_ENGINE) {
@@ -1206,6 +1219,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       currentTranscriptIndex,
       currentExtraStatus,
       spectrumReady,
+      spectrumBlocked,
       readSpectrum,
       toasts,
       playRef,
@@ -1261,6 +1275,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       currentTranscriptIndex,
       currentExtraStatus,
       spectrumReady,
+      spectrumBlocked,
       readSpectrum,
       toasts,
       playRef,
@@ -1307,7 +1322,6 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         ref={audioEl}
         preload="metadata"
         playsInline
-        crossOrigin={STATIC_DEMO || LOCAL_ENGINE ? undefined : 'anonymous'}
         onPlay={() => {
           const context = audioContextRef.current;
           if (context?.state === 'suspended') void context.resume().catch(() => undefined);
@@ -1409,7 +1423,21 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         }}
         onError={() => {
           const target = currentRef.current;
+          const audio = audioEl.current;
           if (!target) return;
+          // A CORS-enabled media request can fail even though the stream itself
+          // is fine. Retry once without it so playback still works; the analyser
+          // then stays silent and the spectrum uses its fallback animation.
+          if (audio && !STATIC_DEMO && corsFallbackRef.current !== target.key && audio.getAttribute('crossorigin')) {
+            corsFallbackRef.current = target.key;
+            setSpectrumBlocked(true);
+            audio.removeAttribute('crossorigin');
+            const retryUrl = target.kind === 'episode' ? target.episode.audioUrl : target.station.url;
+            audio.src = audioSource(retryUrl);
+            audio.load();
+            if (playbackRef.current.isPlaying) requestPlay();
+            return;
+          }
           setPlayback((snapshot) => ({
             ...snapshot,
             isLoading: false,

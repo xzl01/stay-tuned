@@ -29,7 +29,7 @@ function fallbackHeight(mode: SpectrumMode, index: number): number {
  * written directly to the DOM so 60fps audio animation never re-renders React.
  */
 export function LiveSpectrum({ bars, active, className, mode = 'scope' }: LiveSpectrumProps) {
-  const { spectrumReady, readSpectrum } = useAppStore();
+  const { spectrumReady, spectrumBlocked, readSpectrum } = useAppStore();
   const containerRef = useRef<HTMLSpanElement>(null);
   const barRefs = useRef<(HTMLElement | null)[]>([]);
   const levelsRef = useRef<number[]>(Array.from({ length: bars }, () => 0));
@@ -47,7 +47,7 @@ export function LiveSpectrum({ bars, active, className, mode = 'scope' }: LiveSp
       });
     };
 
-    if (!spectrumReady) {
+    if (!spectrumReady || spectrumBlocked) {
       container.classList.remove('has-spectrum');
       elements.forEach((element, index) => {
         if (!element) return;
@@ -71,6 +71,17 @@ export function LiveSpectrum({ bars, active, className, mode = 'scope' }: LiveSp
     const MIN_HZ = 45;
     const MAX_HZ = 14000;
     const NYQUIST = 22050;
+    // A tainted (cross-origin, no CORS) stream yields exact zeros. After a few
+    // seconds of that we stop pretending and hand back to the CSS animation.
+    const SILENT_FRAME_LIMIT = 150;
+    let silentFrames = 0;
+    const showFallback = () => {
+      container.classList.remove('has-spectrum');
+      elements.forEach((element, index) => {
+        if (!element) return;
+        element.style.height = `${fallbackHeight(mode, index)}px`;
+      });
+    };
     let frame = 0;
 
     const tick = () => {
@@ -78,6 +89,20 @@ export function LiveSpectrum({ bars, active, className, mode = 'scope' }: LiveSp
         setFloor();
         return;
       }
+      let rawPeak = 0;
+      for (let index = 0; index < data.length; index += 1) {
+        if (data[index] > rawPeak) rawPeak = data[index];
+      }
+      if (rawPeak === 0) {
+        silentFrames += 1;
+        if (silentFrames > SILENT_FRAME_LIMIT) {
+          showFallback();
+          return;
+        }
+      } else {
+        silentFrames = 0;
+      }
+
       const targets: number[] = [];
       for (let index = 0; index < bars; index += 1) {
         const position = (index + 0.5) / bars;
@@ -114,7 +139,7 @@ export function LiveSpectrum({ bars, active, className, mode = 'scope' }: LiveSp
     return () => {
       window.cancelAnimationFrame(frame);
     };
-  }, [active, bars, mode, readSpectrum, spectrumReady]);
+  }, [active, bars, mode, readSpectrum, spectrumBlocked, spectrumReady]);
 
   return (
     <span ref={containerRef} className={className} aria-hidden="true">

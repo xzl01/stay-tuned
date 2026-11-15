@@ -138,6 +138,7 @@ npm run android:apk    # 产出 android/app/build/outputs/apk/debug/app-debug.ap
 | HLS 串流 | ✅ 交给 Android WebView 原生播放 |
 | Podcasting 2.0 章节与文字稿 | ✅ |
 | 封面 / 音频 | ✅ 由手机直接加载 |
+| 实时频谱 | ✅ 源支持 CORS 时为真实频谱，否则自动退化 |
 
 浏览器端仍然走 Node API（公共订阅源不返回 CORS 头）。如果想把手机的解析交给远端，可在「我的订阅」底部填一个服务端地址覆盖默认行为。
 
