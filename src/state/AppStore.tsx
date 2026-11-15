@@ -39,6 +39,7 @@ import { clamp } from '../lib/format';
 import { feedUrlKey } from '../lib/urls';
 import { showDisplayTitle } from '../lib/shows';
 import { assetUrl, STATIC_DEMO } from '../lib/env';
+import { isNativePlatform } from '../lib/serverConfig';
 
 export interface ToastMessage {
   id: number;
@@ -508,15 +509,17 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
     const sourceUrl = current.kind === 'episode' ? current.episode.audioUrl : current.station.url;
 
-    // CORS-clean media lets the Web Audio analyser drive the live bars. Sources
-    // that reject the anonymous request are retried without it in onError, and
-    // LiveSpectrum then falls back to its decorative animation.
+    // Desktop web reads audio through our own origin, so the analyser gets clean
+    // data. Android's WebView rejects CORS-mode media for many real streams (and
+    // caches the failure), so playback there always loads plainly and the live
+    // bars keep their decorative animation.
+    const proxied = !STATIC_DEMO && !isNativePlatform();
     corsFallbackRef.current = null;
-    setSpectrumBlocked(false);
-    if (STATIC_DEMO) {
-      audio.removeAttribute('crossorigin');
-    } else {
+    setSpectrumBlocked(!proxied);
+    if (proxied) {
       audio.crossOrigin = 'anonymous';
+    } else {
+      audio.removeAttribute('crossorigin');
     }
 
     // Android's WebView plays HLS natively; hls.js would need CORS on segments.

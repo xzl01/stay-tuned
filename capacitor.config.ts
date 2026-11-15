@@ -12,7 +12,9 @@ const config: CapacitorConfig = {
     backgroundColor: '#efece4',
   },
   server: {
-    androidScheme: 'https',
+    // http://localhost keeps the WebView origin a secure context while letting
+    // the page load plain HTTP media (many podcast hosts and LAN stations).
+    androidScheme: 'http',
   },
 };
 
