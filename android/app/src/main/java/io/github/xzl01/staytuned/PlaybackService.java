@@ -7,14 +7,14 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
-import android.graphics.drawable.Icon;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.util.LruCache;
+import android.graphics.drawable.Icon;
 import android.media.MediaMetadata;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
@@ -22,41 +22,82 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.util.LruCache;
 
 import androidx.annotation.Nullable;
+import androidx.media3.common.AudioAttributes;
+import androidx.media3.common.C;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.Player;
+import androidx.media3.exoplayer.ExoPlayer;
+
+import com.getcapacitor.JSObject;
 
 /**
- * Foreground media session. Android surfaces this in the system media panel,
- * which HyperOS also mirrors in its "focus" / dynamic island surface.
+ * Native playback. ExoPlayer owns the audio so the WebView does not have to stay
+ * hot for background listening; the service mirrors state into a MediaSession
+ * and the notification, and streams position back to the UI when it is visible.
  */
 public class PlaybackService extends Service {
 
-    static final String ACTION_UPDATE = "io.github.xzl01.staytuned.MEDIA_UPDATE";
-    static final String ACTION_STOP = "io.github.xzl01.staytuned.MEDIA_STOP";
+    /** Set by the plugin: only the focused UI needs per-second position events. */
+    static volatile boolean uiVisible = true;
+
+    static final String ACTION_LOAD = "io.github.xzl01.staytuned.MEDIA_LOAD";
     static final String ACTION_PLAY = "io.github.xzl01.staytuned.MEDIA_PLAY";
     static final String ACTION_PAUSE = "io.github.xzl01.staytuned.MEDIA_PAUSE";
+    static final String ACTION_SEEK = "io.github.xzl01.staytuned.MEDIA_SEEK";
+    static final String ACTION_RATE = "io.github.xzl01.staytuned.MEDIA_RATE";
+    static final String ACTION_VOLUME = "io.github.xzl01.staytuned.MEDIA_VOLUME";
     static final String ACTION_NEXT = "io.github.xzl01.staytuned.MEDIA_NEXT";
     static final String ACTION_PREV = "io.github.xzl01.staytuned.MEDIA_PREV";
+    static final String ACTION_STOP = "io.github.xzl01.staytuned.MEDIA_STOP";
 
     private static final String CHANNEL_ID = "playback";
     private static final int NOTIFICATION_ID = 1201;
     private static final int CONTENT_REQUEST = 1202;
 
-    private MediaSession session;
-    private String title = "";
-    private String subtitle = "";
-    private boolean playing = false;
-    private boolean live = true;
-    private long positionMs = 0;
-    private long durationMs = 0;
-    private boolean foreground = false;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final LruCache<String, Bitmap> artworkCache = new LruCache<>(6);
+
+    private ExoPlayer player;
+    private MediaSession session;
+
+    private String title = "";
+    private String subtitle = "";
     private String artworkUrl = "";
     private String loadingArtworkUrl = "";
     private Bitmap artwork;
+    private boolean live = true;
+    private boolean playing = false;
+    private boolean foreground = false;
+    private long positionMs = 0;
+    private long durationMs = 0;
+    private long bufferedMs = 0;
+    private float volume = 1f;
+    private float rate = 1f;
     private String lastMetaKey = "";
     private String lastNotifyKey = "";
+    private long sessionPositionMs = -1;
+
+    private final Runnable ticker = new Runnable() {
+        @Override
+        public void run() {
+            if (player == null) return;
+            positionMs = Math.max(0, player.getCurrentPosition());
+            bufferedMs = Math.max(0, player.getBufferedPosition());
+            long duration = player.getDuration();
+            durationMs = duration == C.TIME_UNSET ? 0 : duration;
+            // SystemUI extrapolates from PlaybackState, so the session only needs
+            // an occasional correction instead of one update per second.
+            if (sessionPositionMs < 0 || Math.abs(positionMs - sessionPositionMs) >= 15_000) {
+                publish();
+            }
+            emitState();
+            if (playing) mainHandler.postDelayed(this, uiVisible ? 1000 : 5000);
+        }
+    };
 
     @Override
     public void onCreate() {
@@ -65,52 +106,175 @@ public class PlaybackService extends Service {
         session = new MediaSession(this, "StayTuned");
         session.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
         session.setCallback(new MediaSession.Callback() {
-            @Override public void onPlay() { MediaBridgePlugin.dispatch("play"); }
-            @Override public void onPause() { MediaBridgePlugin.dispatch("pause"); }
-            @Override public void onSkipToNext() { MediaBridgePlugin.dispatch("next"); }
-            @Override public void onSkipToPrevious() { MediaBridgePlugin.dispatch("prev"); }
-            @Override public void onSeekTo(long pos) { MediaBridgePlugin.dispatch("seek:" + (pos / 1000.0)); }
-            @Override public void onStop() { MediaBridgePlugin.dispatch("pause"); }
+            @Override public void onPlay() { resume(); }
+            @Override public void onPause() { pause(); }
+            @Override public void onSkipToNext() { forward("next"); }
+            @Override public void onSkipToPrevious() { forward("prev"); }
+            @Override public void onSeekTo(long pos) { seekTo(pos); }
+            @Override public void onStop() { pause(); }
         });
         session.setActive(true);
+    }
+
+    private void ensurePlayer() {
+        if (player != null) return;
+        player = new ExoPlayer.Builder(this).build();
+        player.setAudioAttributes(
+                new AudioAttributes.Builder()
+                        .setUsage(C.USAGE_MEDIA)
+                        .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
+                        .build(),
+                true);
+        player.setHandleAudioBecomingNoisy(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // Keeps the network alive so background radio does not stutter.
+            player.setWakeMode(C.WAKE_MODE_NETWORK);
+        }
+        player.setVolume(volume);
+        player.setPlaybackSpeed(rate);
+        player.addListener(new Player.Listener() {
+            @Override public void onIsPlayingChanged(boolean isPlaying) {
+                playing = isPlaying;
+                syncWidget();
+                publish();
+                emitState();
+                mainHandler.removeCallbacks(ticker);
+                if (isPlaying) mainHandler.post(ticker);
+            }
+            @Override public void onPlaybackStateChanged(int state) {
+                // Frequent BUFFERING/READY flips must not each wake SystemUI.
+                if (state == Player.STATE_ENDED) {
+                    playing = false;
+                    emitEvent("ended");
+                    publish();
+                    showNotification();
+                } else if (state == Player.STATE_READY) {
+                    emitState();
+                }
+            }
+            @Override public void onPlayerError(PlaybackException error) {
+                playing = false;
+                publish();
+                JSObject data = new JSObject();
+                data.put("message", error.getErrorCodeName());
+                MediaBridgePlugin.emit("nativeError", data);
+            }
+        });
     }
 
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
         String action = intent == null ? null : intent.getAction();
-        if (ACTION_STOP.equals(action)) {
-            releaseSession();
-            stopSelf();
-            return START_NOT_STICKY;
-        }
-        if (ACTION_PLAY.equals(action)) { safeDispatch("play"); publish(); return START_STICKY; }
-        if (ACTION_PAUSE.equals(action)) { safeDispatch("pause"); publish(); return START_STICKY; }
-        if (ACTION_NEXT.equals(action)) { safeDispatch("next"); return START_STICKY; }
-        if (ACTION_PREV.equals(action)) { safeDispatch("prev"); return START_STICKY; }
+        if (action == null) { publish(); return START_STICKY; }
 
-        if (intent != null && ACTION_UPDATE.equals(action)) {
-            title = intent.getStringExtra("title");
-            subtitle = intent.getStringExtra("subtitle");
-            playing = intent.getBooleanExtra("playing", false);
-            live = intent.getBooleanExtra("live", true);
-            positionMs = (long) (intent.getDoubleExtra("position", 0) * 1000);
-            durationMs = (long) (intent.getDoubleExtra("duration", 0) * 1000);
-            String nextArtwork = intent.getStringExtra("artwork");
-            loadArtwork(nextArtwork == null ? "" : nextArtwork);
-            if (title == null) title = "";
-            if (subtitle == null) subtitle = "";
+        switch (action) {
+            case ACTION_LOAD:
+                load(intent);
+                break;
+            case ACTION_PLAY:
+                resume();
+                break;
+            case ACTION_PAUSE:
+                pause();
+                break;
+            case ACTION_SEEK:
+                seekTo((long) (intent.getDoubleExtra("position", 0) * 1000));
+                break;
+            case ACTION_RATE: {
+                rate = (float) intent.getDoubleExtra("rate", 1.0);
+                if (player != null) player.setPlaybackSpeed(rate);
+                emitState();
+                break;
+            }
+            case ACTION_VOLUME: {
+                volume = (float) intent.getDoubleExtra("volume", 1.0);
+                if (player != null) player.setVolume(volume);
+                break;
+            }
+            case ACTION_NEXT:
+                forward("next");
+                break;
+            case ACTION_PREV:
+                forward("prev");
+                break;
+            case ACTION_STOP:
+                release();
+                stopSelf();
+                return START_NOT_STICKY;
+            default:
+                publish();
         }
-        publish();
         return START_STICKY;
     }
 
-    /** Cover art for the current item, cached so progress updates stay cheap. */
+    private void load(Intent intent) {
+        ensurePlayer();
+        title = orEmpty(intent.getStringExtra("title"));
+        subtitle = orEmpty(intent.getStringExtra("subtitle"));
+        live = intent.getBooleanExtra("live", true);
+        rate = (float) intent.getDoubleExtra("rate", 1.0);
+        volume = (float) intent.getDoubleExtra("volume", 1.0);
+        positionMs = (long) (intent.getDoubleExtra("position", 0) * 1000);
+        String url = orEmpty(intent.getStringExtra("url"));
+        boolean autoplay = intent.getBooleanExtra("playing", false);
+
+        player.setPlaybackSpeed(rate);
+        player.setVolume(volume);
+        if (!url.isEmpty()) {
+            player.setMediaItem(MediaItem.fromUri(url));
+            player.prepare();
+            if (positionMs > 0) player.seekTo(positionMs);
+        }
+        player.setPlayWhenReady(autoplay);
+        playing = autoplay;
+
+        loadArtwork(orEmpty(intent.getStringExtra("artwork")));
+        syncWidget();
+        publish();
+        showNotification();
+        emitState();
+    }
+
+    private void resume() {
+        ensurePlayer();
+        player.setPlayWhenReady(true);
+        playing = true;
+        publish();
+        emitState();
+    }
+
+    private void pause() {
+        if (player != null) player.setPlayWhenReady(false);
+        playing = false;
+        publish();
+        showNotification();
+        emitState();
+    }
+
+    private void seekTo(long ms) {
+        positionMs = Math.max(0, ms);
+        if (player != null) player.seekTo(positionMs);
+        publish();
+        emitState();
+    }
+
+    private void forward(String action) {
+        if (!MediaBridgePlugin.dispatch(action)) {
+            JSObject data = new JSObject();
+            data.put("action", action);
+            MediaBridgePlugin.emit("nativeAction", data);
+        }
+    }
+
+    private static String orEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
     private void loadArtwork(String url) {
         if (url.equals(artworkUrl)) return;
         artworkUrl = url;
         artwork = url.isEmpty() ? null : artworkCache.get(url);
         if (artwork != null || url.isEmpty() || url.equals(loadingArtworkUrl)) {
-            publish();
             return;
         }
         loadingArtworkUrl = url;
@@ -122,7 +286,6 @@ public class PlaybackService extends Service {
                 connection.setConnectTimeout(8000);
                 connection.setReadTimeout(8000);
                 connection.setInstanceFollowRedirects(true);
-                connection.setRequestProperty("accept", "image/*");
                 try (java.io.InputStream stream = connection.getInputStream()) {
                     Bitmap raw = BitmapFactory.decodeStream(stream);
                     if (raw != null) {
@@ -144,17 +307,9 @@ public class PlaybackService extends Service {
                 if (result != null) artworkCache.put(url, result);
                 artwork = result;
                 publish();
+                showNotification();
             });
         }, "stay-tuned-artwork").start();
-    }
-
-    private void safeDispatch(String action) {
-        if (MediaBridgePlugin.dispatch(action)) return;
-        Intent launch = new Intent(this, MainActivity.class);
-        launch.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        launch.putExtra(MainActivity.EXTRA_ACTION, action);
-        MainActivity.setPendingAction(action);
-        startActivity(launch);
     }
 
     private String metaKey() {
@@ -163,16 +318,11 @@ public class PlaybackService extends Service {
 
     private void publish() {
         if (session == null) return;
-
-        // Rebuilding metadata and re-posting the notification wakes SystemUI, so
-        // both are skipped unless the visible content actually changed. Playback
-        // progress keeps advancing because the state carries the speed.
         String key = metaKey();
         if (!key.equals(lastMetaKey)) {
             lastMetaKey = key;
             session.setMetadata(buildMetadata());
         }
-
         PlaybackState.Builder state = new PlaybackState.Builder()
                 .setActions(PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE
                         | PlaybackState.ACTION_PLAY_PAUSE
@@ -180,9 +330,9 @@ public class PlaybackService extends Service {
                         | (live ? 0 : PlaybackState.ACTION_SEEK_TO))
                 .setState(playing ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
                         live ? PlaybackState.PLAYBACK_POSITION_UNKNOWN : positionMs,
-                        playing ? 1f : 0f);
+                        playing ? rate : 0f);
         session.setPlaybackState(state.build());
-
+        sessionPositionMs = positionMs;
         String notifyKey = key + '\u0001' + playing;
         if (foreground && notifyKey.equals(lastNotifyKey)) return;
         lastNotifyKey = notifyKey;
@@ -194,11 +344,7 @@ public class PlaybackService extends Service {
                 .putString(MediaMetadata.METADATA_KEY_TITLE, title)
                 .putString(MediaMetadata.METADATA_KEY_ARTIST, subtitle)
                 .putString(MediaMetadata.METADATA_KEY_ALBUM, "留频");
-        Bitmap art = artwork;
-        if (art == null) {
-            Drawable icon = loadDrawable(R.mipmap.ic_launcher);
-            if (icon instanceof BitmapDrawable) art = ((BitmapDrawable) icon).getBitmap();
-        }
+        Bitmap art = artwork != null ? artwork : appIcon();
         if (art != null) {
             meta.putBitmap(MediaMetadata.METADATA_KEY_ART, art);
             meta.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, art);
@@ -207,6 +353,11 @@ public class PlaybackService extends Service {
                 BitmapFactory.decodeResource(getResources(), R.drawable.ic_stat_tuned));
         if (!live && durationMs > 0) meta.putLong(MediaMetadata.METADATA_KEY_DURATION, durationMs);
         return meta.build();
+    }
+
+    private Bitmap appIcon() {
+        Drawable icon = getDrawable(R.mipmap.ic_launcher);
+        return icon instanceof BitmapDrawable ? ((BitmapDrawable) icon).getBitmap() : null;
     }
 
     private void showNotification() {
@@ -219,7 +370,7 @@ public class PlaybackService extends Service {
             }
             foreground = true;
         } catch (Exception ignored) {
-            // Missing notification permission (Android 13+) keeps the UI usable.
+            // Notification permission can be denied on Android 13+.
         }
     }
 
@@ -237,10 +388,10 @@ public class PlaybackService extends Service {
                 .setDeleteIntent(serviceIntent(ACTION_STOP))
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setOngoing(playing)
+                .setShowWhen(false)
                 .setOnlyAlertOnce(true);
         Bitmap large = artwork;
         if (large != null) builder.setLargeIcon(large);
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             builder.addAction(action(R.drawable.ic_media_prev, "上一集", ACTION_PREV));
             builder.addAction(action(
@@ -248,10 +399,9 @@ public class PlaybackService extends Service {
                     playing ? "暂停" : "播放",
                     playing ? ACTION_PAUSE : ACTION_PLAY));
             builder.addAction(action(R.drawable.ic_media_next, "下一集", ACTION_NEXT));
-            Notification.MediaStyle style = new Notification.MediaStyle()
+            builder.setStyle(new Notification.MediaStyle()
                     .setMediaSession(session.getSessionToken())
-                    .setShowActionsInCompactView(0, 1, 2);
-            builder.setStyle(style);
+                    .setShowActionsInCompactView(0, 1, 2));
         }
         return builder.build();
     }
@@ -277,13 +427,29 @@ public class PlaybackService extends Service {
         return PendingIntent.getService(this, action.hashCode(), intent, flags);
     }
 
-    private Drawable loadDrawable(int id) {
-        try {
-            return getDrawable(id);
-        } catch (Exception error) {
-            Bitmap fallback = BitmapFactory.decodeResource(getResources(), id);
-            return fallback == null ? null : new BitmapDrawable(getResources(), fallback);
-        }
+    private void syncWidget() {
+        getSharedPreferences(MediaBridgePlugin.WIDGET_PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putString("title", title)
+                .putString("subtitle", subtitle)
+                .putBoolean("playing", playing)
+                .apply();
+        StayTunedWidget.refreshAll(this);
+    }
+
+    private void emitState() {
+        if (!uiVisible) return;
+        JSObject data = new JSObject();
+        data.put("isPlaying", playing);
+        data.put("position", positionMs / 1000.0);
+        data.put("duration", durationMs / 1000.0);
+        data.put("buffered", bufferedMs / 1000.0);
+        data.put("state", playing ? "playing" : "paused");
+        MediaBridgePlugin.emit("nativeState", data);
+    }
+
+    private void emitEvent(String event) {
+        MediaBridgePlugin.emit(event, new JSObject());
     }
 
     private void createChannel() {
@@ -298,7 +464,12 @@ public class PlaybackService extends Service {
         manager.createNotificationChannel(channel);
     }
 
-    private void releaseSession() {
+    private void release() {
+        mainHandler.removeCallbacksAndMessages(null);
+        if (player != null) {
+            player.release();
+            player = null;
+        }
         if (session != null) {
             session.setActive(false);
             session.release();
@@ -308,11 +479,12 @@ public class PlaybackService extends Service {
             stopForeground(true);
             foreground = false;
         }
+        playing = false;
     }
 
     @Override
     public void onDestroy() {
-        releaseSession();
+        release();
         super.onDestroy();
     }
 

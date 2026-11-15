@@ -16,7 +16,7 @@ This project is licensed under **GPL-3.0-only**. Third-party components remain u
 | `react` | 19.3.1 | MIT | [`react-MIT.txt`](third-party-licenses/react-MIT.txt) |
 | `react-dom` | 19.3.1 | MIT | [`react-dom-MIT.txt`](third-party-licenses/react-dom-MIT.txt) |
 
-These packages are installed from npm; their complete license texts are distributed with the packages and copied here for the direct dependencies. The production dependency tree in [`package-lock.json`](package-lock.json) has 83 packages: 75 × MIT, 5 × ISC, 1 × Apache-2.0, 1 × BSD-3-Clause, 1 × 0BSD.0, 4 × ISC, 1 × BSD-3-Clause, 1 × 0BSD.0, 4 × ISC, 1 × BSD-3-Clause, 1 × 0BSD.
+These packages are installed from npm; their complete license texts are distributed with the packages and copied here for the direct dependencies. The production dependency tree in [`package-lock.json`](package-lock.json) has 83 packages: 75 × MIT, 5 × ISC, 1 × Apache-2.0, 1 × BSD-3-Clause, 1 × 0BSD.0, 1 × BSD-3-Clause, 1 × 0BSD.0, 4 × ISC, 1 × BSD-3-Clause, 1 × 0BSD.0, 4 × ISC, 1 × BSD-3-Clause, 1 × 0BSD.
 
 <details>
 <summary>Transitive production dependencies (74)</summary>

@@ -5,7 +5,6 @@ package io.github.xzl01.staytuned;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 
@@ -20,8 +19,9 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import java.lang.ref.WeakReference;
 
 /**
- * Bridges the WebView player to Android: an active MediaSession (system media
- * panel, HyperOS focus/island surface) and the home screen widget.
+ * Bridges the WebView UI to the native player: ExoPlayer owns playback, the
+ * service mirrors it into a MediaSession (system panel / HyperOS island) and
+ * the home screen widget, and this plugin carries commands and state.
  */
 @CapacitorPlugin(name = "MediaBridge")
 public class MediaBridgePlugin extends Plugin {
@@ -38,6 +38,17 @@ public class MediaBridgePlugin extends Plugin {
     @Override
     protected void handleOnDestroy() {
         current = null;
+        PlaybackService.uiVisible = false;
+    }
+
+    @Override
+    protected void handleOnResume() {
+        PlaybackService.uiVisible = true;
+    }
+
+    @Override
+    protected void handleOnPause() {
+        PlaybackService.uiVisible = false;
     }
 
     private void requestNotificationPermission() {
@@ -51,58 +62,74 @@ public class MediaBridgePlugin extends Plugin {
         }
     }
 
+    private void send(String action, Intent intent) {
+        intent.setClass(getContext(), PlaybackService.class);
+        intent.setAction(action);
+        ContextCompat.startForegroundService(getContext(), intent);
+    }
+
     @PluginMethod
-    public void updateState(PluginCall call) {
-        String title = call.getString("title", "");
-        String subtitle = call.getString("subtitle", "");
-        boolean playing = Boolean.TRUE.equals(call.getBoolean("isPlaying", false));
-        double position = call.getDouble("position", 0.0);
-        double duration = call.getDouble("duration", 0.0);
-        boolean live = Boolean.TRUE.equals(call.getBoolean("isLive", false));
-        String artwork = call.getString("artwork", "");
-
-        Context context = getContext();
-        SharedPreferences prefs = context.getSharedPreferences(WIDGET_PREFS, Context.MODE_PRIVATE);
-        prefs.edit()
-                .putString("title", title)
-                .putString("subtitle", subtitle)
-                .putBoolean("playing", playing)
-                .apply();
-        StayTunedWidget.refreshAll(context);
-
-        Intent intent = new Intent(context, PlaybackService.class);
-        intent.setAction(PlaybackService.ACTION_UPDATE);
-        intent.putExtra("title", title);
-        intent.putExtra("subtitle", subtitle);
-        intent.putExtra("playing", playing);
-        intent.putExtra("position", position);
-        intent.putExtra("duration", duration);
-        intent.putExtra("live", live);
-        intent.putExtra("artwork", artwork == null ? "" : artwork);
-        try {
-            ContextCompat.startForegroundService(context, intent);
-        } catch (Exception ignored) {
-            // Starting from the background is not allowed; the UI will retry.
-        }
+    public void load(PluginCall call) {
+        Intent intent = new Intent();
+        intent.putExtra("url", call.getString("url", ""));
+        intent.putExtra("title", call.getString("title", ""));
+        intent.putExtra("subtitle", call.getString("subtitle", ""));
+        intent.putExtra("artwork", call.getString("artwork", ""));
+        intent.putExtra("position", call.getDouble("position", 0.0));
+        intent.putExtra("rate", call.getDouble("rate", 1.0));
+        intent.putExtra("volume", call.getDouble("volume", 1.0));
+        intent.putExtra("live", Boolean.TRUE.equals(call.getBoolean("live", false)));
+        intent.putExtra("playing", Boolean.TRUE.equals(call.getBoolean("playing", false)));
+        send(PlaybackService.ACTION_LOAD, intent);
         call.resolve(new JSObject().put("ok", true));
     }
 
     @PluginMethod
-    public void clear(PluginCall call) {
-        Context context = getContext();
-        context.getSharedPreferences(WIDGET_PREFS, Context.MODE_PRIVATE).edit().clear().apply();
-        StayTunedWidget.refreshAll(context);
-        Intent intent = new Intent(context, PlaybackService.class);
-        intent.setAction(PlaybackService.ACTION_STOP);
-        try {
-            context.startService(intent);
-        } catch (Exception ignored) {
-            // Nothing playing.
-        }
+    public void play(PluginCall call) {
+        send(PlaybackService.ACTION_PLAY, new Intent());
         call.resolve();
     }
 
-    /** Hand an action from the widget / notification to the running web player. */
+    @PluginMethod
+    public void pause(PluginCall call) {
+        send(PlaybackService.ACTION_PAUSE, new Intent());
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void seekTo(PluginCall call) {
+        Intent intent = new Intent();
+        intent.putExtra("position", call.getDouble("position", 0.0));
+        send(PlaybackService.ACTION_SEEK, intent);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void setRate(PluginCall call) {
+        Intent intent = new Intent();
+        intent.putExtra("rate", call.getDouble("rate", 1.0));
+        send(PlaybackService.ACTION_RATE, intent);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void setVolume(PluginCall call) {
+        Intent intent = new Intent();
+        intent.putExtra("volume", call.getDouble("volume", 1.0));
+        send(PlaybackService.ACTION_VOLUME, intent);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void stop(PluginCall call) {
+        Intent intent = new Intent();
+        intent.setClass(getContext(), PlaybackService.class);
+        intent.setAction(PlaybackService.ACTION_STOP);
+        getContext().startService(intent);
+        call.resolve();
+    }
+
+    /** Hand an action from the widget / notification to the running web UI. */
     static boolean dispatch(String action) {
         MediaBridgePlugin plugin = current == null ? null : current.get();
         if (plugin == null) return false;
@@ -110,6 +137,13 @@ public class MediaBridgePlugin extends Plugin {
         data.put("action", action);
         plugin.notifyListeners("mediaAction", data, true);
         return true;
+    }
+
+    /** State or event coming from the service. */
+    static void emit(String event, JSObject data) {
+        MediaBridgePlugin plugin = current == null ? null : current.get();
+        if (plugin == null) return;
+        plugin.notifyListeners(event, data, true);
     }
 
     @PluginMethod

@@ -2,30 +2,44 @@
 
 import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor/core';
 
-export interface MediaStatePayload {
+export interface NativeLoadOptions {
+  url: string;
   title: string;
   subtitle: string;
+  artwork: string;
+  position: number;
+  rate: number;
+  volume: number;
+  live: boolean;
+  playing: boolean;
+}
+
+export interface NativePlaybackState {
   isPlaying: boolean;
   position: number;
   duration: number;
-  isLive: boolean;
-  /** Cover image URL for the media session / dynamic island. */
-  artwork: string;
+  buffered: number;
+  state: string;
 }
 
 interface MediaBridgePlugin {
-  updateState(options: MediaStatePayload): Promise<{ ok: boolean }>;
-  clear(): Promise<void>;
+  load(options: NativeLoadOptions): Promise<{ ok: boolean }>;
+  play(): Promise<void>;
+  pause(): Promise<void>;
+  seekTo(options: { position: number }): Promise<void>;
+  setRate(options: { rate: number }): Promise<void>;
+  setVolume(options: { volume: number }): Promise<void>;
+  stop(): Promise<void>;
   consumePendingAction(): Promise<{ action?: string }>;
   addListener(
-    eventName: 'mediaAction',
-    listener: (event: { action: string }) => void,
+    eventName: 'mediaAction' | 'nativeState' | 'ended' | 'nativeError',
+    listener: (event: Record<string, unknown>) => void,
   ): Promise<PluginListenerHandle>;
 }
 
 const MediaBridge = registerPlugin<MediaBridgePlugin>('MediaBridge');
 
-export const nativeMediaAvailable = (): boolean => Capacitor.getPlatform() !== 'web';
+export const nativePlaybackAvailable = (): boolean => Capacitor.getPlatform() !== 'web';
 
 function absoluteArtwork(url: string): string {
   if (!url) return '';
@@ -40,24 +54,30 @@ function absoluteArtwork(url: string): string {
   return '';
 }
 
-/** Push the current item to the Android media session and home screen widget. */
-export function pushMediaState(payload: MediaStatePayload): void {
-  if (!nativeMediaAvailable()) return;
-  void MediaBridge.updateState({ ...payload, artwork: absoluteArtwork(payload.artwork) }).catch(
-    () => undefined,
-  );
+function quietly(run: () => Promise<unknown>): void {
+  if (!nativePlaybackAvailable()) return;
+  void run().catch(() => undefined);
 }
 
-export function clearMediaState(): void {
-  if (!nativeMediaAvailable()) return;
-  void MediaBridge.clear().catch(() => undefined);
+export function nativeLoad(options: NativeLoadOptions): void {
+  quietly(() => MediaBridge.load({ ...options, artwork: absoluteArtwork(options.artwork) }));
 }
 
-export function onMediaAction(handler: (action: string) => void): () => void {
-  if (!nativeMediaAvailable()) return () => undefined;
+export const nativePlay = (): void => quietly(() => MediaBridge.play());
+export const nativePause = (): void => quietly(() => MediaBridge.pause());
+export const nativeStop = (): void => quietly(() => MediaBridge.stop());
+export const nativeSeekTo = (position: number): void => quietly(() => MediaBridge.seekTo({ position }));
+export const nativeSetRate = (rate: number): void => quietly(() => MediaBridge.setRate({ rate }));
+export const nativeSetVolume = (volume: number): void => quietly(() => MediaBridge.setVolume({ volume }));
+
+function subscribe(
+  event: 'mediaAction' | 'nativeState' | 'ended' | 'nativeError',
+  handler: (data: Record<string, unknown>) => void,
+): () => void {
+  if (!nativePlaybackAvailable()) return () => undefined;
   let handle: PluginListenerHandle | null = null;
   let cancelled = false;
-  void MediaBridge.addListener('mediaAction', (event) => handler(event.action))
+  void MediaBridge.addListener(event, handler)
     .then((created) => {
       if (cancelled) void created.remove();
       else handle = created;
@@ -69,9 +89,21 @@ export function onMediaAction(handler: (action: string) => void): () => void {
   };
 }
 
+export const onNativeState = (handler: (state: NativePlaybackState) => void): (() => void) =>
+  subscribe('nativeState', (data) => handler(data as unknown as NativePlaybackState));
+
+export const onNativeEnded = (handler: () => void): (() => void) =>
+  subscribe('ended', () => handler());
+
+export const onNativeError = (handler: (message: string) => void): (() => void) =>
+  subscribe('nativeError', (data) => handler(String(data.message ?? '')));
+
+export const onMediaAction = (handler: (action: string) => void): (() => void) =>
+  subscribe('mediaAction', (data) => handler(String(data.action ?? '')));
+
 /** Widget / notification taps that launched the app before JS was ready. */
 export async function takePendingMediaAction(): Promise<string | null> {
-  if (!nativeMediaAvailable()) return null;
+  if (!nativePlaybackAvailable()) return null;
   try {
     const result = await MediaBridge.consumePendingAction();
     return result.action ?? null;

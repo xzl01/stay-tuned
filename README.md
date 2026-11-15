@@ -142,6 +142,16 @@ npm run android:apk    # 产出 android/app/build/outputs/apk/debug/app-debug.ap
 
 浏览器端仍然走 Node API（公共订阅源不返回 CORS 头）。如果想把手机的解析交给远端，可在「我的订阅」底部填一个服务端地址：填了之后会切回远程代理模式（音频也经代理，频谱因此始终可用）。
 
+### 原生播放（Android）
+
+APK 使用 **ExoPlayer** 播放，WebView 只负责界面：
+
+- 音频解码、缓冲、HLS 全部在原生侧完成，不再依赖 WebView 的 `<audio>`，也不受 CORS 限制
+- 支持 `.m3u8`（HLS）、MP3 / M4A 直链与直播流；`setWakeMode` 保持息屏时的网络与 CPU，后台不断流
+- UI 通过 `nativeState` 事件按秒同步进度；应用不可见时停止回传，仅保留服务内部计时
+- 媒体会话每 15 秒才校正一次 `PlaybackState`（系统自行插值），避免每秒唤醒 SystemUI
+- 播放进度每 30 秒落盘，暂停/切歌/退出时立即写入
+
 ### 后台播放与耗电
 
 - 媒体会话不再按固定间隔重建：只有标题、封面或播放状态变化时才更新通知与 `MediaMetadata`，其余更新只刷新 `PlaybackState`。
@@ -149,7 +159,7 @@ npm run android:apk    # 产出 android/app/build/outputs/apk/debug/app-debug.ap
 - 播放进度渲染节流：`timeupdate` 从约 4 次/秒降到可见时 1 次/秒，息屏时不再更新 UI 状态。
 - 进度与曲库分键存储：播放进度写入独立的 `stay-tuned:positions`，播放时不再重复序列化整个曲库（实测 22 秒播放的写入量从 26 KB 降到 6.5 KB，且随曲库规模线性受益）。
 - 息屏时暂停全部装饰动画，避免锁屏状态下继续占用 GPU/CPU。
-- App 内不创建 Web Audio 图，音频直接由系统解码输出，避免额外的音频处理开销。
+- Android 由 ExoPlayer 承担解码与输出，WebView 不持有音频元素，后台只剩原生播放线程。
 
 ### 桌面小组件与系统媒体控制
 

@@ -43,7 +43,20 @@ import { showDisplayTitle } from '../lib/shows';
 import { stationImage } from '../lib/stations';
 import { assetUrl, STATIC_DEMO } from '../lib/env';
 import { isNativePlatform } from '../lib/serverConfig';
-import { clearMediaState, onMediaAction, pushMediaState, takePendingMediaAction } from '../lib/nativeMedia';
+import {
+  nativeLoad,
+  nativePause,
+  nativePlay,
+  nativeSeekTo,
+  nativeSetRate,
+  nativeSetVolume,
+  nativeStop,
+  onMediaAction,
+  onNativeEnded,
+  onNativeError,
+  onNativeState,
+  takePendingMediaAction,
+} from '../lib/nativeMedia';
 
 export interface ToastMessage {
   id: number;
@@ -430,6 +443,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     audio.volume = data.preferences.volume;
     audio.playbackRate = data.preferences.rate;
     if (data.preferences.volume > 0) lastVolumeRef.current = data.preferences.volume;
+    if (isNativePlatform()) {
+      nativeSetVolume(data.preferences.volume);
+      nativeSetRate(data.preferences.rate);
+    }
   }, [data.preferences.volume, data.preferences.rate]);
 
   // A single Web Audio analyser is enough for the whole app. It is created
@@ -484,6 +501,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const requestPlay = useCallback(() => {
+    if (isNativePlatform()) {
+      nativePlay();
+      return;
+    }
     const audio = audioEl.current;
     if (!audio) return;
     if (hlsPendingRef.current) return;
@@ -519,6 +540,14 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const audio = audioEl.current;
     if (!audio) return;
+    if (isNativePlatform()) {
+      // ExoPlayer is the only audio source on Android.
+      destroyHls();
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+      return;
+    }
     let cancelled = false;
 
     destroyHls();
@@ -648,24 +677,24 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   /** Push title/artwork/position to Android once; the system interpolates the
    *  progress bar itself, so no periodic updates are needed. */
-  const publishMediaState = useCallback(() => {
+  /** Everything ExoPlayer needs to take over the current item. */
+  const nativeSourcePayload = useCallback(() => {
     const target = currentRef.current;
-    if (!target) {
-      clearMediaState();
-      return;
-    }
+    if (!target) return null;
     const isEpisode = target.kind === 'episode';
-    pushMediaState({
+    return {
+      url: audioSource(isEpisode ? target.episode.audioUrl : target.station.url),
       title: isEpisode ? target.episode.title : target.station.name,
       subtitle: isEpisode ? showDisplayTitle(target.show) : target.station.group || '留频电台',
-      isPlaying: playbackRef.current.isPlaying,
-      position: playbackRef.current.currentTime,
-      duration: isEpisode ? target.episode.duration || playbackRef.current.duration : 0,
-      isLive: !isEpisode,
       artwork: isEpisode
         ? target.episode.image || target.show.image || ''
         : stationImage(target.station) || '',
-    });
+      live: !isEpisode,
+      position: playbackRef.current.currentTime,
+      rate: dataRef.current.preferences.rate,
+      volume: dataRef.current.preferences.volume,
+      playing: playbackRef.current.isPlaying,
+    };
   }, []);
 
   const seek = useCallback(
@@ -690,9 +719,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         ...state,
         positions: { ...state.positions, [target.key]: position },
       }));
-      publishMediaState();
+      if (isNativePlatform()) nativeSeekTo(position);
     },
-    [notify, publishMediaState],
+    [notify],
   );
 
   const skip = useCallback(
@@ -809,7 +838,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const pause = useCallback(() => {
-    audioEl.current?.pause();
+    if (isNativePlatform()) nativePause();
+    else audioEl.current?.pause();
     setPlayback((snapshot) => ({ ...snapshot, isPlaying: false }));
   }, []);
 
@@ -947,7 +977,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       const left = Math.max(0, Math.ceil((sleep.endsAt - Date.now()) / 1000));
       setSleepRemaining(left);
       if (left <= 0) {
-        audioEl.current?.pause();
+        if (isNativePlatform()) nativePause();
+        else audioEl.current?.pause();
         setPlayback((snapshot) => ({ ...snapshot, isPlaying: false }));
         setSleep(null);
         notify('定时结束，播放已暂停。');
@@ -1311,35 +1342,60 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Mirror the current item into Android's media session (system panel,
-  // HyperOS focus/island) and the home screen widget.
-  // The system extrapolates progress from PlaybackState, but the notification
-  // card only redraws on an update. A slow re-sync keeps it honest without the
-  // per-5s wakeups the old build did (the service skips rebuilding the
-  // notification when nothing visible changed).
-  useEffect(() => {
-    if (!isNativePlatform() || !current || !playback.isPlaying) return;
-    let timer = 0;
-    const schedule = () => {
-      const delay = document.hidden ? 60_000 : 15_000;
-      timer = window.setTimeout(() => {
-        publishMediaState();
-        schedule();
-      }, delay);
-    };
-    schedule();
-    return () => window.clearTimeout(timer);
-  }, [current, playback.isPlaying, publishMediaState]);
-
+  // On Android the native player owns playback; the WebView only reflects it.
   useEffect(() => {
     if (!isNativePlatform()) return;
-    if (!current) {
-      clearMediaState();
+    if (!currentKey) {
+      nativeStop();
       return;
     }
-    publishMediaState();
-    return undefined;
-  }, [current, playback.isPlaying, publishMediaState]);
+    const payload = nativeSourcePayload();
+    if (payload) nativeLoad(payload);
+  }, [currentKey, nativeSourcePayload]);
+
+  useEffect(() => {
+    if (!isNativePlatform() || !currentKey) return;
+    if (playback.isPlaying) nativePlay();
+    else nativePause();
+  }, [playback.isPlaying, currentKey]);
+
+  useEffect(() => {
+    if (!isNativePlatform()) return undefined;
+    const offState = onNativeState((state) => {
+      setPlayback((snapshot) => ({
+        ...snapshot,
+        isPlaying: state.isPlaying,
+        currentTime: Number.isFinite(state.position) ? state.position : snapshot.currentTime,
+        duration: state.duration > 0 ? state.duration : snapshot.duration,
+        buffered:
+          state.duration > 0
+            ? Math.min(100, Math.max(snapshot.buffered, (state.buffered / state.duration) * 100))
+            : snapshot.buffered,
+        isLoading: false,
+        error: null,
+      }));
+      const target = currentRef.current;
+      if (target && target.kind === 'episode' && Number.isFinite(state.position)) {
+        if (Math.abs(state.position - lastSavedPositionRef.current) > 30) {
+          lastSavedPositionRef.current = state.position;
+          setData((current) => ({
+            ...current,
+            positions: { ...current.positions, [target.key]: state.position },
+          }));
+        }
+      }
+    });
+    const offEnded = onNativeEnded(() => nextRef.current?.());
+    const offError = onNativeError((message) => {
+      setPlayback((snapshot) => ({ ...snapshot, isPlaying: false, isLoading: false }));
+      notify(message ? `播放失败：${message}` : '播放失败，请稍后重试。', 'error');
+    });
+    return () => {
+      offState();
+      offEnded();
+      offError();
+    };
+  }, [notify]);
 
   useEffect(() => {
     if (!isNativePlatform()) return undefined;
@@ -1347,7 +1403,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       if (action === 'play') {
         setPlayback((snapshot) => (snapshot.isPlaying ? snapshot : { ...snapshot, isPlaying: true }));
       } else if (action === 'pause') {
-        audioEl.current?.pause();
+        if (isNativePlatform()) nativePause();
+        else audioEl.current?.pause();
         setPlayback((snapshot) => ({ ...snapshot, isPlaying: false }));
       } else if (action === 'next') {
         nextRef.current?.();
