@@ -23,7 +23,7 @@ import type {
   TranscriptLine,
   PersistedState,
 } from '../types';
-import { loadPersistedState, savePersistedState } from '../lib/storage';
+import { loadPersistedState, savePersistedState, savePositions } from '../lib/storage';
 import { exportBackupFile, mergeBackup, parseBackup, type ImportMode } from '../lib/backup';
 import {
   audioSource,
@@ -293,11 +293,19 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     setToasts((list) => list.filter((toast) => toast.id !== id));
   }, []);
 
-  // Persist library and preferences without hammering localStorage during playback.
+  // Library writes stay rare: the dependency list only contains slices that a
+  // progress update does not touch.
   useEffect(() => {
-    const timer = window.setTimeout(() => savePersistedState(data), 320);
+    const timer = window.setTimeout(() => savePersistedState(dataRef.current), 400);
     return () => window.clearTimeout(timer);
-  }, [data]);
+  }, [data.shows, data.stations, data.queue, data.current, data.favorites, data.preferences]);
+
+  // Progress is small and separate; flush it slowly while playing and right away
+  // when the app is hidden.
+  useEffect(() => {
+    const timer = window.setTimeout(() => savePositions(dataRef.current.positions), 4000);
+    return () => window.clearTimeout(timer);
+  }, [data.positions]);
 
   const episodeExtrasRef = useRef(episodeExtras);
   episodeExtrasRef.current = episodeExtras;
@@ -1291,10 +1299,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       const audio = audioEl.current;
       if (!target || target.kind !== 'episode' || !audio || !Number.isFinite(audio.currentTime)) return;
       const state = dataRef.current;
-      savePersistedState({
-        ...state,
-        positions: { ...state.positions, [target.key]: audio.currentTime },
-      });
+      const positions = { ...state.positions, [target.key]: audio.currentTime };
+      savePositions(positions);
+      savePersistedState({ ...state, positions });
     };
     window.addEventListener('pagehide', flush);
     document.addEventListener('visibilitychange', flush);
@@ -1547,7 +1554,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
               );
             }
           }
-          if (Math.abs(time - lastSavedPositionRef.current) > 7) {
+          if (Math.abs(time - lastSavedPositionRef.current) > 30) {
             lastSavedPositionRef.current = time;
             setData((state) => ({
               ...state,

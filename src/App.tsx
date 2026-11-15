@@ -52,6 +52,16 @@ function AppShell() {
     if (prefs.mode !== 'skeuo') setReceiver3DOpen(false);
   }, [prefs.mode]);
 
+  // Nothing on screen needs to animate while the app is in the background.
+  useEffect(() => {
+    const apply = () => {
+      document.documentElement.dataset.background = document.hidden ? 'true' : 'false';
+    };
+    apply();
+    document.addEventListener('visibilitychange', apply);
+    return () => document.removeEventListener('visibilitychange', apply);
+  }, []);
+
   useEffect(() => {
     document.documentElement.dataset.theme = prefs.theme;
     document.documentElement.dataset.mode = prefs.mode;

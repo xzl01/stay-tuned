@@ -5,6 +5,7 @@ import { createSeedState } from '../data/seed';
 import { migrateLegacyStationPlaylists } from './stations';
 
 const STORAGE_KEY = 'stay-tuned:v1';
+const POSITIONS_KEY = 'stay-tuned:positions';
 const DEFAULT_PREFERENCES: Preferences = {
   theme: 'light',
   mode: 'skeuo',
@@ -100,18 +101,45 @@ export function loadPersistedState(): PersistedState {
     if (!raw) return createSeedState();
     const parsed = sanitize(JSON.parse(raw));
     if (!parsed) return createSeedState();
-    // If a previous session cleared all content there is still a valid empty library.
+    // Playback progress lives in its own key so writing it never rewrites the
+    // whole library; older builds stored it inline, which stays the fallback.
+    const savedPositions = window.localStorage.getItem(POSITIONS_KEY);
+    if (savedPositions) {
+      try {
+        const parsedPositions = JSON.parse(savedPositions);
+        if (parsedPositions && typeof parsedPositions === 'object') {
+          parsed.positions = Object.fromEntries(
+            Object.entries(parsedPositions).filter(
+              ([key, value]) => typeof key === 'string' && typeof value === 'number',
+            ),
+          ) as Record<string, number>;
+        }
+      } catch {
+        // Keep the positions embedded in the library file.
+      }
+    }
     return parsed;
   } catch {
     return createSeedState();
   }
 }
 
+/** Library, queue and preferences. Never includes playback positions. */
 export function savePersistedState(state: PersistedState): void {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const { positions: _positions, ...library } = state;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(library));
   } catch {
     // A full storage quota should never break playback.
+  }
+}
+
+/** Small, frequently updated map kept separate from the library. */
+export function savePositions(positions: PersistedState['positions']): void {
+  try {
+    window.localStorage.setItem(POSITIONS_KEY, JSON.stringify(positions));
+  } catch {
+    // Ignore quota errors; progress is best effort.
   }
 }
 

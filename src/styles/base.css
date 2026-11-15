@@ -812,3 +812,10 @@ html[data-theme='dark'] .cover-art::after {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Background playback: decorative motion is wasted work behind a locked screen. */
+html[data-background='true'] *,
+html[data-background='true'] *::before,
+html[data-background='true'] *::after {
+  animation-play-state: paused !important;
+}
