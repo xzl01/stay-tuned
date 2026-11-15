@@ -55,6 +55,8 @@ public class PlaybackService extends Service {
     private String artworkUrl = "";
     private String loadingArtworkUrl = "";
     private Bitmap artwork;
+    private String lastMetaKey = "";
+    private String lastNotifyKey = "";
 
     @Override
     public void onCreate() {
@@ -155,9 +157,39 @@ public class PlaybackService extends Service {
         startActivity(launch);
     }
 
+    private String metaKey() {
+        return title + '\u0001' + subtitle + '\u0001' + artworkUrl + '\u0001' + (live ? '1' : '0');
+    }
+
     private void publish() {
         if (session == null) return;
 
+        // Rebuilding metadata and re-posting the notification wakes SystemUI, so
+        // both are skipped unless the visible content actually changed. Playback
+        // progress keeps advancing because the state carries the speed.
+        String key = metaKey();
+        if (!key.equals(lastMetaKey)) {
+            lastMetaKey = key;
+            session.setMetadata(buildMetadata());
+        }
+
+        PlaybackState.Builder state = new PlaybackState.Builder()
+                .setActions(PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE
+                        | PlaybackState.ACTION_PLAY_PAUSE
+                        | PlaybackState.ACTION_SKIP_TO_NEXT | PlaybackState.ACTION_SKIP_TO_PREVIOUS
+                        | (live ? 0 : PlaybackState.ACTION_SEEK_TO))
+                .setState(playing ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
+                        live ? PlaybackState.PLAYBACK_POSITION_UNKNOWN : positionMs,
+                        playing ? 1f : 0f);
+        session.setPlaybackState(state.build());
+
+        String notifyKey = key + '\u0001' + playing;
+        if (foreground && notifyKey.equals(lastNotifyKey)) return;
+        lastNotifyKey = notifyKey;
+        showNotification();
+    }
+
+    private MediaMetadata buildMetadata() {
         MediaMetadata.Builder meta = new MediaMetadata.Builder()
                 .putString(MediaMetadata.METADATA_KEY_TITLE, title)
                 .putString(MediaMetadata.METADATA_KEY_ARTIST, subtitle)
@@ -174,18 +206,10 @@ public class PlaybackService extends Service {
         meta.putBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON,
                 BitmapFactory.decodeResource(getResources(), R.drawable.ic_stat_tuned));
         if (!live && durationMs > 0) meta.putLong(MediaMetadata.METADATA_KEY_DURATION, durationMs);
-        session.setMetadata(meta.build());
+        return meta.build();
+    }
 
-        PlaybackState.Builder state = new PlaybackState.Builder()
-                .setActions(PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE
-                        | PlaybackState.ACTION_PLAY_PAUSE
-                        | PlaybackState.ACTION_SKIP_TO_NEXT | PlaybackState.ACTION_SKIP_TO_PREVIOUS
-                        | (live ? 0 : PlaybackState.ACTION_SEEK_TO))
-                .setState(playing ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
-                        live ? PlaybackState.PLAYBACK_POSITION_UNKNOWN : positionMs,
-                        playing ? 1f : 0f);
-        session.setPlaybackState(state.build());
-
+    private void showNotification() {
         Notification notification = buildNotification();
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

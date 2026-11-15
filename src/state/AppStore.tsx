@@ -187,6 +187,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const spectrumInitRef = useRef(false);
   const corsFallbackRef = useRef<string | null>(null);
+  const lastTickAtRef = useRef(0);
   const nextRef = useRef<() => void>(() => undefined);
   const previousRef = useRef<() => void>(() => undefined);
   const seekRef = useRef<(seconds: number) => void>(() => undefined);
@@ -611,6 +612,28 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     requestPlay();
   }, [playback.isPlaying, currentKey, requestPlay]);
 
+  /** Push title/artwork/position to Android once; the system interpolates the
+   *  progress bar itself, so no periodic updates are needed. */
+  const publishMediaState = useCallback(() => {
+    const target = currentRef.current;
+    if (!target) {
+      clearMediaState();
+      return;
+    }
+    const isEpisode = target.kind === 'episode';
+    pushMediaState({
+      title: isEpisode ? target.episode.title : target.station.name,
+      subtitle: isEpisode ? showDisplayTitle(target.show) : target.station.group || '留频电台',
+      isPlaying: playbackRef.current.isPlaying,
+      position: playbackRef.current.currentTime,
+      duration: isEpisode ? target.episode.duration || playbackRef.current.duration : 0,
+      isLive: !isEpisode,
+      artwork: isEpisode
+        ? target.episode.image || target.show.image || ''
+        : stationImage(target.station) || '',
+    });
+  }, []);
+
   const seek = useCallback(
     (seconds: number) => {
       const audio = audioEl.current;
@@ -633,8 +656,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         ...state,
         positions: { ...state.positions, [target.key]: position },
       }));
+      publishMediaState();
     },
-    [notify],
+    [notify, publishMediaState],
   );
 
   const skip = useCallback(
@@ -1245,48 +1269,33 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   // Mirror the current item into Android's media session (system panel,
   // HyperOS focus/island) and the home screen widget.
+  // The system extrapolates progress from PlaybackState, but the notification
+  // card only redraws on an update. A slow re-sync keeps it honest without the
+  // per-5s wakeups the old build did (the service skips rebuilding the
+  // notification when nothing visible changed).
+  useEffect(() => {
+    if (!isNativePlatform() || !current || !playback.isPlaying) return;
+    let timer = 0;
+    const schedule = () => {
+      const delay = document.hidden ? 60_000 : 15_000;
+      timer = window.setTimeout(() => {
+        publishMediaState();
+        schedule();
+      }, delay);
+    };
+    schedule();
+    return () => window.clearTimeout(timer);
+  }, [current, playback.isPlaying, publishMediaState]);
+
   useEffect(() => {
     if (!isNativePlatform()) return;
     if (!current) {
       clearMediaState();
       return;
     }
-    const isEpisode = current.kind === 'episode';
-    const payload = {
-      title: isEpisode ? current.episode.title : current.station.name,
-      subtitle: isEpisode ? showDisplayTitle(current.show) : current.station.group || '留频电台',
-      isPlaying: playback.isPlaying,
-      position: playback.currentTime,
-      duration: isEpisode ? current.episode.duration || playback.duration : 0,
-      isLive: !isEpisode,
-      artwork: isEpisode
-        ? current.episode.image || current.show.image || ''
-        : stationImage(current.station) || '',
-    };
-    pushMediaState(payload);
+    publishMediaState();
     return undefined;
-  }, [current, playback.isPlaying]);
-
-  useEffect(() => {
-    if (!isNativePlatform() || !current || !playback.isPlaying) return;
-    const timer = window.setInterval(() => {
-      const target = currentRef.current;
-      if (!target) return;
-      const isEpisode = target.kind === 'episode';
-      pushMediaState({
-        title: isEpisode ? target.episode.title : target.station.name,
-        subtitle: isEpisode ? showDisplayTitle(target.show) : target.station.group || '留频电台',
-        isPlaying: true,
-        position: playbackRef.current.currentTime,
-        duration: isEpisode ? target.episode.duration || playbackRef.current.duration : 0,
-        isLive: !isEpisode,
-        artwork: isEpisode
-          ? target.episode.image || target.show.image || ''
-          : stationImage(target.station) || '',
-      });
-    }, 5000);
-    return () => window.clearInterval(timer);
-  }, [current, playback.isPlaying]);
+  }, [current, playback.isPlaying, publishMediaState]);
 
   useEffect(() => {
     if (!isNativePlatform()) return undefined;
@@ -1485,9 +1494,20 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
           if (!audio || !target) return;
           if (target.kind === 'radio') return;
           const time = audio.currentTime;
-          setPlayback((snapshot) =>
-            Math.abs(snapshot.currentTime - time) < 0.05 ? snapshot : { ...snapshot, currentTime: time },
-          );
+
+          // Browsers fire timeupdate ~4x/second. Re-rendering the whole tree that
+          // often keeps the CPU busy during background playback, so the visible
+          // clock updates once a second and only while the UI is on screen.
+          const now = performance.now();
+          const interval = document.hidden ? 2000 : 900;
+          if (now - lastTickAtRef.current >= interval) {
+            lastTickAtRef.current = now;
+            if (!document.hidden) {
+              setPlayback((snapshot) =>
+                Math.abs(snapshot.currentTime - time) < 0.05 ? snapshot : { ...snapshot, currentTime: time },
+              );
+            }
+          }
           if (Math.abs(time - lastSavedPositionRef.current) > 7) {
             lastSavedPositionRef.current = time;
             setData((state) => ({
