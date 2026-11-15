@@ -2,6 +2,7 @@
 
 import type { Chapter, FeedResponse, PodcastSearchResult, Station, TranscriptLine } from '../types';
 import { STATIC_DEMO } from './env';
+import { apiUrl, absolutize, getServerBase, isNativePlatform } from './serverConfig';
 
 export class ApiError extends Error {
   status: number;
@@ -15,16 +16,23 @@ async function request<T>(path: string, params?: Record<string, string>, signal?
   if (STATIC_DEMO) {
     throw new ApiError('GitHub Pages 是静态演示版；RSS、搜索和 M3U 导入请在本机运行完整版。');
   }
-  const url = new URL(path, window.location.origin);
+  if (isNativePlatform() && !getServerBase()) {
+    throw new ApiError('还没有连接服务端。请在「我的订阅」底部打开「连接」，填入运行 Node 服务的地址。');
+  }
+  const url = apiUrl(path);
   for (const [key, value] of Object.entries(params ?? {})) {
     if (value != null) url.searchParams.set(key, value);
   }
   let response: Response;
   try {
-    response = await fetch(url, { signal, headers: { accept: 'application/json' } });
+    response = await fetch(url.toString(), { signal, headers: { accept: 'application/json' } });
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err;
-    throw new ApiError('无法连接本地服务，请确认 API 服务已启动。');
+    throw new ApiError(
+      getServerBase()
+        ? `无法连接 ${getServerBase()}，请确认服务已启动并且手机能访问该地址。`
+        : '无法连接本地服务，请确认 API 服务已启动。',
+    );
   }
   let body: unknown = null;
   try {
@@ -70,7 +78,7 @@ export async function parsePlaylistText(text: string): Promise<Station[]> {
   if (STATIC_DEMO) {
     throw new ApiError('GitHub Pages 是静态演示版；本地 M3U 导入请在本机运行完整版。');
   }
-  const response = await fetch('/api/playlist/parse', {
+  const response = await fetch(apiUrl('/api/playlist/parse').toString(), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ text }),
@@ -119,17 +127,17 @@ export function proxiedImage(url?: string): string | undefined {
   if (STATIC_DEMO) return url;
   if (url.startsWith('/') || url.startsWith('data:') || url.startsWith('blob:')) return url;
   if (!/^https?:/i.test(url)) return undefined;
-  return `/api/image?url=${encodeURIComponent(url)}`;
+  return absolutize(`/api/image?url=${encodeURIComponent(url)}`);
 }
 
 export function audioSource(url: string): string {
   if (!url) return '';
   if (STATIC_DEMO) return url;
   if (url.startsWith('/') || url.startsWith('data:') || url.startsWith('blob:')) return url;
-  return `/api/audio?url=${encodeURIComponent(url)}`;
+  return absolutize(`/api/audio?url=${encodeURIComponent(url)}`);
 }
 
 export function hlsSource(url: string): string {
   if (STATIC_DEMO) return url;
-  return `/api/hls?url=${encodeURIComponent(url)}`;
+  return absolutize(`/api/hls?url=${encodeURIComponent(url)}`);
 }

@@ -33,7 +33,8 @@ required attribution to [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 - New images/audio must be original, generated for the project, or explicitly
   licensed for GPL-3.0-compatible redistribution.
 - Do not commit API keys, tokens, cookies, private feeds or personal data.
-- If you add a dependency, run `npm run license:check` and update the notices.
+- If you add a dependency, run `npm run license:check`, then `npm run notices` to
+  regenerate the dependency tables in `THIRD_PARTY_NOTICES.md`.
 
 ## Reporting bugs
 

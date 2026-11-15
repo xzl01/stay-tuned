@@ -14,6 +14,8 @@ import { findPlayableByKey } from '../lib/refs';
 import { showDisplayTitle } from '../lib/shows';
 import { stationImage } from '../lib/stations';
 import { imageFileToDataUrl } from '../lib/images';
+import { ServerSheet } from './ServerSheet';
+import { getServerBase, isNativePlatform } from '../lib/serverConfig';
 
 interface LibrarySheetProps {
   open: boolean;
@@ -860,6 +862,7 @@ export function LibrarySheet({ open, onClose }: LibrarySheetProps) {
   const searchTimer = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const [refreshingShow, setRefreshingShow] = useState<string | null>(null);
+  const [serverOpen, setServerOpen] = useState(false);
   const lastAutoRefreshAt = useRef(0);
 
   const refreshShow = async (show: Show) => {
@@ -1078,7 +1081,10 @@ export function LibrarySheet({ open, onClose }: LibrarySheetProps) {
       className="library-sheet"
       footer={
         <div className="library-footer">
-          <span>订阅与收听进度保存在本机</span>
+          <button type="button" className="library-server-button" onClick={() => setServerOpen(true)}>
+            <Icon name="signal" size={13} />
+            {getServerBase() ? getServerBase().replace(/^https?:\/\//, '') : isNativePlatform() ? '连接服务端' : '同源服务'}
+          </button>
           <span className="mono">RSS 2.0 · ATOM · M3U · HLS</span>
         </div>
       }
@@ -1349,6 +1355,7 @@ export function LibrarySheet({ open, onClose }: LibrarySheetProps) {
         )}
 
       </div>
+      <ServerSheet open={serverOpen} onClose={() => setServerOpen(false)} />
     </Sheet>
   );
 }

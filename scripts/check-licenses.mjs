@@ -13,6 +13,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 // MPL-2.0 where applicable and are not relicensed.
 const ALLOWED = new Set([
   '0BSD',
+  'BlueOak-1.0.0',
   'Apache-2.0',
   'BSD-2-Clause',
   'BSD-3-Clause',

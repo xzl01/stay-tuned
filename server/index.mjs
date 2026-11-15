@@ -17,6 +17,35 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 const app = express();
 app.disable('x-powered-by');
+
+// The packaged Android app runs from the WebView origin https://localhost, so
+// every API call is cross-origin. CORS defaults to open for this local-first
+// proxy; set CORS_ORIGINS="https://a.example,https://b.example" to restrict it.
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (CORS_ORIGINS.length) {
+    if (origin && CORS_ORIGINS.includes(origin)) {
+      res.setHeader('access-control-allow-origin', origin);
+      res.setHeader('vary', 'origin');
+    }
+  } else {
+    res.setHeader('access-control-allow-origin', '*');
+  }
+  res.setHeader('access-control-allow-methods', 'GET,POST,HEAD,OPTIONS');
+  res.setHeader('access-control-allow-headers', 'content-type,accept,range,if-none-match');
+  res.setHeader('access-control-expose-headers', 'content-length,content-range,accept-ranges,etag');
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
+  next();
+});
+
 app.use(express.json({ limit: '2mb' }));
 
 // ---------------------------------------------------------------------------

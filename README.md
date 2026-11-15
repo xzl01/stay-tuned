@@ -95,6 +95,39 @@ npm start
 | --- | --- | --- |
 | `PORT` | `8787` | Node 服务端口 |
 | `HOST` | `0.0.0.0` | 监听地址；只想本机访问可设为 `127.0.0.1` |
+| `CORS_ORIGINS` | 空（允许任意来源） | 逗号分隔的允许来源，例如 `https://app.example.com`；留空时返回 `*` |
+
+### Android 应用
+
+仓库内置 [Capacitor](https://capacitorjs.com/) 工程（`android/`），可以直接构建 APK：
+
+```bash
+npm ci
+npm run android:sync   # 构建前端并同步到 android 工程
+npm run android:apk    # 产出 android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+本地构建需要 **Node.js 22**、**JDK 21**、**Android SDK（compileSdk 36 / build-tools 36）**。如果不希望配置本地环境，可以走 GitHub Actions：
+
+| 方式 | 结果 |
+| --- | --- |
+| Actions → **Build Android APK** → Run workflow | 下载 `stay-tuned-apk` artifact（debug + release） |
+| 推送 `v*` 标签（如 `git tag v1.0.0 && git push origin v1.0.0`） | 自动构建并附到 GitHub Release |
+
+**签名**：`release` 构建默认产出未签名的 `app-release-unsigned.apk`。要生成可安装的正式包，在仓库 Secrets 中配置：
+
+| Secret | 说明 |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | keystore 文件的 base64（`base64 -w0 release.keystore`） |
+| `ANDROID_KEYSTORE_PASSWORD` | keystore 密码 |
+| `ANDROID_KEY_ALIAS` | 密钥别名 |
+| `ANDROID_KEY_PASSWORD` | 密钥密码 |
+
+配置后 workflow 会自动签名 `app-release.apk`；缺少这些 Secrets 时仍会构建未签名包，不会失败。
+
+**连接服务端**：Android 应用打包的是纯前端，RSS 解析、M3U/HLS 处理、跨域代理都在 Node 服务里。首次打开后点「我的订阅」底部的「连接服务端」，填入运行 `npm start` 的机器地址（例如 `http://192.168.1.10:8787`）。地址只保存在本机；内置示例节目与本地音频无需服务端即可播放。
+
+服务端已内置 CORS 支持以适配 WebView 的 `https://localhost` 源。如果部署在公网，建议用 `CORS_ORIGINS` 收窄允许来源，并自行增加鉴权与限流。
 
 ### GitHub Pages 静态演示
 
@@ -182,6 +215,7 @@ npm run build     # TypeScript 类型检查 + 生产构建
 │   ├── data/seed.ts       示例订阅、示例节目与章节/逐字稿
 │   ├── lib/               API、格式化、持久化、封面
 │   └── styles/            设计令牌与分模块样式
+├── android/               Capacitor Android 工程（WebView 外壳 + 启动图标）
 ├── public/
 │   ├── audio/             本地生成的示例环境声（可自由替换）
 │   ├── fonts/             自托管 Maple Mono
@@ -228,6 +262,8 @@ npm run build     # TypeScript 类型检查 + 生产构建
 ## 已知边界
 
 - 这是一个**本地优先的单用户应用**：没有账号、云同步或跨设备进度合并。
+- Android 应用是 WebView 外壳，本身不含解析服务；需要连接自建的 Node 服务端，或在浏览器里使用完整版。
+- APK 面向 Android 7.0+（minSdk 24）；未签名的 release 包不能直接安装，需要按上文配置签名。
 - 音频直链、封面和 RSS 都由本机 Node 代理转发；如果把服务暴露到公网，请自行增加鉴权、限流和 SSRF 防护。
 - HLS 依赖 `hls.js`；Safari 原生 HLS 也会被代理转发。
 - 某些播客源会拒绝非浏览器 UA 或要求地区访问，这是源站策略。
