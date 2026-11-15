@@ -24,6 +24,7 @@ import type {
   PersistedState,
 } from '../types';
 import { loadPersistedState, savePersistedState } from '../lib/storage';
+import { exportBackupFile, mergeBackup, parseBackup, type ImportMode } from '../lib/backup';
 import {
   audioSource,
   fetchChapters,
@@ -40,6 +41,7 @@ import { feedUrlKey } from '../lib/urls';
 import { showDisplayTitle } from '../lib/shows';
 import { assetUrl, STATIC_DEMO } from '../lib/env';
 import { isNativePlatform } from '../lib/serverConfig';
+import { clearMediaState, onMediaAction, pushMediaState, takePendingMediaAction } from '../lib/nativeMedia';
 
 export interface ToastMessage {
   id: number;
@@ -117,6 +119,8 @@ interface AppStoreValue {
   setSleepMinutes: (minutes: number | null) => void;
   setSleepAtEpisodeEnd: () => void;
   retryCurrentExtras: () => void;
+  exportBackup: () => Promise<string>;
+  importBackup: (file: File, mode: ImportMode) => Promise<{ shows: number; stations: number }>;
 
   addShow: (show: Show, options?: { silent?: boolean }) => void;
   renameShow: (showId: string, title: string) => void;
@@ -182,6 +186,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const spectrumInitRef = useRef(false);
   const corsFallbackRef = useRef<string | null>(null);
+  const nextRef = useRef<() => void>(() => undefined);
+  const previousRef = useRef<() => void>(() => undefined);
+  const seekRef = useRef<(seconds: number) => void>(() => undefined);
   const hlsRef = useRef<Hls | null>(null);
   const hlsPendingRef = useRef(false);
   const pendingSeekRef = useRef<number | null>(null);
@@ -884,6 +891,34 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   // Sleep timer is also cleared when the user manually pauses? Keep it armed;
   // a timer that fires while paused is harmless.
 
+  const exportBackup = useCallback(async () => {
+    const path = await exportBackupFile(dataRef.current);
+    notify('已导出订阅配置。', 'success');
+    return path;
+  }, [notify]);
+
+  const importBackup = useCallback(
+    async (file: File, mode: ImportMode) => {
+      const text = await file.text();
+      const incoming = parseBackup(text);
+      const next = mode === 'merge' ? mergeBackup(dataRef.current, incoming) : incoming;
+      setData((state) => ({
+        ...next,
+        // Playback preferences and current item stay local.
+        preferences: mode === 'merge' ? state.preferences : { ...next.preferences, theme: state.preferences.theme, mode: state.preferences.mode },
+        current: mode === 'merge' ? state.current : null,
+      }));
+      notify(
+        mode === 'merge'
+          ? `已合并 ${incoming.shows.length} 档播客、${incoming.stations.length} 个电台。`
+          : `已替换为 ${incoming.shows.length} 档播客、${incoming.stations.length} 个电台。`,
+        'success',
+      );
+      return { shows: incoming.shows.length, stations: incoming.stations.length };
+    },
+    [notify],
+  );
+
   const addShow = useCallback(
     (show: Show, options?: { silent?: boolean }) => {
       const existing = dataRef.current.shows.findIndex(
@@ -1207,6 +1242,73 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Mirror the current item into Android's media session (system panel,
+  // HyperOS focus/island) and the home screen widget.
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+    if (!current) {
+      clearMediaState();
+      return;
+    }
+    const isEpisode = current.kind === 'episode';
+    const payload = {
+      title: isEpisode ? current.episode.title : current.station.name,
+      subtitle: isEpisode ? showDisplayTitle(current.show) : current.station.group || '留频电台',
+      isPlaying: playback.isPlaying,
+      position: playback.currentTime,
+      duration: isEpisode ? current.episode.duration || playback.duration : 0,
+      isLive: !isEpisode,
+    };
+    pushMediaState(payload);
+    return undefined;
+  }, [current, playback.isPlaying]);
+
+  useEffect(() => {
+    if (!isNativePlatform() || !current || !playback.isPlaying) return;
+    const timer = window.setInterval(() => {
+      const target = currentRef.current;
+      if (!target) return;
+      const isEpisode = target.kind === 'episode';
+      pushMediaState({
+        title: isEpisode ? target.episode.title : target.station.name,
+        subtitle: isEpisode ? showDisplayTitle(target.show) : target.station.group || '留频电台',
+        isPlaying: true,
+        position: playbackRef.current.currentTime,
+        duration: isEpisode ? target.episode.duration || playbackRef.current.duration : 0,
+        isLive: !isEpisode,
+      });
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [current, playback.isPlaying]);
+
+  useEffect(() => {
+    if (!isNativePlatform()) return undefined;
+    const run = (action: string) => {
+      if (action === 'play') {
+        setPlayback((snapshot) => (snapshot.isPlaying ? snapshot : { ...snapshot, isPlaying: true }));
+      } else if (action === 'pause') {
+        audioEl.current?.pause();
+        setPlayback((snapshot) => ({ ...snapshot, isPlaying: false }));
+      } else if (action === 'next') {
+        nextRef.current?.();
+      } else if (action === 'prev') {
+        previousRef.current?.();
+      } else if (action.startsWith('seek:')) {
+        const seconds = Number(action.slice(5));
+        if (Number.isFinite(seconds)) seekRef.current?.(seconds);
+      }
+    };
+    const off = onMediaAction(run);
+    void takePendingMediaAction().then((action) => {
+      if (action) run(action);
+    });
+    return off;
+  }, []);
+
+  nextRef.current = next;
+  previousRef.current = previous;
+  seekRef.current = seek;
+
   const value = useMemo<AppStoreValue>(
     () => ({
       shows: data.shows,
@@ -1248,6 +1350,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       setSleepMinutes,
       setSleepAtEpisodeEnd,
       retryCurrentExtras,
+      exportBackup,
+      importBackup,
       addShow,
       renameShow,
       removeShow,
@@ -1303,6 +1407,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       setSleepMinutes,
       setSleepAtEpisodeEnd,
       retryCurrentExtras,
+      exportBackup,
+      importBackup,
       addShow,
       renameShow,
       removeShow,

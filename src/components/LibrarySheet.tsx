@@ -21,6 +21,7 @@ interface LibrarySheetProps {
   open: boolean;
   onClose: () => void;
   onOpenServer: () => void;
+  onOpenData: () => void;
 }
 
 type Tab = 'podcast' | 'radio' | 'favorites';
@@ -845,7 +846,7 @@ function StationPlaylistGroup({
   );
 }
 
-export function LibrarySheet({ open, onClose, onOpenServer }: LibrarySheetProps) {
+export function LibrarySheet({ open, onClose, onOpenServer, onOpenData }: LibrarySheetProps) {
   const { shows, stations, addStations, addShow, removeShow, removeStation, playStation, playStationAndAdd, notify, current, favorites } = useAppStore();
   const [tab, setTab] = useState<Tab>('podcast');
   const [addOpen, setAddOpen] = useState(false);
@@ -1089,7 +1090,10 @@ export function LibrarySheet({ open, onClose, onOpenServer }: LibrarySheetProps)
                 ? '本地解析引擎'
                 : '同源服务'}
           </button>
-          <span className="mono">RSS 2.0 · ATOM · M3U · HLS</span>
+          <button type="button" className="library-server-button library-data-button" onClick={onOpenData}>
+            <Icon name="external" size={12} />
+            备份 / 同步
+          </button>
         </div>
       }
     >

@@ -8,19 +8,22 @@ This project is licensed under **GPL-3.0-only**. Third-party components remain u
 | --- | --- | --- | --- |
 | `@capacitor/android` | 8.6.2 | MIT | 见 npm 包内 LICENSE |
 | `@capacitor/core` | 8.6.2 | MIT | 见 npm 包内 LICENSE |
+| `@capacitor/filesystem` | 8.1.5 | MIT | 见 npm 包内 LICENSE |
+| `@capacitor/share` | 8.0.3 | MIT | 见 npm 包内 LICENSE |
 | `express` | 5.3.0 | MIT | [`express-MIT.txt`](third-party-licenses/express-MIT.txt) |
 | `fast-xml-parser` | 5.12.1 | MIT | [`fast-xml-parser-MIT.txt`](third-party-licenses/fast-xml-parser-MIT.txt) |
 | `hls.js` | 1.7.4 | Apache-2.0 | [`hls.js-Apache-2.0.txt`](third-party-licenses/hls.js-Apache-2.0.txt) |
 | `react` | 19.3.1 | MIT | [`react-MIT.txt`](third-party-licenses/react-MIT.txt) |
 | `react-dom` | 19.3.1 | MIT | [`react-dom-MIT.txt`](third-party-licenses/react-dom-MIT.txt) |
 
-These packages are installed from npm; their complete license texts are distributed with the packages and copied here for the direct dependencies. The production dependency tree in [`package-lock.json`](package-lock.json) has 80 packages: 73 × MIT, 1 × Apache-2.0, 4 × ISC, 1 × BSD-3-Clause, 1 × 0BSD.0, 4 × ISC, 1 × BSD-3-Clause, 1 × 0BSD.
+These packages are installed from npm; their complete license texts are distributed with the packages and copied here for the direct dependencies. The production dependency tree in [`package-lock.json`](package-lock.json) has 83 packages: 75 × MIT, 5 × ISC, 1 × Apache-2.0, 1 × BSD-3-Clause, 1 × 0BSD.0, 4 × ISC, 1 × BSD-3-Clause, 1 × 0BSD.0, 4 × ISC, 1 × BSD-3-Clause, 1 × 0BSD.
 
 <details>
-<summary>Transitive production dependencies (73)</summary>
+<summary>Transitive production dependencies (74)</summary>
 
 | Package | Version | License |
 | --- | --- | --- |
+| `@capacitor/synapse` | 1.0.4 | ISC |
 | `@nodable/entities` | 3.1.0 | MIT |
 | `accepts` | 2.0.0 | MIT |
 | `anynum` | 1.0.1 | MIT |

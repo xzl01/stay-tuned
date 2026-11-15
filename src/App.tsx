@@ -8,6 +8,7 @@ import { MobilePlayer } from './components/MobilePlayer';
 import { LibrarySheet } from './components/LibrarySheet';
 import { QueueSheet } from './components/QueueSheet';
 import { ServerSheet } from './components/ServerSheet';
+import { DataSheet } from './components/DataSheet';
 import { ToastStack } from './components/ui/Primitives';
 import { Receiver3DEggContext } from './hooks/usePlayEasterEgg';
 import { STATIC_DEMO } from './lib/env';
@@ -38,6 +39,7 @@ function AppShell() {
   const [queueOpen, setQueueOpen] = useState(false);
   const [receiver3DOpen, setReceiver3DOpen] = useState(false);
   const [serverOpen, setServerOpen] = useState(false);
+  const [dataOpen, setDataOpen] = useState(false);
   const closeReceiver3D = useCallback(() => {
     setReceiver3DOpen(false);
     requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-testid="receiver-play"]')?.focus({ preventScroll: true }));
@@ -138,9 +140,14 @@ function AppShell() {
           setLibraryOpen(false);
           setServerOpen(true);
         }}
+        onOpenData={() => {
+          setLibraryOpen(false);
+          setDataOpen(true);
+        }}
       />
       <QueueSheet open={queueOpen} onClose={() => setQueueOpen(false)} onBrowse={openLibrary} />
       <ServerSheet open={serverOpen} onClose={() => setServerOpen(false)} />
+      <DataSheet open={dataOpen} onClose={() => setDataOpen(false)} />
       <ToastStack />
 
     </div>

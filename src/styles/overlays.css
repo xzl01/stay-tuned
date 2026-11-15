@@ -2199,3 +2199,73 @@ html[data-mode='skeuo'] :is([data-testid='receiver-play'],[data-testid='desktop-
   font-size: 10.5px;
   line-height: 1.65;
 }
+
+/* Subscription backup ------------------------------------------------------ */
+
+.backup-block {
+  margin-bottom: 18px;
+  padding: 14px 14px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.backup-block h3 {
+  margin-bottom: 6px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.backup-hint {
+  margin-bottom: 10px;
+  color: var(--ink-3);
+  font-size: 10.5px;
+  line-height: 1.65;
+}
+
+.backup-action {
+  width: 100%;
+  justify-content: center;
+}
+
+.backup-note {
+  margin-top: 8px;
+  color: var(--olive);
+  font-size: 10px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.backup-modes {
+  display: inline-flex;
+  gap: 2px;
+  margin-bottom: 8px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface-raised);
+}
+
+.backup-modes button {
+  padding: 4px 12px;
+  border-radius: 3px;
+  color: var(--ink-3);
+  font-size: 10.5px;
+  line-height: 1.2;
+}
+
+.backup-modes button.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.backup-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  color: var(--accent);
+  font-size: 11px;
+}
