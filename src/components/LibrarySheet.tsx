@@ -14,12 +14,12 @@ import { findPlayableByKey } from '../lib/refs';
 import { showDisplayTitle } from '../lib/shows';
 import { stationImage } from '../lib/stations';
 import { imageFileToDataUrl } from '../lib/images';
-import { ServerSheet } from './ServerSheet';
 import { getServerBase, isNativePlatform } from '../lib/serverConfig';
 
 interface LibrarySheetProps {
   open: boolean;
   onClose: () => void;
+  onOpenServer: () => void;
 }
 
 type Tab = 'podcast' | 'radio' | 'favorites';
@@ -844,7 +844,7 @@ function StationPlaylistGroup({
   );
 }
 
-export function LibrarySheet({ open, onClose }: LibrarySheetProps) {
+export function LibrarySheet({ open, onClose, onOpenServer }: LibrarySheetProps) {
   const { shows, stations, addStations, addShow, removeShow, removeStation, playStation, playStationAndAdd, notify, current, favorites } = useAppStore();
   const [tab, setTab] = useState<Tab>('podcast');
   const [addOpen, setAddOpen] = useState(false);
@@ -862,7 +862,6 @@ export function LibrarySheet({ open, onClose }: LibrarySheetProps) {
   const searchTimer = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const [refreshingShow, setRefreshingShow] = useState<string | null>(null);
-  const [serverOpen, setServerOpen] = useState(false);
   const lastAutoRefreshAt = useRef(0);
 
   const refreshShow = async (show: Show) => {
@@ -1081,7 +1080,7 @@ export function LibrarySheet({ open, onClose }: LibrarySheetProps) {
       className="library-sheet"
       footer={
         <div className="library-footer">
-          <button type="button" className="library-server-button" onClick={() => setServerOpen(true)}>
+          <button type="button" className="library-server-button" onClick={onOpenServer}>
             <Icon name="signal" size={13} />
             {getServerBase() ? getServerBase().replace(/^https?:\/\//, '') : isNativePlatform() ? '连接服务端' : '同源服务'}
           </button>
@@ -1355,7 +1354,6 @@ export function LibrarySheet({ open, onClose }: LibrarySheetProps) {
         )}
 
       </div>
-      <ServerSheet open={serverOpen} onClose={() => setServerOpen(false)} />
     </Sheet>
   );
 }

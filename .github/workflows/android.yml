@@ -86,9 +86,14 @@ jobs:
         run: |
           mkdir -p artifacts
           cp android/app/build/outputs/apk/debug/app-debug.apk "artifacts/stay-tuned-${{ github.ref_name }}-debug.apk"
-          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
-            cp android/app/build/outputs/apk/release/app-release.apk "artifacts/stay-tuned-${{ github.ref_name }}-release.apk"
-          fi
+          for candidate in app-release.apk app-release-unsigned.apk; do
+            source="android/app/build/outputs/apk/release/$candidate"
+            if [ -f "$source" ]; then
+              suffix=release
+              case "$candidate" in *unsigned*) suffix=release-unsigned ;; esac
+              cp "$source" "artifacts/stay-tuned-${{ github.ref_name }}-$suffix.apk"
+            fi
+          done
           ls -lh artifacts
 
       - name: Upload APK artifacts
