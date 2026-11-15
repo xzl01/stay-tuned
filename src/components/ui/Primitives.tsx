@@ -44,6 +44,8 @@ export function Sheet({
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const closeHandlerRef = useRef(onClose);
+  closeHandlerRef.current = onClose;
   const titleId = useId();
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export function Sheet({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        onClose();
+        closeHandlerRef.current();
         return;
       }
       if (event.key !== 'Tab' || !panelRef.current) return;
@@ -93,7 +95,7 @@ export function Sheet({
       document.removeEventListener('keydown', onKeyDown);
       previousFocusRef.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!mounted || typeof document === 'undefined') return null;
 
