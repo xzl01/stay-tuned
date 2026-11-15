@@ -15,7 +15,7 @@ import { showDisplayTitle } from '../lib/shows';
 import { stationImage } from '../lib/stations';
 import { imageFileToDataUrl } from '../lib/images';
 import { getServerBase, isNativePlatform } from '../lib/serverConfig';
-import { LOCAL_ENGINE } from '../lib/api';
+import { useLocalEngine } from '../lib/api';
 
 interface LibrarySheetProps {
   open: boolean;
@@ -1085,7 +1085,7 @@ export function LibrarySheet({ open, onClose, onOpenServer }: LibrarySheetProps)
             <Icon name="signal" size={13} />
             {getServerBase()
               ? getServerBase().replace(/^https?:\/\//, '')
-              : LOCAL_ENGINE
+              : useLocalEngine()
                 ? '本地解析引擎'
                 : '同源服务'}
           </button>

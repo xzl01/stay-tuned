@@ -30,7 +30,7 @@ import {
   fetchTranscript,
   hlsSource,
   isHlsUrl,
-  LOCAL_ENGINE,
+  useLocalEngine,
   proxiedImage,
 } from '../lib/api';
 import { resolvePlayable } from '../lib/refs';
@@ -520,7 +520,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     }
 
     // Android's WebView plays HLS natively; hls.js would need CORS on segments.
-    if (isHlsUrl(sourceUrl) && !LOCAL_ENGINE) {
+    if (isHlsUrl(sourceUrl) && !useLocalEngine()) {
       hlsPendingRef.current = true;
       void (async () => {
         try {
