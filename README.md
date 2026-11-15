@@ -114,6 +114,8 @@ npm run android:apk    # 产出 android/app/build/outputs/apk/debug/app-debug.ap
 | Actions → **Build Android APK** → Run workflow | 下载 `stay-tuned-apk` artifact（debug + release） |
 | 推送 `v*` 标签（如 `git tag v1.0.0 && git push origin v1.0.0`） | 自动构建并附到 GitHub Release |
 
+没有配置签名时，**debug APK 可以直接安装到手机**（使用调试签名）；`release-unsigned.apk` 不能直接安装，仅用于随后用你自己的密钥签名。
+
 **签名**：`release` 构建默认产出未签名的 `app-release-unsigned.apk`。要生成可安装的正式包，在仓库 Secrets 中配置：
 
 | Secret | 说明 |
