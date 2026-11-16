@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Ubuntu 24.04+ AppArmor profile for the Electron desktop application.
+abi <abi/4.0>,
+include <tunables/global>
+
+profile stay-tuned /opt/Stay\ Tuned/stay-tuned flags=(unconfined) {
+  userns,
+  include if exists <local/stay-tuned>
+}

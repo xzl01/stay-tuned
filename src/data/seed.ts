@@ -283,6 +283,8 @@ export function createSeedState(): PersistedState {
       rate: 1,
       followTranscript: true,
       haptics: true,
+      autoCacheNewEpisodes: false,
+      autoCachePlaying: false,
       history: [],
     },
   };

@@ -33,6 +33,7 @@
 - **睡眠定时**：15 / 30 / 60 分钟，或「本集结束后暂停」。
 - **收藏**：「我的订阅」中有独立的收藏标签页，收藏的播客单集和电台可以在这里统一播放或移除。
 - **Media Session**：桌面媒体键、锁屏控制、系统播放/暂停/上一段/下一段。
+- **离线缓存**：可手动缓存单集，也可开启「发现新播客自动下载」和「在听的播客自动缓存」；缓存完成后下次播放直接从本机读取。支持逐条删除、清空全部、查看占用空间与下载进度。
 - **跟随播放**：文字稿随声音自动滚动，可关闭。
 
 ### 电台
@@ -96,6 +97,16 @@ npm start
 | `PORT` | `8787` | Node 服务端口 |
 | `HOST` | `0.0.0.0` | 监听地址；只想本机访问可设为 `127.0.0.1` |
 | `CORS_ORIGINS` | 空（允许任意来源） | 逗号分隔的允许来源，例如 `https://app.example.com`；留空时返回 `*` |
+
+### 离线缓存
+
+在「我的订阅」单集行右侧点下载图标即可手动缓存该期；再次点击删除。也可以进入「设置 → 离线缓存」统一管理：
+
+- 打开 **发现新播客自动下载**：订阅或刷新后，只缓存此后新出现的单集（每档最多最新 3 期），开启时不会回填整库；
+- 打开 **在听的播客自动缓存**：切到某期节目时自动下载；
+- 查看缓存数量、总占用与下载进度，逐条删除或清空全部。
+
+实现按平台分流：Web / Electron 把音频 Blob 存进 IndexedDB，播放时用 `blob:` URL；Android 用 Capacitor Filesystem 下载到应用私有目录，交给 ExoPlayer 读本地文件。索引只存 localStorage，不进入订阅备份。直播电台、HLS 串流和 GitHub Pages 静态演示版不缓存；下载按队列串行，缓存完成不会打断正在播放的声音，本地源在下次播放该集时生效。自动缓存失败是静默的，不弹通知。
 
 ### Android 应用
 
@@ -161,6 +172,14 @@ APK 使用 **ExoPlayer** 播放，WebView 只负责界面：
 - 息屏时暂停全部装饰动画，避免锁屏状态下继续占用 GPU/CPU。
 - Android 由 ExoPlayer 承担解码与输出，WebView 不持有音频元素，后台只剩原生播放线程。
 
+### 小米妙享背屏（兼容媒体卡片）
+
+小米 17 Pro / Pro Max 的「妙享背屏」是 HyperOS 管理的物理副屏；截至 2026-11 未找到普通第三方 APK 可直接自绘背屏 UI 的公开 SDK。官方公开的 Flip 外屏 Activity 适配（`miui.fliphome.default` / `miui.supportFlipFullScreen`）不等于 17 Pro 背屏绘权，社区自绘方案依赖 Shizuku、root 或系统模板替换，不适合作为商店版功能。
+
+因此 Android 版采用**兼容优先**方案：在检测到 `MiuiMultiDisplayTypeInfo.isRearDevice()` 的机型上，把 `MediaSession` 与媒体通知的封面替换成运行时绘制的「留频收音机」位图；小 LCD 内显示播放 / 暂停、时间或 `LIVE`、当前章节，章节与音量推杆保持设计约束中的语义，动态文字不印在机身上。拟物 / 扁平与亮色 / 深色随主应用偏好切换，刷新按 5 秒节流，普通 Android 设备仍显示真实节目 / 电台封面。
+
+限制：系统背屏音乐卡片是否把本应用纳入显示由 HyperOS 版本、用户开关和可能的音乐白名单决定；应用无法强制把卡片添加到背屏，也无法控制小米系统模板的裁切与排版。最终效果需要小米 17 Pro / Pro Max 真机验证。
+
 ### 桌面小组件与系统媒体控制
 
 APK 内置原生媒体会话与桌面小组件：
@@ -171,6 +190,47 @@ APK 内置原生媒体会话与桌面小组件：
 - **线性马达触感**：双推杆刻度、实体按键、主播放键、抽屉开合、成功 / 失败提示、5 秒长按彩蛋和 3D 开机都有触感。离散按键走系统 `HapticFeedbackConstants`（由系统 / 厂商调音），推杆、拨杆、卡榫与提示走自定义波形并使用 `USAGE_TOUCH`，因此会跟随系统「触感反馈」总开关与强度；扁平外观整体降一档。手机顶栏的触感图标、桌面端「外观设置」菜单都可关闭。实现与真机测量见 [docs/haptics.md](docs/haptics.md)。
 
 调试签名已固定为仓库内的 `android/keystore/debug.keystore`（密码 `staytuned`），本地构建与 CI 产物可以互相覆盖安装，不会再出现签名冲突。
+
+### 桌面应用（Windows / macOS / Linux）
+
+仓库内置 Electron 桌面端打包配置，用户无需单独安装 Node.js 或启动服务：应用内嵌 Express 服务，固定监听 `127.0.0.1:18787`，同时提供完整 RSS / M3U / HLS 代理能力。订阅、进度与主题仍保存在本机 localStorage；桌面端不注册 service worker，避免缓存与内置服务不同步。
+
+Electron 45 上游已移除 Windows ia32 与 Linux armv7l 二进制，因此当前架构矩阵为 **x64、arm64、macOS universal**。
+
+| 平台 | 产物 | 架构 | 构建 runner |
+| --- | --- | --- | --- |
+| Windows | NSIS 安装包、portable exe | x64、arm64 | `windows-latest` |
+| macOS | dmg、zip | x64、arm64、universal | `macos-latest` |
+| Linux | AppImage、deb、rpm、tar.gz | x64、arm64 | `ubuntu-latest` / `ubuntu-24.04-arm` |
+
+本地构建（macOS 可原生打出全部 macOS 架构；其他平台建议交给 CI）：
+
+```bash
+npm ci
+npm run desktop:mac       # macOS: dmg + zip，x64 / arm64 / universal
+npm run desktop:win       # Windows: 需要 Wine 或 Windows runner
+npm run desktop:linux     # Linux: 需要 rpm / fpm 工具链或 Linux runner
+npm run desktop:dev       # 开发调试：构建前端并直接启动 Electron
+```
+
+脚本会先执行 `npm run build` 与 `npm run desktop:icons`（用 Python Pillow + macOS `iconutil` 生成 ico / icns / PNG 图标），再调用 `electron-builder`。产物统一输出到 `desktop-dist/`，与 Vite 的 `dist/` 分离。`package.json` 中的 `allowScripts` 仅供 npm 12 批准 Electron 与 `electron-winstaller` 的安装脚本；旧版 npm 会忽略该字段，CI 也会自动检测命令是否存在。
+
+GitHub Actions：
+
+| 方式 | 结果 |
+| --- | --- |
+| Actions → **Build desktop packages** → Run workflow | 下载各平台 artifact |
+| 推送 `v*` 标签 | 自动构建全部平台并附到 GitHub Release（与 Android APK 工作流并行） |
+
+本地 `desktop:*` 脚本会自动对 macOS arm64 / universal 包做 ad-hoc 签名（通过 `STAY_TUNED_ADHOC_SIGN=1`），使未经 Developer ID 签名的包仍能启动；CI 配置了真实证书时该 hook 不会覆盖正式签名。未经公证的包首次打开可能需要右键 → 打开或在系统设置中允许，Windows SmartScreen 可能提示风险。生产签名可在仓库 Secrets 配置：
+
+| Secret | 说明 |
+| --- | --- |
+| `MAC_CSC_LINK` / `MAC_CSC_KEY_PASSWORD` | macOS Developer ID 证书（base64 `.p12`）与密码 |
+| `APPLE_API_KEY` / `APPLE_API_KEY_ID` / `APPLE_API_ISSUER` / `APPLE_TEAM_ID` | Apple 公证 API 凭据 |
+| `WIN_CSC_LINK` / `WIN_CSC_KEY_PASSWORD` | Windows 代码签名证书与密码 |
+
+`electron/main.mjs` 使用单实例锁、固定回环端口与受限 CORS；若 `18787` 被占用，可通过 `STAY_TUNED_DESKTOP_PORT` 指定另一个固定端口（不要使用随机端口，否则 localStorage 的 origin 会变化）。`server/index.mjs` 已导出 `startServer()` 供桌面端嵌入，原来的 `npm start` 独立服务行为不变。
 
 ### GitHub Pages 静态演示
 
@@ -213,6 +273,20 @@ npm run build     # TypeScript 类型检查 + 生产构建
 
 本地示例播放列表：[`public/demo/stations.m3u`](public/demo/stations.m3u)。
 
+### 设置
+
+顶栏右侧的推杆图标（手机端在主题按钮旁）打开**设置**，把低频项集中在一处，「我的订阅」底部只保留一个入口。设置分为五组：
+
+| 分组 | 内容 |
+| --- | --- |
+| 外观 | 质感（拟物 / 扁平）、主题（亮色 / 暗色）、触感反馈（有马达时） |
+| 播放 | 文字稿跟随播放 |
+| 离线缓存 | 已用空间与条数、音频缓存管理、发现新播客自动下载、在听的播客自动缓存 |
+| 数据 | 订阅备份 / 同步（打开备份面板）、解析引擎（打开服务地址面板） |
+| 关于 | 版本、运行环境、开源许可 |
+
+外观仍可从顶栏快速切换；设置页提供同一组开关，方便一次改完。缓存体积这类不需要频繁查看的信息只在设置页显示，不再占用播放界面。
+
 ### 快捷键（桌面）
 
 | 按键 | 行为 |
@@ -231,8 +305,11 @@ npm run build     # TypeScript 类型检查 + 生产构建
 
 ```
 .
+├── electron/              Electron 主进程 + preload（桌面应用）
+├── build/                 桌面端图标与 Ubuntu AppArmor 配置
+├── electron-builder.yml   多平台 / 多架构打包配置
 ├── server/
-│   ├── index.mjs          Express API + 生产静态托管
+│   ├── index.mjs          Express API + 生产静态托管（可被桌面端嵌入）
 │   ├── feed.mjs           RSS 2.0 / Atom 解析与规范化
 │   ├── extras.mjs         播客章节与文字稿解析
 │   ├── playlist.mjs       M3U / M3U8 / 直接音频流导入
@@ -314,7 +391,9 @@ npm run build     # TypeScript 类型检查 + 生产构建
 - 某些播客源会拒绝非浏览器 UA 或要求地区访问，这是源站策略。
 - 订阅刷新目前在打开订阅抽屉时自动尝试，没有后台定时任务或 Podping 推送；电台 HLS 断流暂不自动重连。
 - 真实章节 / 文字稿需要节目提供 Podcasting 2.0 标签；ID3 内嵌章节和视频播客尚未解析。
-- 音频下载 / 离线收听尚未实现；Service Worker 只缓存界面壳，不缓存音频。
+- 音频缓存只覆盖普通单集音频直链，不包含直播、HLS 分片、章节/文字稿附件或封面大图离线化；Service Worker 仍只缓存界面壳。GitHub Pages 静态演示版不提供音频缓存。缓存受设备可用存储限制，超限会提示失败。
+- 网络中断恢复：ExoPlayer 进入错误状态后无法仅凭 `setPlayWhenReady` 恢复；Android 端会在重播前重新 `prepare()` 并定位回原进度，按 1.5s / 3s / 4.5s / 6s 退避重试 4 次。WebView 侧监听 `online` 与 `visibilitychange` 重新装载当前音源。
+- 播放进度：原生服务每 5 秒把位置写入 `stay_tuned_positions`，seek、切集与退出时立即落盘；WebView 侧保存阈值同样收紧到 5 秒。定位在 `STATE_READY` 后应用，避免 `prepare()` 后立即 `seekTo()` 被丢弃。
 - 播放进度只在页面隐藏时同步刷盘，并由播放中每 ~7 秒写一次；强制关闭页面可能丢失最后几秒进度。
 
 ---

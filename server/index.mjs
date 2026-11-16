@@ -3,18 +3,27 @@
 import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
+import process from 'node:process';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { HttpError, USER_AGENT, assertHttpUrl, fetchJson, fetchText, hashId } from './http.mjs';
+import { HttpError, USER_AGENT, assertHttpUrl, fetchJson, fetchText } from './http.mjs';
 import { FEATURED_STATIONS, ITUNES_SEARCH_ENDPOINT, RADIO_MIRRORS, mapItunesPodcast, normalizeStation } from './catalog.mjs';
 import { fetchFeed } from './feed.mjs';
 import { fetchPlaylist, parsePlaylist } from './playlist.mjs';
 import { parseChapters, parseTranscript } from './extras.mjs';
 import { pipeUpstream, rewriteHlsPlaylist } from './hls.mjs';
 
+const require = createRequire(import.meta.url);
+const { version: APP_VERSION } = require('../package.json');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
-const PORT = Number(process.env.PORT) || 8787;
-const HOST = process.env.HOST || '0.0.0.0';
+const PROJECT_ROOT = path.resolve(__dirname, '..');
+const DEFAULT_PORT = Number(process.env.PORT) || 8787;
+const DEFAULT_HOST = process.env.HOST || '0.0.0.0';
+
+/** Directory containing the built Vite bundle. Electron can override it. */
+export function resolveDistDir() {
+  return process.env.STAY_TUNED_DIST || path.join(PROJECT_ROOT, 'dist');
+}
 
 const app = express();
 app.disable('x-powered-by');
@@ -22,15 +31,15 @@ app.disable('x-powered-by');
 // The packaged Android app runs from the WebView origin https://localhost, so
 // every API call is cross-origin. CORS defaults to open for this local-first
 // proxy; set CORS_ORIGINS="https://a.example,https://b.example" to restrict it.
-const CORS_ORIGINS = (process.env.CORS_ORIGINS || '')
+let corsOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
   .map((value) => value.trim())
   .filter(Boolean);
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (CORS_ORIGINS.length) {
-    if (origin && CORS_ORIGINS.includes(origin)) {
+  if (corsOrigins.length) {
+    if (origin && corsOrigins.includes(origin)) {
       res.setHeader('access-control-allow-origin', origin);
       res.setHeader('vary', 'origin');
     }
@@ -71,15 +80,11 @@ async function cached(key, ttlMs, producer) {
   return value;
 }
 
-function publicBase(req) {
-  return `${req.protocol}://${req.get('host')}`;
-}
-
 // ---------------------------------------------------------------------------
 // Health
 // ---------------------------------------------------------------------------
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, app: 'stay-tuned', version: '1.0.0', uptime: process.uptime() });
+  res.json({ ok: true, app: 'stay-tuned', version: APP_VERSION, uptime: process.uptime() });
 });
 
 // ---------------------------------------------------------------------------
@@ -396,7 +401,7 @@ app.get('/api/radio/featured', (_req, res) => {
 // ---------------------------------------------------------------------------
 // Static production bundle + SPA fallback
 // ---------------------------------------------------------------------------
-const dist = path.join(ROOT, 'dist');
+const dist = resolveDistDir();
 if (fs.existsSync(path.join(dist, 'index.html'))) {
   app.use(express.static(dist, { maxAge: '1h', index: false }));
   app.use((req, res, next) => {
@@ -426,9 +431,41 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`留频 API ready on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
-  if (!fs.existsSync(path.join(dist, 'index.html'))) {
-    console.log('开发模式：请另开终端运行 vite（或直接 npm run dev）。');
-  }
-});
+export { app as expressApp };
+
+/**
+ * Start the API and static server. Electron embeds this directly so the
+ * desktop app needs no separate Node process. Returns the underlying
+ * http.Server so callers can close it on quit.
+ */
+export function startServer(options = {}) {
+  const port = Number(options.port ?? DEFAULT_PORT);
+  const host = options.host ?? DEFAULT_HOST;
+  if (options.corsOrigins) corsOrigins = options.corsOrigins;
+  return new Promise((resolve, reject) => {
+    const server = app.listen(port, host);
+    server.once('error', reject);
+    server.once('listening', () => {
+      server.removeListener('error', reject);
+      const address = server.address();
+      const actualPort = typeof address === 'object' && address ? address.port : port;
+      if (!options.quiet) {
+        const label = host === '0.0.0.0' ? 'localhost' : host;
+        console.log(`留频 API ready on http://${label}:${actualPort}`);
+        if (!fs.existsSync(path.join(dist, 'index.html'))) {
+          console.log('开发模式：请另开终端运行 vite（或直接 npm run dev）。');
+        }
+      }
+      resolve(server);
+    });
+  });
+}
+
+// `npm start` keeps the original standalone behaviour; `electron/main.mjs`
+// imports startServer() instead of spawning this file.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  startServer().catch((error) => {
+    console.error('[stay-tuned] 服务启动失败:', error);
+    process.exitCode = 1;
+  });
+}

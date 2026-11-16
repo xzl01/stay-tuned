@@ -19,6 +19,7 @@ import { LiveSpectrum } from './LiveSpectrum';
 interface MobilePlayerProps {
   onOpenLibrary: () => void;
   onOpenQueue: () => void;
+  onOpenSettings: () => void;
 }
 
 function MobileTranscriptPreview({ onOpen }: { onOpen: () => void }) {
@@ -140,14 +141,14 @@ function MobileHero() {
   );
 }
 
-export function MobilePlayer({ onOpenLibrary, onOpenQueue }: MobilePlayerProps) {
+export function MobilePlayer({ onOpenLibrary, onOpenQueue, onOpenSettings }: MobilePlayerProps) {
   const { current } = useAppStore();
   const [chaptersOpen, setChaptersOpen] = useState(false);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
 
   return (
     <div className="mobile-app">
-      <MobileHeader onOpenLibrary={onOpenLibrary} />
+      <MobileHeader onOpenLibrary={onOpenLibrary} onOpenSettings={onOpenSettings} />
       <main className="mobile-stage">
         <MobileHero />
         <Receiver variant="mobile" onOpenQueue={onOpenQueue} />

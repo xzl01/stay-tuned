@@ -76,10 +76,18 @@ export function parseBackup(text: string): PersistedState {
     favorites: Array.isArray(state.favorites)
       ? state.favorites.filter((key): key is string => typeof key === 'string')
       : [],
-    preferences:
-      state.preferences && typeof state.preferences === 'object'
-        ? state.preferences
-        : ({} as PersistedState['preferences']),
+    preferences: {
+      theme: 'light',
+      mode: 'skeuo',
+      volume: 0.72,
+      rate: 1,
+      followTranscript: true,
+      haptics: true,
+      autoCacheNewEpisodes: false,
+      autoCachePlaying: false,
+      history: [],
+      ...(state.preferences && typeof state.preferences === 'object' ? state.preferences : {}),
+    },
   };
 }
 

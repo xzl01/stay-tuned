@@ -16,7 +16,7 @@ This project is licensed under **GPL-3.0-only**. Third-party components remain u
 | `react` | 19.3.1 | MIT | [`react-MIT.txt`](third-party-licenses/react-MIT.txt) |
 | `react-dom` | 19.3.1 | MIT | [`react-dom-MIT.txt`](third-party-licenses/react-dom-MIT.txt) |
 
-These packages are installed from npm; their complete license texts are distributed with the packages and copied here for the direct dependencies. The production dependency tree in [`package-lock.json`](package-lock.json) has 83 packages: 75 × MIT, 5 × ISC, 1 × Apache-2.0, 1 × BSD-3-Clause, 1 × 0BSD.0, 1 × BSD-3-Clause, 1 × 0BSD.0, 4 × ISC, 1 × BSD-3-Clause, 1 × 0BSD.0, 4 × ISC, 1 × BSD-3-Clause, 1 × 0BSD.
+These packages are installed from npm; their complete license texts are distributed with the packages and copied here for the direct dependencies. The production dependency tree in [`package-lock.json`](package-lock.json) has 83 packages: 75 × MIT, 5 × ISC, 1 × Apache-2.0, 1 × BSD-3-Clause, 1 × 0BSD.0, 1 × BSD-3-Clause, 1 × 0BSD.0, 1 × BSD-3-Clause, 1 × 0BSD.0, 1 × BSD-3-Clause, 1 × 0BSD.0, 1 × BSD-3-Clause, 1 × 0BSD.0, 1 × BSD-3-Clause, 1 × 0BSD.0, 4 × ISC, 1 × BSD-3-Clause, 1 × 0BSD.0, 4 × ISC, 1 × BSD-3-Clause, 1 × 0BSD.
 
 <details>
 <summary>Transitive production dependencies (74)</summary>
@@ -111,6 +111,8 @@ Development tooling is not included in the runtime bundle. Direct dev dependenci
 | `@types/react-dom` | 19.3.0 | MIT |
 | `@vitejs/plugin-react` | 6.3.0 | MIT |
 | `concurrently` | 10.0.7 | MIT |
+| `electron` | 45.3.2 | MIT |
+| `electron-builder` | 26.18.1 | MIT |
 | `typescript` | 5.9.3 | Apache-2.0 |
 | `vite` | 8.3.8 | MIT |
 
@@ -120,6 +122,7 @@ Development tooling is not included in the runtime bundle. Direct dev dependenci
 | --- | --- | --- | --- |
 | Three.js and Three.js addons | 0.180.0, vendored under `src/components/receiver3d/vendor/` | MIT | [`three.js-MIT.txt`](third-party-licenses/three.js-MIT.txt) |
 | hls.js | 1.7.4, npm runtime dependency | Apache-2.0 | [`hls.js-Apache-2.0.txt`](third-party-licenses/hls.js-Apache-2.0.txt) |
+| Electron runtime | 45.3.2, bundled into desktop installers | MIT | [`electron-MIT.txt`](third-party-licenses/electron-MIT.txt) |
 | Maple Mono | SIL OFL 1.1, upstream https://github.com/subframe7536/maple-font (v7 license) | OFL-1.1 | [`maple-mono-OFL-1.1.txt`](third-party-licenses/maple-mono-OFL-1.1.txt) |
 | Fusion Pixel | 2026.11.10, upstream https://github.com/TakWolf/fusion-pixel-font | OFL-1.1 | [`fusion-pixel-OFL-1.1.txt`](third-party-licenses/fusion-pixel-OFL-1.1.txt) and `public/fonts/fusion-pixel/LICENSES/` |
 

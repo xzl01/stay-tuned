@@ -16,12 +16,12 @@ import { stationImage } from '../lib/stations';
 import { imageFileToDataUrl } from '../lib/images';
 import { getServerBase, isNativePlatform } from '../lib/serverConfig';
 import { useLocalEngine } from '../lib/api';
+import { DESKTOP_APP, STATIC_DEMO } from '../lib/env';
 
 interface LibrarySheetProps {
   open: boolean;
   onClose: () => void;
-  onOpenServer: () => void;
-  onOpenData: () => void;
+  onOpenSettings: () => void;
 }
 
 type Tab = 'podcast' | 'radio' | 'favorites';
@@ -246,10 +246,17 @@ function PodcastEpisodeRow({
   fallbackNumber: number;
   onPlayed: () => void;
 }) {
-  const { playEpisode, addToQueue, isQueued, current, notify, positions } = useAppStore();
+  const {
+    playEpisode, addToQueue, isQueued, current, notify, positions,
+    cacheStatus, cacheEpisode, uncacheEpisode, cacheIndex,
+  } = useAppStore();
   const active = current?.kind === 'episode' && current.episode.id === episode.id;
   const queued = isQueued({ kind: 'episode', showId: show.id, episodeId: episode.id });
   const episodeKey = `episode:${show.id}:${episode.id}`;
+  void cacheIndex; // keep the row subscribed to cache progress
+  const cacheState = cacheStatus(episodeKey);
+  const cached = cacheState.state === 'ready';
+  const caching = cacheState.state === 'downloading';
   const saved = positions[episodeKey] ?? 0;
   const completed = episode.duration > 0 && saved >= Math.max(episode.duration - 10, 1);
   const inProgress = saved >= 5 && !completed;
@@ -282,6 +289,7 @@ function PodcastEpisodeRow({
             {episode.duration ? ` · ${formatTime(episode.duration)}` : ''}
             {status ? ` · ${status}` : ''}
             {active ? ' · 正在收听' : ''}
+            {cached ? ' · 已缓存' : caching ? ` · 缓存中 ${Math.round(cacheState.progress * 100)}%` : ''}
           </span>
           {inProgress || completed ? (
             <span className={`library-episode-progress ${completed ? 'is-complete' : ''}`} aria-hidden="true">
@@ -290,6 +298,22 @@ function PodcastEpisodeRow({
           ) : null}
         </span>
       </button>
+      {STATIC_DEMO ? null : (
+      <button
+        type="button"
+        className={`library-episode-cache ${cached ? 'is-cached' : ''} ${caching ? 'is-busy' : ''}`}
+        disabled={caching}
+        aria-label={cached ? '删除本机缓存' : caching ? '正在缓存' : '缓存这期节目'}
+        title={cached ? '删除本机缓存' : caching ? '正在缓存' : '缓存到本机'}
+        onClick={() => {
+          if (caching) return;
+          if (cached) void uncacheEpisode(episodeKey);
+          else void cacheEpisode(show.id, episode.id);
+        }}
+      >
+        <Icon name={cached ? 'downloadDone' : caching ? 'refresh' : 'download'} size={15} />
+      </button>
+      )}
       <button
         type="button"
         className={`library-episode-queue ${queued ? 'is-queued' : ''}`}
@@ -846,7 +870,7 @@ function StationPlaylistGroup({
   );
 }
 
-export function LibrarySheet({ open, onClose, onOpenServer, onOpenData }: LibrarySheetProps) {
+export function LibrarySheet({ open, onClose, onOpenSettings }: LibrarySheetProps) {
   const { shows, stations, addStations, addShow, removeShow, removeStation, playStation, playStationAndAdd, notify, current, favorites } = useAppStore();
   const [tab, setTab] = useState<Tab>('podcast');
   const [addOpen, setAddOpen] = useState(false);
@@ -1082,17 +1106,19 @@ export function LibrarySheet({ open, onClose, onOpenServer, onOpenData }: Librar
       className="library-sheet"
       footer={
         <div className="library-footer">
-          <button type="button" className="library-server-button" onClick={onOpenServer}>
+          <span className="library-engine-label">
             <Icon name="signal" size={13} />
             {getServerBase()
               ? getServerBase().replace(/^https?:\/\//, '')
-              : useLocalEngine()
-                ? '本地解析引擎'
-                : '同源服务'}
-          </button>
-          <button type="button" className="library-server-button library-data-button" onClick={onOpenData}>
-            <Icon name="external" size={12} />
-            备份 / 同步
+              : DESKTOP_APP
+                ? '桌面内置服务'
+                : useLocalEngine()
+                  ? '本地解析引擎'
+                  : '同源服务'}
+          </span>
+          <button type="button" className="library-server-button library-data-button" onClick={onOpenSettings}>
+            <Icon name="settings" size={12} />
+            设置
           </button>
         </div>
       }

@@ -14,6 +14,7 @@ const direct = new Set(Object.keys(rootPkg.dependencies ?? {}));
 const directDev = new Set(Object.keys(rootPkg.devDependencies ?? {}));
 
 const LICENSE_FILES = {
+  electron: 'electron-MIT.txt',
   express: 'express-MIT.txt',
   'fast-xml-parser': 'fast-xml-parser-MIT.txt',
   'hls.js': 'hls.js-Apache-2.0.txt',

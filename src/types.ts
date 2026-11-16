@@ -125,6 +125,10 @@ export interface Preferences {
   followTranscript: boolean;
   /** Linear-motor haptics on the Android build. Defaults to on. */
   haptics: boolean;
+  /** Automatically cache new episodes when a show is added or refreshed. */
+  autoCacheNewEpisodes: boolean;
+  /** Automatically cache the episode that is currently playing. */
+  autoCachePlaying: boolean;
   history: string[];
 }
 

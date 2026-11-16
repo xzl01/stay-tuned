@@ -8,6 +8,7 @@ import { MenuPopover, type MenuOption } from './ui/Primitives';
 interface HeaderProps {
   onOpenLibrary: () => void;
   onOpenQueue: () => void;
+  onOpenSettings: () => void;
 }
 
 function ModeToggle({ mode, onChange, compact = false }: { mode: Mode; onChange: (mode: Mode) => void; compact?: boolean }) {
@@ -99,7 +100,7 @@ function HeaderAppearanceMenu() {
   );
 }
 
-export function DesktopHeader({ onOpenLibrary, onOpenQueue }: HeaderProps) {
+export function DesktopHeader({ onOpenLibrary, onOpenQueue, onOpenSettings }: HeaderProps) {
   const { queue } = useAppStore();
   return (
     <header className="site-header site-header--desktop">
@@ -115,7 +116,8 @@ export function DesktopHeader({ onOpenLibrary, onOpenQueue }: HeaderProps) {
       <div className="header-actions">
         <HeaderAppearanceMenu />
         <span className="header-rule" aria-hidden="true" />
-        <button type="button" className="header-link header-link--plain" onClick={onOpenLibrary}>
+        <button type="button" className="header-library-button" onClick={onOpenLibrary}>
+          <Icon name="library" size={19} />
           <span>我的订阅</span>
         </button>
         <span className="header-rule" aria-hidden="true" />
@@ -124,12 +126,22 @@ export function DesktopHeader({ onOpenLibrary, onOpenQueue }: HeaderProps) {
           <span>播放队列</span>
           <span className="queue-badge" aria-label={`${queue.length} 项`}>{queue.length}</span>
         </button>
+        <span className="header-rule" aria-hidden="true" />
+        <button
+          type="button"
+          className="header-icon-button"
+          onClick={onOpenSettings}
+          aria-label="设置"
+          title="设置"
+        >
+          <Icon name="settings" size={18} />
+        </button>
       </div>
     </header>
   );
 }
 
-export function MobileHeader({ onOpenLibrary }: { onOpenLibrary: () => void }) {
+export function MobileHeader({ onOpenLibrary, onOpenSettings }: { onOpenLibrary: () => void; onOpenSettings: () => void }) {
   const { prefs, setMode, setTheme, setHaptics, hapticsAvailable } = useAppStore();
   return (
     <header className="site-header site-header--mobile">
@@ -151,7 +163,7 @@ export function MobileHeader({ onOpenLibrary }: { onOpenLibrary: () => void }) {
           aria-label="打开我的订阅"
           title="我的订阅"
         >
-          <Icon name="library" size={17} />
+          <Icon name="library" size={20} />
         </button>
         <ModeToggle mode={prefs.mode} onChange={setMode} compact />
         {hapticsAvailable ? (
@@ -167,6 +179,15 @@ export function MobileHeader({ onOpenLibrary }: { onOpenLibrary: () => void }) {
           </button>
         ) : null}
         <ThemeButton theme={prefs.theme} onToggle={() => setTheme(prefs.theme === 'light' ? 'dark' : 'light')} />
+        <button
+          type="button"
+          className="header-icon-button"
+          onClick={onOpenSettings}
+          aria-label="设置"
+          title="设置"
+        >
+          <Icon name="settings" size={18} />
+        </button>
       </div>
     </header>
   );

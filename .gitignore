@@ -1,6 +1,12 @@
 node_modules
 dist
+desktop-dist
+build/icon.png
+build/icon.ico
+build/icon.icns
+build/icons/
 .npm-cache
+.electron-cache
 *.log
 .DS_Store
 .screenshots

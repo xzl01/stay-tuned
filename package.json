@@ -14,7 +14,15 @@
     "android:sync": "npm run build && cap sync android",
     "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "android:open": "cap open android",
-    "notices": "node scripts/generate-notices.mjs"
+    "notices": "node scripts/generate-notices.mjs",
+    "desktop:icons": "python3 scripts/desktop-icons.py",
+    "desktop:prepare": "npm run build && npm run desktop:icons",
+    "desktop:dev": "npm run desktop:prepare && electron .",
+    "desktop:dir": "npm run desktop:prepare && STAY_TUNED_ADHOC_SIGN=1 electron-builder --dir --publish never",
+    "desktop:dist": "npm run desktop:prepare && STAY_TUNED_ADHOC_SIGN=1 electron-builder --publish never",
+    "desktop:mac": "npm run desktop:prepare && STAY_TUNED_ADHOC_SIGN=1 electron-builder --mac dmg zip --x64 --arm64 --universal --publish never",
+    "desktop:win": "npm run desktop:prepare && STAY_TUNED_ADHOC_SIGN=1 electron-builder --win nsis portable --x64 --arm64 --publish never",
+    "desktop:linux": "npm run desktop:prepare && STAY_TUNED_ADHOC_SIGN=1 electron-builder --linux AppImage deb rpm tar.gz --x64 --arm64 --publish never"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.2",
@@ -33,6 +41,8 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
     "concurrently": "^10.0.7",
+    "electron": "45.3.2",
+    "electron-builder": "26.18.1",
     "typescript": "^5.9.3",
     "vite": "^8.3.8"
   },
@@ -59,5 +69,10 @@
     "react",
     "typescript",
     "gplv3"
-  ]
+  ],
+  "main": "electron/main.mjs",
+  "allowScripts": {
+    "electron@45.3.2": true,
+    "electron-winstaller@5.4.0": true
+  }
 }

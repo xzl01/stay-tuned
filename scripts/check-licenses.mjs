@@ -32,10 +32,23 @@ function tokensOf(expression) {
     .filter(Boolean);
 }
 
+// Only production dependencies ship inside the app. Electron and its builder
+// toolchain are devDependencies and are audited separately by the notices file.
+const production = new Set();
+function collectProduction(deps) {
+  for (const name of Object.keys(deps ?? {})) {
+    const key = 'node_modules/' + name;
+    if (production.has(key)) continue;
+    production.add(key);
+    collectProduction(lock.packages[key]?.dependencies);
+  }
+}
+collectProduction(lock.packages['']?.dependencies);
+
 const problems = [];
 const counts = {};
 for (const [location, meta] of Object.entries(lock.packages ?? {})) {
-  if (!location.startsWith('node_modules/')) continue;
+  if (!production.has(location)) continue;
   const license = meta.license;
   if (!license) {
     problems.push(`${location}: missing license metadata`);
@@ -56,6 +69,7 @@ for (const required of [
   'LICENSE',
   'NOTICE',
   'THIRD_PARTY_NOTICES.md',
+  'third-party-licenses/electron-MIT.txt',
   'third-party-licenses/hls.js-Apache-2.0.txt',
   'third-party-licenses/three.js-MIT.txt',
   'third-party-licenses/maple-mono-OFL-1.1.txt',
@@ -71,5 +85,5 @@ if (problems.length) {
   process.exitCode = 1;
 } else {
   const summary = Object.entries(counts).map(([license, count]) => `${count}× ${license}`).join(', ');
-  console.log(`License compliance check passed: ${Object.keys(lock.packages).filter((p) => p.startsWith('node_modules/')).length} npm packages (${summary}).`);
+  console.log(`License compliance check passed: ${production.size} production npm packages (${summary}).`);
 }

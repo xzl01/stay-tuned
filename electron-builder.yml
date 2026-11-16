@@ -1,0 +1,109 @@
+# electron-builder 26 stable configuration
+# Electron 45 provides x64 / arm64 / universal binaries. ia32 and armv7l were
+# removed upstream and are intentionally not listed as targets.
+
+appId: io.github.xzl01.staytuned.desktop
+productName: Stay Tuned
+copyright: Copyright © 2026 HarryLoong
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+
+directories:
+  output: desktop-dist
+  buildResources: build
+  app: .
+
+# package.json and production node_modules are always included automatically.
+files:
+  - package.json
+  - electron/**/*
+  - server/**/*
+  - dist/**/*
+  - LICENSE
+  - NOTICE
+  - THIRD_PARTY_NOTICES.md
+  - third-party-licenses/**/*
+  - '!**/*.test.mjs'
+  - '!**/*.map'
+  - '!desktop-dist/**'
+
+asar: true
+# Electron 45 no longer extracts asar files to temporary copies. Keep the
+# static bundle as real files so express.static never depends on that behaviour.
+asarUnpack:
+  - dist/**/*
+npmRebuild: false
+nodeGypRebuild: false
+buildDependenciesFromSource: false
+forceCodeSigning: false
+electronVersion: 45.3.2
+
+extraMetadata:
+  main: electron/main.mjs
+
+afterSign: scripts/after-sign.cjs
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+    - target: portable
+      arch: [x64, arm64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  buildUniversalInstaller: false
+  artifactName: ${productName}-Setup-${version}-win-${arch}.${ext}
+
+portable:
+  artifactName: ${productName}-Portable-${version}-win-${arch}.${ext}
+
+mac:
+  icon: build/icon.icns
+  category: public.app-category.entertainment
+  mergeASARs: true
+  singleArchFiles: node_modules/**/*
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  # No certificate: builder skips signing; keep local builds launchable by
+  # setting STAY_TUNED_ADHOC_SIGN=1, which the afterSign hook applies.
+  identity: null
+  notarize: false
+  target:
+    - target: dmg
+      arch: [x64, arm64, universal]
+    - target: zip
+      arch: [x64, arm64, universal]
+  artifactName: ${productName}-${version}-mac-${arch}.${ext}
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+      type: file
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+linux:
+  icon: build/icons
+  executableName: stay-tuned
+  category: Audio;Player;
+  maintainer: HarryLoong <https://github.com/xzl01>
+  target:
+    - target: AppImage
+      arch: [x64, arm64]
+    - target: deb
+      arch: [x64, arm64]
+    - target: rpm
+      arch: [x64, arm64]
+    - target: tar.gz
+      arch: [x64, arm64]
+  artifactName: ${productName}-${version}-linux-${arch}.${ext}
+
+deb:
+  # Ubuntu 24.04+ restricts unsandboxed Chromium apps by default.
+  appArmorProfile: build/apparmor-profile

@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react';
 import type Hls from 'hls.js';
@@ -36,13 +37,28 @@ import {
 } from '../lib/api';
 import { resolvePlayable } from '../lib/refs';
 import { chapterIndexAt, transcriptIndexAt } from '../lib/episode';
-import { clamp } from '../lib/format';
+import { clamp, pad2 } from '../lib/format';
 import { feedUrlKey } from '../lib/urls';
 import { initHaptics, pulse, setHapticsEnabled, setHapticsMode } from '../lib/haptics';
 import { showDisplayTitle } from '../lib/shows';
 import { stationImage } from '../lib/stations';
 import { assetUrl, STATIC_DEMO } from '../lib/env';
 import { isNativePlatform } from '../lib/serverConfig';
+import {
+  cacheStatusFor,
+  clearCache,
+  downloadEpisode,
+  enqueueAutoCache,
+  episodeCacheKey,
+  episodeCacheTarget,
+  getCacheIndex,
+  getCachedPlaybackUrl,
+  getNativeCachedUrl,
+  releasePlaybackUrl,
+  removeCachedEpisode,
+  subscribeCache,
+  type CacheTarget,
+} from '../lib/cache';
 import {
   nativeLoad,
   nativePause,
@@ -51,6 +67,7 @@ import {
   nativeSetRate,
   nativeSetVolume,
   nativeStop,
+  nativeUpdateDisplay,
   onMediaAction,
   onNativeEnded,
   onNativeError,
@@ -114,6 +131,13 @@ interface AppStoreValue {
   spectrumBlocked: boolean;
   readSpectrum: (data: Uint8Array) => boolean;
   toasts: ToastMessage[];
+  cacheIndex: ReturnType<typeof getCacheIndex>;
+  cacheStatus: (key: string) => ReturnType<typeof cacheStatusFor>;
+  cacheEpisode: (showId: string, episodeId: string) => Promise<void>;
+  uncacheEpisode: (key: string) => Promise<void>;
+  clearEpisodeCache: () => Promise<void>;
+  setAutoCacheNewEpisodes: (value: boolean) => void;
+  setAutoCachePlaying: (value: boolean) => void;
 
   playRef: (ref: PlayableRef) => void;
   playEpisode: (showId: string, episodeId: string) => void;
@@ -173,15 +197,29 @@ function refKeyFor(ref: PlayableRef): string {
   return ref.kind === 'episode' ? `episode:${ref.showId}:${ref.episodeId}` : `radio:${ref.stationId}`;
 }
 
+/**
+ * Where playback should actually start.
+ *
+ * A finished episode stores its end position so the library can still show
+ * “已听完”. Replaying it must not jump to the tail: that fires `ended` within a
+ * second and auto-skips to the next episode. Anything within 5s of the end is
+ * therefore treated as “start over”.
+ */
+function resumeStart(saved: number, duration: number): number {
+  if (!Number.isFinite(saved) || saved <= 0) return 0;
+  if (duration > 0 && saved >= duration - 5) return 0;
+  return saved;
+}
+
 function initialPlayback(data: PersistedState): PlaybackSnapshot {
   const playable = resolvePlayable(data.current, data.shows, data.stations);
   const key = playable?.key ?? '';
-  const saved = data.positions[key] ?? 0;
   const duration = playable?.kind === 'episode' ? playable.episode.duration : 0;
+  const start = playable?.kind === 'episode' ? resumeStart(data.positions[key] ?? 0, duration) : 0;
   return {
     isPlaying: false,
     isLoading: Boolean(playable),
-    currentTime: playable?.kind === 'episode' ? Math.min(saved, duration || saved) : 0,
+    currentTime: start,
     duration,
     buffered: 0,
     error: null,
@@ -199,6 +237,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [spectrumReady, setSpectrumReady] = useState(false);
   const [spectrumBlocked, setSpectrumBlocked] = useState(false);
   const [hapticsAvailable, setHapticsAvailable] = useState(false);
+  /** Bumped to re-enter the load effect (network recovery). */
+  const [reloadToken, setReloadToken] = useState(0);
+  const cacheIndex = useSyncExternalStore(subscribeCache, getCacheIndex, getCacheIndex);
 
   useEffect(() => {
     let cancelled = false;
@@ -230,6 +271,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const seekRef = useRef<(seconds: number) => void>(() => undefined);
   const hlsRef = useRef<Hls | null>(null);
   const hlsPendingRef = useRef(false);
+  const cachedObjectUrlRef = useRef<string | null>(null);
+  /** One-shot resume position applied on the next (re)load. */
+  const explicitSeekRef = useRef<number | null>(null);
   const pendingSeekRef = useRef<number | null>(null);
   const lastSavedPositionRef = useRef(0);
   const toastIdRef = useRef(0);
@@ -536,10 +580,15 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Load the selected item into the audio element (and hls.js for HLS streams).
+  // A completed cache is picked up the next time this episode is selected, so
+  // background downloads never reload (and briefly interrupt) current playback.
   const currentKey = current?.key ?? null;
   useEffect(() => {
     const audio = audioEl.current;
     if (!audio) return;
+    // Switching episodes invalidates the previous blob: URL.
+    releasePlaybackUrl(cachedObjectUrlRef.current);
+    cachedObjectUrlRef.current = null;
     if (isNativePlatform()) {
       // ExoPlayer is the only audio source on Android.
       destroyHls();
@@ -567,8 +616,18 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // A recovery/reload supplies the live position explicitly; otherwise fall
+    // back to the stored one (treating a finished episode as “start over”).
+    const explicit = explicitSeekRef.current;
+    explicitSeekRef.current = null;
     const saved =
-      current.kind === 'episode' ? Math.max(0, dataRef.current.positions[current.key] ?? 0) : 0;
+      explicit ??
+      (current.kind === 'episode'
+        ? resumeStart(
+            Math.max(0, dataRef.current.positions[current.key] ?? 0),
+            current.episode.duration,
+          )
+        : 0);
     lastSavedPositionRef.current = saved;
     pendingSeekRef.current = saved > 0 ? saved : null;
 
@@ -650,17 +709,32 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         }
       })();
     } else {
-      audio.src = audioSource(sourceUrl);
-      audio.load();
+      // Prefer a completed offline cache. A cached file is same-origin (blob:)
+      // or private native storage, so playback works without the API proxy.
+      const cacheKey = current.kind === 'episode'
+        ? episodeCacheKey(current.ref.showId, current.ref.episodeId)
+        : null;
+      void (async () => {
+        const cached = cacheKey ? await getCachedPlaybackUrl(cacheKey) : null;
+        if (cancelled) {
+          releasePlaybackUrl(cached);
+          return;
+        }
+        cachedObjectUrlRef.current = cached && cached.startsWith('blob:') ? cached : null;
+        audio.src = cached || audioSource(sourceUrl);
+        audio.load();
+      })();
     }
 
     return () => {
       cancelled = true;
       destroyHls();
+      releasePlaybackUrl(cachedObjectUrlRef.current);
+      cachedObjectUrlRef.current = null;
     };
-    // current identity is stable between position saves; key is the true dependency.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentKey]);
+    // current identity is stable between position saves; key is the true
+    // dependency. reloadToken re-enters this effect for network recovery.
+  }, [currentKey, reloadToken]);
 
   // Reflect play / pause state into the media element.
   useEffect(() => {
@@ -682,37 +756,75 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     const target = currentRef.current;
     if (!target) return null;
     const isEpisode = target.kind === 'episode';
+    const cacheKey = isEpisode ? episodeCacheKey(target.ref.showId, target.ref.episodeId) : null;
+    const cachedNativeUrl = cacheKey ? getNativeCachedUrl(cacheKey) : null;
+    // Chapter text is deliberately not part of this payload: it goes through
+    // nativeUpdateDisplay, so this callback stays stable for the whole episode.
     return {
-      url: audioSource(isEpisode ? target.episode.audioUrl : target.station.url),
+      url: cachedNativeUrl || audioSource(isEpisode ? target.episode.audioUrl : target.station.url),
       title: isEpisode ? target.episode.title : target.station.name,
       subtitle: isEpisode ? showDisplayTitle(target.show) : target.station.group || '留频电台',
       artwork: isEpisode
         ? target.episode.image || target.show.image || ''
         : stationImage(target.station) || '',
       live: !isEpisode,
-      position: playbackRef.current.currentTime,
+      // Prefer the furthest known position (the mirrored native value can lag a
+      // seek by a tick), but never resume a finished episode at its tail.
+      position: isEpisode
+        ? Math.max(
+            resumeStart(playbackRef.current.currentTime || 0, target.episode.duration),
+            resumeStart(dataRef.current.positions[target.key] ?? 0, target.episode.duration),
+          )
+        : 0,
+      // Stable identity for native position persistence: the audio URL changes
+      // when a cached file is used, so it cannot be the storage key.
+      key: target.key,
       rate: dataRef.current.preferences.rate,
       volume: dataRef.current.preferences.volume,
       playing: playbackRef.current.isPlaying,
     };
+    // No chapter here on purpose: the payload must stay stable for the whole
+    // episode, otherwise crossing a chapter boundary re-sends nativeLoad and
+    // rebuilds ExoPlayer mid-playback. The LCD text goes through updateDisplay.
+  }, []);
+
+  /** Current playback position in seconds, regardless of who owns the audio.
+   *  Web/desktop: the <audio> element is authoritative.
+   *  Android: ExoPlayer is authoritative; mirrored through nativeState.
+   *  Reading the element there would always yield 0 (it has no media source). */
+  const currentPosition = useCallback((): number => {
+    if (isNativePlatform()) {
+      const mirrored = playbackRef.current.currentTime;
+      return Number.isFinite(mirrored) && mirrored > 0 ? mirrored : 0;
+    }
+    const audio = audioEl.current;
+    const time = audio?.currentTime;
+    if (Number.isFinite(time) && (time as number) > 0) return time as number;
+    const fallback = playbackRef.current.currentTime;
+    return Number.isFinite(fallback) && fallback > 0 ? fallback : 0;
   }, []);
 
   const seek = useCallback(
     (seconds: number) => {
       const audio = audioEl.current;
       const target = currentRef.current;
-      if (!audio || !target) return;
+      if (!target) return;
       if (target.kind !== 'episode') {
         notify('直播节目无法快进，只能实时收听。');
         return;
       }
       const total = playbackRef.current.duration || target.episode.duration || 0;
       const position = clamp(seconds, 0, Math.max(0, total - 0.25));
-      try {
-        if (audio.readyState >= 1) audio.currentTime = position;
-        else pendingSeekRef.current = position;
-      } catch {
-        pendingSeekRef.current = position;
+      if (isNativePlatform()) {
+        // ExoPlayer owns playback; the WebView element has no media loaded.
+        pendingSeekRef.current = null;
+      } else if (audio) {
+        try {
+          if (audio.readyState >= 1) audio.currentTime = position;
+          else pendingSeekRef.current = position;
+        } catch {
+          pendingSeekRef.current = position;
+        }
       }
       setPlayback((snapshot) => ({ ...snapshot, currentTime: position }));
       setData((state) => ({
@@ -732,10 +844,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         notify('直播节目无法快进，只能实时收听。');
         return;
       }
-      const currentTime = audioEl.current?.currentTime ?? playbackRef.current.currentTime;
-      seek(currentTime + seconds);
+      seek(currentPosition() + seconds);
     },
-    [notify, seek],
+    [notify, seek, currentPosition],
   );
 
   const playRef = useCallback(
@@ -755,12 +866,14 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       }
 
       // Remember where we left the previous episode.
-      if (currentRef.current?.kind === 'episode' && audio) {
+      const previousKey = currentRef.current?.kind === 'episode' ? currentRef.current.key : null;
+      if (previousKey) {
+        const leftAt = currentPosition();
         setData((state) => ({
           ...state,
           positions: {
             ...state.positions,
-            [currentRef.current!.key]: audio.currentTime,
+            [previousKey]: leftAt,
           },
         }));
       }
@@ -879,8 +992,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   }, [notify, playRef]);
 
   const previous = useCallback(() => {
-    const audio = audioEl.current;
-    if (audio && audio.currentTime > 5 && currentRef.current?.kind === 'episode') {
+    if (currentPosition() > 5 && currentRef.current?.kind === 'episode') {
       seek(0);
       return;
     }
@@ -951,6 +1063,81 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       pulse('toggleOn');
     }
   }, []);
+
+  const setAutoCacheNewEpisodes = useCallback((value: boolean) => {
+    setData((state) => ({
+      ...state,
+      preferences: { ...state.preferences, autoCacheNewEpisodes: value },
+    }));
+  }, []);
+  const setAutoCachePlaying = useCallback((value: boolean) => {
+    setData((state) => ({
+      ...state,
+      preferences: { ...state.preferences, autoCachePlaying: value },
+    }));
+  }, []);
+
+  const findEpisodeTarget = useCallback((showId: string, episodeId: string): CacheTarget | null => {
+    const show = dataRef.current.shows.find((item) => item.id === showId);
+    const episode = show?.episodes.find((item) => item.id === episodeId);
+    return show && episode ? episodeCacheTarget(show, episode) : null;
+  }, []);
+
+  const cacheEpisode = useCallback(async (showId: string, episodeId: string) => {
+    const target = findEpisodeTarget(showId, episodeId);
+    if (!target) {
+      notify('找不到这期节目，无法缓存。', 'error');
+      return;
+    }
+    try {
+      await downloadEpisode(target);
+      const state = cacheStatusFor(target.key).state;
+      notify(
+        state === 'ready'
+          ? '《' + target.title + '》已缓存到本机。'
+          : '《' + target.title + '》正在缓存。',
+        state === 'ready' ? 'success' : 'default',
+      );
+    } catch (error) {
+      notify(error instanceof Error ? error.message : '缓存失败，请稍后重试。', 'error');
+    }
+  }, [findEpisodeTarget, notify]);
+
+  const uncacheEpisode = useCallback(async (key: string) => {
+    await removeCachedEpisode(key);
+    notify('已删除本机缓存。', 'default');
+  }, [notify]);
+
+  const clearEpisodeCache = useCallback(async () => {
+    // Detach the active blob: URL first. Revoking a blob that the <audio>
+    // element is currently playing aborts playback (and breaks seeking).
+    const target = currentRef.current;
+    const audio = audioEl.current;
+    if (!isNativePlatform() && audio && cachedObjectUrlRef.current) {
+      const resumeAt = audio.currentTime;
+      releasePlaybackUrl(cachedObjectUrlRef.current);
+      cachedObjectUrlRef.current = null;
+      if (target?.kind === 'episode' && target.episode.audioUrl) {
+        audio.src = audioSource(target.episode.audioUrl);
+        audio.load();
+        if (Number.isFinite(resumeAt) && resumeAt > 0) {
+          audio.addEventListener(
+            'loadedmetadata',
+            () => {
+              try {
+                audio.currentTime = resumeAt;
+              } catch {
+                // Seek can fail while the stream is still opening.
+              }
+            },
+            { once: true },
+          );
+        }
+      }
+    }
+    await clearCache();
+    notify('已清空全部音频缓存。', 'default');
+  }, [notify]);
 
   const setSleepMinutes = useCallback((minutes: number | null) => {
     if (!minutes) {
@@ -1327,10 +1514,11 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const flush = () => {
       const target = currentRef.current;
-      const audio = audioEl.current;
-      if (!target || target.kind !== 'episode' || !audio || !Number.isFinite(audio.currentTime)) return;
+      if (!target || target.kind !== 'episode') return;
+      const at = currentPosition();
+      if (!Number.isFinite(at)) return;
       const state = dataRef.current;
-      const positions = { ...state.positions, [target.key]: audio.currentTime };
+      const positions = { ...state.positions, [target.key]: at };
       savePositions(positions);
       savePersistedState({ ...state, positions });
     };
@@ -1340,7 +1528,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('pagehide', flush);
       document.removeEventListener('visibilitychange', flush);
     };
-  }, []);
+  }, [currentPosition]);
 
   // On Android the native player owns playback; the WebView only reflects it.
   useEffect(() => {
@@ -1355,9 +1543,42 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isNativePlatform() || !currentKey) return;
+    // Only forward the "play" intent. isPlaying momentarily becomes false while
+    // buffering or after a network error, and mirroring that as pause() would
+    // cancel buffering and disable the native retry path — leaving the user
+    // with a session that only a restart can fix.
     if (playback.isPlaying) nativePlay();
-    else nativePause();
   }, [playback.isPlaying, currentKey]);
+
+  // Xiaomi's rear-screen music card can only consume MediaSession artwork.
+  // Refresh the generated receiver LCD when the chapter, theme or fader moves;
+  // time itself is bucketed so this does not wake SystemUI every second.
+  useEffect(() => {
+    if (!isNativePlatform() || !currentKey) return;
+    const target = currentRef.current;
+    if (!target) return;
+    const isEpisode = target.kind === 'episode';
+    const chapters = isEpisode ? target.episode.chapters ?? [] : [];
+    const chapter = chapters[currentChapterIndex];
+    const label = isEpisode
+      ? chapter
+        ? `${pad2(currentChapterIndex + 1)}  ${chapter.title}`
+        : `01  ${target.episode.title}`
+      : `LIVE  ${target.station.name}`;
+    nativeUpdateDisplay({
+      chapter: label,
+      volume: data.preferences.volume,
+      mode: data.preferences.mode,
+      theme: data.preferences.theme,
+    });
+  }, [
+    currentKey,
+    currentChapterIndex,
+    current,
+    data.preferences.volume,
+    data.preferences.mode,
+    data.preferences.theme,
+  ]);
 
   useEffect(() => {
     if (!isNativePlatform()) return undefined;
@@ -1376,7 +1597,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       }));
       const target = currentRef.current;
       if (target && target.kind === 'episode' && Number.isFinite(state.position)) {
-        if (Math.abs(state.position - lastSavedPositionRef.current) > 30) {
+        // 5s drift is enough: the previous 30s threshold lost the tail of a
+        // session when the app was killed right after a network drop.
+        if (Math.abs(state.position - lastSavedPositionRef.current) >= 5) {
           lastSavedPositionRef.current = state.position;
           setData((current) => ({
             ...current,
@@ -1387,8 +1610,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     });
     const offEnded = onNativeEnded(() => nextRef.current?.());
     const offError = onNativeError((message) => {
-      setPlayback((snapshot) => ({ ...snapshot, isPlaying: false, isLoading: false }));
-      notify(message ? `播放失败：${message}` : '播放失败，请稍后重试。', 'error');
+      // Stay in the "wants to play" state so tapping play retries instead of
+      // needing an app restart; the native service rebuilds on the next command.
+      setPlayback((snapshot) => ({ ...snapshot, isPlaying: false, isLoading: false, error: message || '播放失败' }));
+      notify(message ? `播放失败：${message}，网络恢复后会自动重试。` : '播放失败，网络恢复后会自动重试。', 'error');
     });
     return () => {
       offState();
@@ -1422,9 +1647,116 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return off;
   }, []);
 
+  // Network recovery. Two distinct triggers, deliberately kept narrow:
+  //   - `online` after a real drop: the stream is usually dead, so re-arm it.
+  //   - regaining visibility: only if playback is actually in an error state.
+  // Never reload a healthy stream here: `audio.load()` resets currentTime, which
+  // would restart the episode and overwrite the saved position with 0.
+  const wasOfflineRef = useRef(
+    typeof navigator !== 'undefined' && navigator.onLine === false,
+  );
+  useEffect(() => {
+    const recover = (reason: 'online' | 'visible') => {
+      const target = currentRef.current;
+      if (!target) return;
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+      const hadError = Boolean(playbackRef.current.error);
+      // Visibility alone must not touch a healthy session.
+      if (reason === 'visible' && !hadError) return;
+      if (reason === 'online' && !hadError && !wasOfflineRef.current) return;
+      wasOfflineRef.current = false;
+      const resumeAt = currentPosition();
+      setPlayback((snapshot) => ({ ...snapshot, error: null, isLoading: true }));
+      if (isNativePlatform()) {
+        // A full load is the only way out of an ExoPlayer error state; it also
+        // re-applies the position we captured above.
+        const payload = nativeSourcePayload();
+        if (payload) {
+          nativeLoad({
+            ...payload,
+            position: Math.max(resumeAt, payload.position || 0),
+            playing: true,
+          });
+        }
+        return;
+      }
+      // Web: re-enter the normal load path (handles HLS vs direct audio and
+      // prefers an existing offline cache) instead of poking audio.src here.
+      explicitSeekRef.current = resumeAt > 0 ? resumeAt : null;
+      setReloadToken((token) => token + 1);
+    };
+    const onOnline = () => recover('online');
+    const onOffline = () => {
+      wasOfflineRef.current = true;
+    };
+    const onVisible = () => {
+      if (!document.hidden) recover('visible');
+    };
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [currentPosition, nativeSourcePayload]);
+
   nextRef.current = next;
   previousRef.current = previous;
   seekRef.current = seek;
+
+  nextRef.current = next;
+  previousRef.current = previous;
+  seekRef.current = seek;
+
+  // Automatic cache #1: cache newly discovered episodes. A seen-key set is
+  // seeded with everything known at the moment the switch is enabled, so
+  // turning it on does not backfill the whole library; only episodes that
+  // appear later (new subscription / refreshed feed / new release) are queued.
+  const autoCacheSeenRef = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (!data.preferences.autoCacheNewEpisodes) {
+      autoCacheSeenRef.current = null;
+      return;
+    }
+    let seen = autoCacheSeenRef.current;
+    if (!seen) {
+      seen = new Set<string>();
+      for (const show of data.shows) {
+        for (const episode of show.episodes) seen.add(episodeCacheKey(show.id, episode.id));
+      }
+      autoCacheSeenRef.current = seen;
+      return;
+    }
+    const targets: CacheTarget[] = [];
+    const current = new Set<string>();
+    for (const show of data.shows) {
+      for (const episode of show.episodes.slice(0, 3)) {
+        const key = episodeCacheKey(show.id, episode.id);
+        if (seen.has(key)) continue;
+        targets.push(episodeCacheTarget(show, episode));
+      }
+      for (const episode of show.episodes) {
+        const key = episodeCacheKey(show.id, episode.id);
+        seen.add(key);
+        current.add(key);
+      }
+    }
+    // Drop keys for removed subscriptions so the set cannot grow forever.
+    for (const key of seen) {
+      if (!current.has(key)) seen.delete(key);
+    }
+    enqueueAutoCache(targets);
+  }, [data.preferences.autoCacheNewEpisodes, data.shows]);
+
+  // Automatic cache #2: cache the episode that is currently being listened to.
+  // Downloads are serial and never block the UI; failures are silent.
+  useEffect(() => {
+    if (!current || current.kind !== 'episode') return;
+    if (!data.preferences.autoCachePlaying) return;
+    enqueueAutoCache([episodeCacheTarget(current.show, current.episode)]);
+  }, [current?.key, data.preferences.autoCachePlaying]);
 
   const value = useMemo<AppStoreValue>(
     () => ({
@@ -1447,6 +1779,13 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       spectrumBlocked,
       readSpectrum,
       toasts,
+      cacheIndex,
+      cacheStatus: cacheStatusFor,
+      cacheEpisode,
+      uncacheEpisode,
+      clearEpisodeCache,
+      setAutoCacheNewEpisodes,
+      setAutoCachePlaying,
       playRef,
       playEpisode,
       playStation,
@@ -1506,6 +1845,12 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       spectrumBlocked,
       readSpectrum,
       toasts,
+      cacheIndex,
+      cacheEpisode,
+      uncacheEpisode,
+      clearEpisodeCache,
+      setAutoCacheNewEpisodes,
+      setAutoCachePlaying,
       playRef,
       playEpisode,
       playStation,
@@ -1611,7 +1956,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
               );
             }
           }
-          if (Math.abs(time - lastSavedPositionRef.current) > 30) {
+          if (Math.abs(time - lastSavedPositionRef.current) >= 5) {
             lastSavedPositionRef.current = time;
             setData((state) => ({
               ...state,

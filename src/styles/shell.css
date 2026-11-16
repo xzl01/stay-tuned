@@ -464,3 +464,40 @@ html[data-mode='flat'] .player-card::before {
   color: var(--ink);
   background: color-mix(in srgb, var(--surface-2) 72%, transparent);
 }
+
+/* Primary navigation entry: 我的订阅 is the most-used action, so it gets a
+   real button instead of a bare text link. */
+.header-library-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 42px;
+  padding: 0 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface-raised) 84%, transparent);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(48, 52, 46, 0.06);
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease,
+    transform 0.16s ease, box-shadow 0.2s ease;
+}
+
+.header-library-button svg {
+  color: var(--olive);
+  opacity: 1;
+}
+
+.header-library-button:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: var(--surface-raised);
+  box-shadow: 0 4px 12px -6px rgba(48, 52, 46, 0.28);
+  transform: translateY(-1px);
+}
+
+.header-library-button:active {
+  transform: scale(0.98);
+}

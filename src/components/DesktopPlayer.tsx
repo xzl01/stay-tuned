@@ -12,9 +12,10 @@ import { ChaptersSheet } from './ChaptersSheet';
 interface DesktopPlayerProps {
   onOpenLibrary: () => void;
   onOpenQueue: () => void;
+  onOpenSettings: () => void;
 }
 
-export function DesktopPlayer({ onOpenLibrary, onOpenQueue }: DesktopPlayerProps) {
+export function DesktopPlayer({ onOpenLibrary, onOpenQueue, onOpenSettings }: DesktopPlayerProps) {
   const { current, playback } = useAppStore();
   const [chaptersOpen, setChaptersOpen] = useState(false);
   const episodeLabel =
@@ -26,7 +27,7 @@ export function DesktopPlayer({ onOpenLibrary, onOpenQueue }: DesktopPlayerProps
 
   return (
     <div className="desktop-app">
-      <DesktopHeader onOpenLibrary={onOpenLibrary} onOpenQueue={onOpenQueue} />
+      <DesktopHeader onOpenLibrary={onOpenLibrary} onOpenQueue={onOpenQueue} onOpenSettings={onOpenSettings} />
       <main className="desktop-stage" id="now-playing">
         <section className={`player-card ${playback.isPlaying ? 'is-playing' : ''}`} aria-label="播客播放器">
           <div className="desktop-columns">

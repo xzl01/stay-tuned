@@ -12,6 +12,17 @@ export interface NativeLoadOptions {
   volume: number;
   live: boolean;
   playing: boolean;
+  /** Current chapter label for OEM rear-screen media artwork. */
+  chapter?: string;
+  /** Stable episode identity, used for native progress persistence. */
+  key?: string;
+}
+
+export interface NativeDisplayOptions {
+  chapter: string;
+  volume: number;
+  mode: string;
+  theme: string;
 }
 
 export interface NativePlaybackState {
@@ -24,6 +35,7 @@ export interface NativePlaybackState {
 
 interface MediaBridgePlugin {
   load(options: NativeLoadOptions): Promise<{ ok: boolean }>;
+  updateDisplay(options: NativeDisplayOptions): Promise<void>;
   play(): Promise<void>;
   pause(): Promise<void>;
   seekTo(options: { position: number }): Promise<void>;
@@ -61,6 +73,10 @@ function quietly(run: () => Promise<unknown>): void {
 
 export function nativeLoad(options: NativeLoadOptions): void {
   quietly(() => MediaBridge.load({ ...options, artwork: absoluteArtwork(options.artwork) }));
+}
+
+export function nativeUpdateDisplay(options: NativeDisplayOptions): void {
+  quietly(() => MediaBridge.updateDisplay(options));
 }
 
 export const nativePlay = (): void => quietly(() => MediaBridge.play());

@@ -1,0 +1,154 @@
+name: Build desktop packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{github.ref}}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: ${{matrix.name}}
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-latest
+            args: --win nsis portable --x64
+          - name: Windows arm64
+            os: windows-latest
+            args: --win nsis portable --arm64
+          - name: macOS x64
+            os: macos-latest
+            args: --mac dmg zip --x64
+          - name: macOS arm64
+            os: macos-latest
+            args: --mac dmg zip --arm64
+          - name: macOS universal
+            os: macos-latest
+            args: --mac dmg zip --universal
+          - name: Linux x64
+            os: ubuntu-latest
+            args: --linux AppImage deb rpm tar.gz --x64
+          - name: Linux arm64
+            os: ubuntu-24.04-arm
+            args: --linux AppImage deb rpm tar.gz --arm64
+    env:
+      ELECTRON_CACHE: ${{github.workspace}}/.cache/electron
+      ELECTRON_BUILDER_CACHE: ${{github.workspace}}/.cache/electron-builder
+      USE_HARD_LINKS: 'true'
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Pillow for icon generation
+        run: python -m pip install --disable-pip-version-check Pillow
+
+      - name: Cache Electron toolsets
+        uses: actions/cache@v4
+        with:
+          path: ${{github.workspace}}/.cache
+          key: ${{runner.os}}-${{runner.arch}}-electron-${{hashFiles('package-lock.json', 'electron-builder.yml')}}
+          restore-keys: |
+            ${{runner.os}}-${{runner.arch}}-electron-
+
+      - name: Install Linux packaging tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y rpm libopenjp2-tools
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download Electron runtime
+        run: node node_modules/electron/install.js
+
+      - name: Build web bundle and desktop icons
+        run: npm run desktop:prepare
+
+      - name: Package desktop app
+        shell: bash
+        env:
+          # Without a Developer ID certificate, arm64/universal macOS builds must
+          # still be ad-hoc signed or macOS refuses to launch them. The hook in
+          # scripts/after-sign.cjs skips itself when a real identity is present.
+          STAY_TUNED_ADHOC_SIGN: '1'
+          # Configure these repository secrets to enable real signing/notarization.
+          CSC_LINK: ${{secrets.MAC_CSC_LINK}}
+          CSC_KEY_PASSWORD: ${{secrets.MAC_CSC_KEY_PASSWORD}}
+          APPLE_API_KEY: ${{secrets.APPLE_API_KEY}}
+          APPLE_API_KEY_ID: ${{secrets.APPLE_API_KEY_ID}}
+          APPLE_API_ISSUER: ${{secrets.APPLE_API_ISSUER}}
+          APPLE_TEAM_ID: ${{secrets.APPLE_TEAM_ID}}
+          WIN_CSC_LINK: ${{secrets.WIN_CSC_LINK}}
+          WIN_CSC_KEY_PASSWORD: ${{secrets.WIN_CSC_KEY_PASSWORD}}
+        run: npx electron-builder ${{matrix.args}} --publish never
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{matrix.os}}-${{strategy.job-index}}
+          path: |
+            desktop-dist/**/*.exe
+            desktop-dist/**/*.dmg
+            desktop-dist/**/*.zip
+            desktop-dist/**/*.AppImage
+            desktop-dist/**/*.deb
+            desktop-dist/**/*.rpm
+            desktop-dist/**/*.tar.gz
+            desktop-dist/**/*.blockmap
+            desktop-dist/latest*.yml
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-*
+          path: desktop-dist
+          merge-multiple: true
+
+      - name: Attach desktop packages to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop-dist/**/*.exe
+            desktop-dist/**/*.dmg
+            desktop-dist/**/*.zip
+            desktop-dist/**/*.AppImage
+            desktop-dist/**/*.deb
+            desktop-dist/**/*.rpm
+            desktop-dist/**/*.tar.gz
+            desktop-dist/**/*.blockmap
+            desktop-dist/latest*.yml
+          generate_release_notes: true
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

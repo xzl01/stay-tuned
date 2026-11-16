@@ -13,6 +13,8 @@ const DEFAULT_PREFERENCES: Preferences = {
   rate: 1,
   followTranscript: true,
   haptics: true,
+  autoCacheNewEpisodes: false,
+  autoCachePlaying: false,
   history: [],
 };
 
@@ -77,6 +79,8 @@ function sanitize(input: unknown): PersistedState | null {
   // Older backups have no `haptics` field; keep the switch on unless it was
   // explicitly turned off.
   preferences.haptics = preferences.haptics !== false;
+  preferences.autoCacheNewEpisodes = Boolean(preferences.autoCacheNewEpisodes);
+  preferences.autoCachePlaying = Boolean(preferences.autoCachePlaying);
   if (!Array.isArray(preferences.history)) preferences.history = [];
 
   const current =

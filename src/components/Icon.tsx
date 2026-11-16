@@ -40,7 +40,10 @@ export type IconName =
   | 'haptics'
   | 'spark'
   | 'headphones'
-  | 'list';
+  | 'list'
+  | 'download'
+  | 'downloadDone'
+  | 'settings';
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: IconName;
@@ -49,6 +52,31 @@ interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
 }
 
 const paths: Record<IconName, React.ReactNode> = {
+  settings: (
+    <>
+      <path d="M4 7h4.6M15.4 7H20" />
+      <circle cx="12" cy="7" r="2.2" />
+      <path d="M4 12h9.6M18.4 12H20" />
+      <circle cx="16" cy="12" r="2.2" />
+      <path d="M4 17h1.6M10.4 17H20" />
+      <circle cx="7.6" cy="17" r="2.2" />
+    </>
+  ),
+  download: (
+    <>
+      <path d="M12 3.5v10.2" />
+      <path d="m7.8 9.8 4.2 4.2 4.2-4.2" />
+      <path d="M5 17.5v1.2A1.8 1.8 0 0 0 6.8 20.5h10.4a1.8 1.8 0 0 0 1.8-1.8v-1.2" />
+    </>
+  ),
+  downloadDone: (
+    <>
+      <path d="M12 3.5v9" />
+      <path d="m7.8 8.6 4.2 4.2 4.2-4.2" />
+      <path d="M5 16.5v2A1.8 1.8 0 0 0 6.8 20.3h10.4a1.8 1.8 0 0 0 1.8-1.8v-2" />
+      <path d="m9 14.8 2 2 4-4" />
+    </>
+  ),
   play: <path d="M8 5.2c0-1.1 1.2-1.8 2.2-1.2l9.6 6.1c1 .6 1 2 0 2.6l-9.6 6.1c-1 .6-2.2-.1-2.2-1.2V5.2Z" fill="currentColor" stroke="none" />,
   pause: (
     <g fill="currentColor" stroke="none">

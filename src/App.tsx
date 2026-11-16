@@ -9,6 +9,8 @@ import { LibrarySheet } from './components/LibrarySheet';
 import { QueueSheet } from './components/QueueSheet';
 import { ServerSheet } from './components/ServerSheet';
 import { DataSheet } from './components/DataSheet';
+import { CacheSheet } from './components/CacheSheet';
+import { SettingsSheet } from './components/SettingsSheet';
 import { ToastStack } from './components/ui/Primitives';
 import { Receiver3DEggContext } from './hooks/usePlayEasterEgg';
 import { STATIC_DEMO } from './lib/env';
@@ -40,6 +42,8 @@ function AppShell() {
   const [receiver3DOpen, setReceiver3DOpen] = useState(false);
   const [serverOpen, setServerOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
+  const [cacheOpen, setCacheOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const closeReceiver3D = useCallback(() => {
     setReceiver3DOpen(false);
     requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-testid="receiver-play"]')?.focus({ preventScroll: true }));
@@ -138,26 +142,47 @@ function AppShell() {
       </div>
 
       {isMobile ? (
-        <MobilePlayer onOpenLibrary={openLibrary} onOpenQueue={openQueue} />
+        <MobilePlayer
+          onOpenLibrary={openLibrary}
+          onOpenQueue={openQueue}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
       ) : (
-        <DesktopPlayer onOpenLibrary={openLibrary} onOpenQueue={openQueue} />
+        <DesktopPlayer
+          onOpenLibrary={openLibrary}
+          onOpenQueue={openQueue}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
       )}
 
       <LibrarySheet
         open={libraryOpen}
         onClose={() => setLibraryOpen(false)}
-        onOpenServer={() => {
+        onOpenSettings={() => {
           setLibraryOpen(false);
-          setServerOpen(true);
-        }}
-        onOpenData={() => {
-          setLibraryOpen(false);
-          setDataOpen(true);
+          setSettingsOpen(true);
         }}
       />
       <QueueSheet open={queueOpen} onClose={() => setQueueOpen(false)} onBrowse={openLibrary} />
       <ServerSheet open={serverOpen} onClose={() => setServerOpen(false)} />
       <DataSheet open={dataOpen} onClose={() => setDataOpen(false)} />
+      <CacheSheet open={cacheOpen} onClose={() => setCacheOpen(false)} />
+      <SettingsSheet
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onOpenCache={() => {
+          setSettingsOpen(false);
+          setCacheOpen(true);
+        }}
+        onOpenData={() => {
+          setSettingsOpen(false);
+          setDataOpen(true);
+        }}
+        onOpenServer={() => {
+          setSettingsOpen(false);
+          setServerOpen(true);
+        }}
+      />
       <ToastStack />
 
     </div>

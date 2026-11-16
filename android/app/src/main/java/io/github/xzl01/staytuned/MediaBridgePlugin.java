@@ -65,7 +65,19 @@ public class MediaBridgePlugin extends Plugin {
     private void send(String action, Intent intent) {
         intent.setClass(getContext(), PlaybackService.class);
         intent.setAction(action);
-        ContextCompat.startForegroundService(getContext(), intent);
+        // Only a load starts a foreground service. Rate/volume/display/seek
+        // commands can also arrive when nothing is playing; promoting those with
+        // startForegroundService() would trip the 5s startForeground() contract
+        // and crash the app with ForegroundServiceDidNotStartInTimeException.
+        try {
+            if (PlaybackService.ACTION_LOAD.equals(action)) {
+                ContextCompat.startForegroundService(getContext(), intent);
+            } else {
+                getContext().startService(intent);
+            }
+        } catch (IllegalStateException ignored) {
+            // Background service start is not allowed; the command is a no-op.
+        }
     }
 
     @PluginMethod
@@ -80,8 +92,21 @@ public class MediaBridgePlugin extends Plugin {
         intent.putExtra("volume", call.getDouble("volume", 1.0));
         intent.putExtra("live", Boolean.TRUE.equals(call.getBoolean("live", false)));
         intent.putExtra("playing", Boolean.TRUE.equals(call.getBoolean("playing", false)));
+        intent.putExtra("chapter", call.getString("chapter", ""));
+        intent.putExtra("key", call.getString("key", ""));
         send(PlaybackService.ACTION_LOAD, intent);
         call.resolve(new JSObject().put("ok", true));
+    }
+
+    @PluginMethod
+    public void updateDisplay(PluginCall call) {
+        Intent intent = new Intent();
+        intent.putExtra("chapter", call.getString("chapter", ""));
+        intent.putExtra("volume", call.getDouble("volume", 1.0));
+        intent.putExtra("mode", call.getString("mode", "skeuo"));
+        intent.putExtra("theme", call.getString("theme", "light"));
+        send(PlaybackService.ACTION_UPDATE_DISPLAY, intent);
+        call.resolve();
     }
 
     @PluginMethod
@@ -122,10 +147,7 @@ public class MediaBridgePlugin extends Plugin {
 
     @PluginMethod
     public void stop(PluginCall call) {
-        Intent intent = new Intent();
-        intent.setClass(getContext(), PlaybackService.class);
-        intent.setAction(PlaybackService.ACTION_STOP);
-        getContext().startService(intent);
+        send(PlaybackService.ACTION_STOP, new Intent());
         call.resolve();
     }
 
