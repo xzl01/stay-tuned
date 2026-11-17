@@ -167,13 +167,14 @@ export function SettingsSheet({
         />
         <Row
           title="主题"
-          hint="亮色为暖白，暗色为暖炭灰。"
+          hint="跟随系统会随手机的深色模式自动切换；亮色为暖白，暗色为暖炭灰。"
           control={
             <Segment<Theme>
               label="配色主题"
               value={prefs.theme}
               onChange={setTheme}
               options={[
+                { value: 'system', label: '跟随' },
                 { value: 'light', label: '亮色' },
                 { value: 'dark', label: '暗色' },
               ]}

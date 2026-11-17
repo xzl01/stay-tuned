@@ -25,6 +25,7 @@ import type {
   PersistedState,
 } from '../types';
 import { loadPersistedState, savePersistedState, savePositions } from '../lib/storage';
+import { THEME_QUERY, resolveTheme } from '../lib/theme';
 import { exportBackupFile, mergeBackup, parseBackup, type ImportMode } from '../lib/backup';
 import {
   audioSource,
@@ -119,6 +120,8 @@ interface AppStoreValue {
   currentKey: string | null;
   favorites: string[];
   prefs: Preferences;
+  /** `prefs.theme` with `system` collapsed to the OS appearance. */
+  resolvedTheme: 'light' | 'dark';
   /** Whether this device can play haptics at all (Android build with a motor). */
   hapticsAvailable: boolean;
   playback: PlaybackSnapshot;
@@ -237,6 +240,12 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [spectrumReady, setSpectrumReady] = useState(false);
   const [spectrumBlocked, setSpectrumBlocked] = useState(false);
   const [hapticsAvailable, setHapticsAvailable] = useState(false);
+  /** Tracks the OS appearance so `theme: 'system'` can follow it live. */
+  const [systemDark, setSystemDark] = useState(
+    () => typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia(THEME_QUERY).matches,
+  );
   /** Bumped to re-enter the load effect (network recovery). */
   const [reloadToken, setReloadToken] = useState(0);
   const cacheIndex = useSyncExternalStore(subscribeCache, getCacheIndex, getCacheIndex);
@@ -249,6 +258,16 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Follow the OS appearance while the preference is "system".
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+    const query = window.matchMedia(THEME_QUERY);
+    const sync = () => setSystemDark(query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
   }, []);
 
   useEffect(() => {
@@ -1758,6 +1777,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     enqueueAutoCache([episodeCacheTarget(current.show, current.episode)]);
   }, [current?.key, data.preferences.autoCachePlaying]);
 
+  // Derived outside the memo so the context value can depend on it directly.
+  const resolvedTheme = resolveTheme(data.preferences.theme, systemDark);
+
   const value = useMemo<AppStoreValue>(
     () => ({
       shows: data.shows,
@@ -1768,6 +1790,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       currentKey,
       favorites: data.favorites,
       prefs: data.preferences,
+      resolvedTheme,
       hapticsAvailable,
       playback,
       sleep,
@@ -1888,6 +1911,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       isQueued,
       notify,
       dismissToast,
+      resolvedTheme,
     ],
   );
 

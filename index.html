@@ -16,7 +16,11 @@
         const saved = JSON.parse(localStorage.getItem('stay-tuned:v1') || 'null');
         const theme = saved && saved.preferences && saved.preferences.theme;
         const mode = saved && saved.preferences && saved.preferences.mode;
-        document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light';
+        const pref = theme === 'dark' || theme === 'light' || theme === 'system' ? theme : 'light';
+        const dark = pref === 'system'
+          ? Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          : pref === 'dark';
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
         document.documentElement.dataset.mode = mode === 'flat' ? 'flat' : 'skeuo';
       } catch (_) {
         document.documentElement.dataset.theme = 'light';

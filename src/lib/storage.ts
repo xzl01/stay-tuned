@@ -71,7 +71,7 @@ function sanitize(input: unknown): PersistedState | null {
     ...DEFAULT_PREFERENCES,
     ...(raw.preferences && typeof raw.preferences === 'object' ? raw.preferences : {}),
   };
-  if (!['light', 'dark'].includes(preferences.theme)) preferences.theme = 'light';
+  if (!['light', 'dark', 'system'].includes(preferences.theme)) preferences.theme = 'light';
   if (!['skeuo', 'flat'].includes(preferences.mode)) preferences.mode = 'skeuo';
   preferences.volume = Math.min(1, Math.max(0, Number(preferences.volume) || 0));
   preferences.rate = Math.min(2, Math.max(0.5, Number(preferences.rate) || 1));

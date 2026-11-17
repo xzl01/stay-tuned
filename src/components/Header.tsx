@@ -51,7 +51,7 @@ function ThemeButton({ theme, onToggle }: { theme: Theme; onToggle: () => void }
 function HeaderAppearanceMenu() {
   // Haptics lives in Settings: it is a preference, not something to flip while
   // glancing at the player.
-  const { prefs, setMode, setTheme } = useAppStore();
+  const { prefs, resolvedTheme, setMode, setTheme } = useAppStore();
   const options: MenuOption[] = [
     {
       id: 'skeuo',
@@ -64,6 +64,13 @@ function HeaderAppearanceMenu() {
       label: '扁平外观',
       active: prefs.mode === 'flat',
       onSelect: () => setMode('flat'),
+    },
+    {
+      id: 'system',
+      label: '跟随系统',
+      detail: resolvedTheme === 'dark' ? '当前深色' : '当前浅色',
+      active: prefs.theme === 'system',
+      onSelect: () => setTheme('system'),
     },
     {
       id: 'light',
@@ -80,7 +87,7 @@ function HeaderAppearanceMenu() {
   ];
   return (
     <MenuPopover
-      trigger={<Icon name={prefs.theme === 'light' ? 'sun' : 'moon'} size={19} />}
+      trigger={<Icon name={resolvedTheme === 'light' ? 'sun' : 'moon'} size={19} />}
       triggerClassName="header-appearance-trigger"
       triggerTitle="外观设置"
       options={options}
@@ -133,7 +140,7 @@ export function DesktopHeader({ onOpenLibrary, onOpenQueue, onOpenSettings }: He
 }
 
 export function MobileHeader({ onOpenLibrary, onOpenSettings }: { onOpenLibrary: () => void; onOpenSettings: () => void }) {
-  const { prefs, setMode, setTheme } = useAppStore();
+  const { prefs, resolvedTheme, setMode, setTheme } = useAppStore();
   return (
     <header className="site-header site-header--mobile">
       <button
@@ -157,7 +164,10 @@ export function MobileHeader({ onOpenLibrary, onOpenSettings }: { onOpenLibrary:
           <Icon name="library" size={20} />
         </button>
         <ModeToggle mode={prefs.mode} onChange={setMode} compact />
-        <ThemeButton theme={prefs.theme} onToggle={() => setTheme(prefs.theme === 'light' ? 'dark' : 'light')} />
+        <ThemeButton
+          theme={resolvedTheme}
+          onToggle={() => setTheme(resolvedTheme === 'light' ? 'dark' : 'light')}
+        />
         <button
           type="button"
           className="header-icon-button"

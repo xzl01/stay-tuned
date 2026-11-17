@@ -30,6 +30,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
 function AppShell() {
   const {
     prefs,
+    resolvedTheme,
     togglePlay,
     skip,
     toggleMute,
@@ -67,11 +68,11 @@ function AppShell() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = prefs.theme;
+    document.documentElement.dataset.theme = resolvedTheme;
     document.documentElement.dataset.mode = prefs.mode;
     const meta = document.querySelector('meta[name="theme-color"]');
-    meta?.setAttribute('content', prefs.theme === 'dark' ? '#121410' : '#efece4');
-  }, [prefs.theme, prefs.mode]);
+    meta?.setAttribute('content', resolvedTheme === 'dark' ? '#121410' : '#efece4');
+  }, [resolvedTheme, prefs.mode]);
 
   useEffect(() => {
     if (!STATIC_DEMO) return;
@@ -115,12 +116,13 @@ function AppShell() {
       } else if (event.key.toLowerCase() === 'q') {
         setQueueOpen(true);
       } else if (event.key.toLowerCase() === 'd') {
-        setTheme(prefs.theme === 'light' ? 'dark' : 'light');
+        // Toggle against what is actually on screen, so it also leaves 'system'.
+        setTheme(resolvedTheme === 'light' ? 'dark' : 'light');
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [libraryOpen, queueOpen, receiver3DOpen, closeReceiver3D, prefs.theme, skip, setTheme, toggleMute, togglePlay]);
+  }, [libraryOpen, queueOpen, receiver3DOpen, closeReceiver3D, resolvedTheme, skip, setTheme, toggleMute, togglePlay]);
 
   const openLibrary = () => {
     setQueueOpen(false);

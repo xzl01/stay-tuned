@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
-export type Theme = 'light' | 'dark';
+/** `system` follows the OS appearance and resolves at runtime. */
+export type Theme = 'light' | 'dark' | 'system';
 export type Mode = 'skeuo' | 'flat';
 
 export type CoverKind =
