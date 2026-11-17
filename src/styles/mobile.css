@@ -535,3 +535,28 @@
   transition: height 0.08s linear;
   will-change: height;
 }
+
+/* Horizontal gutters honour the display cutout in landscape. The value still
+   shrinks on narrow screens via --mobile-gutter. */
+:root {
+  --mobile-gutter: 22px;
+}
+
+@media (max-width: 390px) {
+  :root {
+    --mobile-gutter: 18px;
+  }
+}
+
+@media (max-width: 340px) {
+  :root {
+    --mobile-gutter: 14px;
+  }
+}
+
+.site-header--mobile,
+.mobile-stage {
+  padding-left: max(var(--mobile-gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--mobile-gutter), env(safe-area-inset-right, 0px));
+}
+
