@@ -138,6 +138,8 @@ npm run android:apk    # 产出 android/app/build/outputs/apk/debug/app-debug.ap
 
 配置后 workflow 会自动签名 `app-release.apk`；缺少这些 Secrets 时仍会构建未签名包，不会失败。
 
+> 本仓库的四个签名 Secrets 已配置，`v*` 标签产物中的 `release.apk` 是正式签名包。签名密钥（JKS / RSA 4096 / 30 年有效期）由维护者离线保管：**密钥一旦丢失，已发布的应用将无法再更新**，请自行备份，且不要提交进仓库（`.gitignore` 已屏蔽 `*.jks`、`*.keystore`、`*.p12`）。
+
 **内置解析引擎**：APK 里打包了完整的解析层，`server/feed.mjs`、`playlist.mjs`、`extras.mjs`、`catalog.mjs` 等纯 ESM 模块被前端直接复用，网络请求通过 CapacitorHttp 走原生通道，因此**不需要任何服务端**：
 
 | 能力 | 是否内置 |

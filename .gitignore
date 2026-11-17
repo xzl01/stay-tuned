@@ -27,3 +27,10 @@ playwright-report
 .npm
 *.swp
 .toolchain
+# Signing material must never be committed.
+*.jks
+*.keystore
+!android/keystore/debug.keystore
+*.p12
+*.pfx
+release-signing/
