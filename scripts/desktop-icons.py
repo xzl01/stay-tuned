@@ -6,8 +6,6 @@ tools. Pillow draws the same geometry as scripts/assets/icon-full.svg.
 """
 from pathlib import Path
 import struct
-import subprocess
-import tempfile
 from io import BytesIO
 
 from PIL import Image, ImageDraw
@@ -76,19 +74,30 @@ def write_ico(base):
     (BUILD / 'icon.ico').write_bytes(header + directory + blobs)
 
 
+# ICNS element types and the pixel size each one carries.
+ICNS_TYPES = (
+    (b'ic07', 128),
+    (b'ic08', 256),
+    (b'ic09', 512),
+    (b'ic10', 1024),
+    (b'ic11', 32),
+    (b'ic12', 64),
+    (b'ic13', 256),
+    (b'ic14', 512),
+)
+
+
 def write_icns(base):
-    # iconutil expects a full .iconset; macOS derives standard variants.
-    with tempfile.TemporaryDirectory() as tmp:
-        iconset = Path(tmp) / 'icon.iconset'
-        iconset.mkdir()
-        for n in (16, 32, 128, 256, 512):
-            base.resize((n, n), Image.Resampling.LANCZOS).save(
-                iconset / ('icon_' + str(n) + 'x' + str(n) + '.png'))
-            base.resize((n*2, n*2), Image.Resampling.LANCZOS).save(
-                iconset / ('icon_' + str(n) + 'x' + str(n) + '@2x.png'))
-        subprocess.run(['iconutil', '--convert', 'icns',
-                        '--output', str(BUILD / 'icon.icns'),
-                        str(iconset)], check=True)
+    # Build the .icns container directly instead of shelling out to iconutil,
+    # which only exists on macOS. The format is a header plus tagged PNG
+    # chunks, so this works on every CI runner and keeps the output identical.
+    chunks = b''
+    for tag, size in ICNS_TYPES:
+        buf = BytesIO()
+        base.resize((size, size), Image.Resampling.LANCZOS).save(buf, format='PNG')
+        data = buf.getvalue()
+        chunks += tag + struct.pack('>I', len(data) + 8) + data
+    (BUILD / 'icon.icns').write_bytes(b'icns' + struct.pack('>I', len(chunks) + 8) + chunks)
 
 
 def main():
