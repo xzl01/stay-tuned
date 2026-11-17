@@ -49,7 +49,9 @@ function ThemeButton({ theme, onToggle }: { theme: Theme; onToggle: () => void }
 }
 
 function HeaderAppearanceMenu() {
-  const { prefs, setMode, setTheme, setHaptics, hapticsAvailable } = useAppStore();
+  // Haptics lives in Settings: it is a preference, not something to flip while
+  // glancing at the player.
+  const { prefs, setMode, setTheme } = useAppStore();
   const options: MenuOption[] = [
     {
       id: 'skeuo',
@@ -75,17 +77,6 @@ function HeaderAppearanceMenu() {
       active: prefs.theme === 'dark',
       onSelect: () => setTheme('dark'),
     },
-    ...(hapticsAvailable
-      ? [
-          {
-            id: 'haptics',
-            label: '触感反馈',
-            detail: prefs.haptics ? '开' : '关',
-            active: prefs.haptics,
-            onSelect: () => setHaptics(!prefs.haptics),
-          } satisfies MenuOption,
-        ]
-      : []),
   ];
   return (
     <MenuPopover
@@ -142,7 +133,7 @@ export function DesktopHeader({ onOpenLibrary, onOpenQueue, onOpenSettings }: He
 }
 
 export function MobileHeader({ onOpenLibrary, onOpenSettings }: { onOpenLibrary: () => void; onOpenSettings: () => void }) {
-  const { prefs, setMode, setTheme, setHaptics, hapticsAvailable } = useAppStore();
+  const { prefs, setMode, setTheme } = useAppStore();
   return (
     <header className="site-header site-header--mobile">
       <button
@@ -166,18 +157,6 @@ export function MobileHeader({ onOpenLibrary, onOpenSettings }: { onOpenLibrary:
           <Icon name="library" size={20} />
         </button>
         <ModeToggle mode={prefs.mode} onChange={setMode} compact />
-        {hapticsAvailable ? (
-          <button
-            type="button"
-            className={`header-icon-button ${prefs.haptics ? 'is-on' : ''}`}
-            onClick={() => setHaptics(!prefs.haptics)}
-            aria-label={prefs.haptics ? '关闭触感反馈' : '开启触感反馈'}
-            aria-pressed={prefs.haptics}
-            title={prefs.haptics ? '触感 · 开' : '触感 · 关'}
-          >
-            <Icon name="haptics" size={18} />
-          </button>
-        ) : null}
         <ThemeButton theme={prefs.theme} onToggle={() => setTheme(prefs.theme === 'light' ? 'dark' : 'light')} />
         <button
           type="button"
