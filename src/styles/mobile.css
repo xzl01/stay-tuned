@@ -559,4 +559,3 @@
   padding-left: max(var(--mobile-gutter), env(safe-area-inset-left, 0px));
   padding-right: max(var(--mobile-gutter), env(safe-area-inset-right, 0px));
 }
-
