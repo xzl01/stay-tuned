@@ -4,7 +4,7 @@ import { webview } from '@kit.ArkWeb';
 import { picker } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { common } from '@kit.AbilityKit';
+import { common, Want } from '@kit.AbilityKit';
 import { StayTunedHttp } from '../common/HttpBridge';
 import { MediaHost } from '../common/MediaHost';
 import { FilesHost } from '../common/FilesHost';
@@ -75,6 +75,33 @@ struct Index {
     this.media.sendAction(action);
   }
 
+  /** True for links that should leave the shell (browser, mail, store...). */
+  private shouldOpenExternally(url: string): boolean {
+    if (url.length === 0) return false;
+    if (url.startsWith('resource://') || url.startsWith('about:') || url.startsWith('data:')) {
+      return false;
+    }
+    return url.startsWith('http://') || url.startsWith('https://');
+  }
+
+  /**
+   * Hand a link to the system browser. Android does the same through
+   * Capacitor's `launchIntent`, and without it every `target="_blank"` link in
+   * the app (release notes, licence, podcast site) is dead in the shell.
+   */
+  private openExternal(url: string): void {
+    const context = this.context;
+    if (!context) return;
+    const want: Want = {
+      action: 'ohos.want.action.viewData',
+      entities: ['entity.system.browsable'],
+      uri: url,
+    };
+    context.startAbility(want).catch((error: BusinessError) => {
+      hilog.warn(DOMAIN, TAG, 'open external failed: %{public}s', JSON.stringify(error));
+    });
+  }
+
   /** Re-enter the bundled page after the renderer was killed. */
   private reloadPage(): void {
     try {
@@ -130,6 +157,21 @@ struct Index {
           this.openFilePicker(event);
           // Returning true means ArkWeb waits for handleFileList().
           return true;
+        })
+        .onLoadIntercept((event: OnLoadInterceptEvent) => {
+          const url = event.data.getRequestUrl();
+          if (this.shouldOpenExternally(url)) {
+            this.openExternal(url);
+            return true;
+          }
+          return false;
+        })
+        .onDownloadStart((event: OnDownloadStartEvent) => {
+          // Anything the page tries to download goes to the browser, which owns
+          // a real downloader; the blob: exports already use StayTunedFiles.
+          if (this.shouldOpenExternally(event.url)) {
+            this.openExternal(event.url);
+          }
         })
         .onRenderExited(() => {
           // The renderer can be reclaimed while the app sits in the background.
