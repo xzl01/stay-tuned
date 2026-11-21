@@ -291,6 +291,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const hlsRef = useRef<Hls | null>(null);
   const hlsPendingRef = useRef(false);
   const cachedObjectUrlRef = useRef<string | null>(null);
+  /** Set when the media element lost its source (error / long background);
+   *  the next play re-arms it instead of calling play() on a dead element. */
+  const needsReloadRef = useRef(false);
   /** One-shot resume position applied on the next (re)load. */
   const explicitSeekRef = useRef<number | null>(null);
   const pendingSeekRef = useRef<number | null>(null);
@@ -563,6 +566,34 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return true;
   }, []);
 
+  /**
+   * Rebuild the media element at the last known position.
+   *
+   * A paused stream that sat in the background for a while can lose its source:
+   * the network connection is gone, the element ends up in an error state, and
+   * calling play() on it fails forever. Re-entering the normal load path
+   * re-resolves the URL, prefers an offline cache and re-applies the position.
+   */
+  const rearmSource = useCallback(
+    (announce: boolean) => {
+      const target = currentRef.current;
+      if (!target || isNativePlatform()) return false;
+      // Read the element directly: currentPosition() is declared further down.
+      const elementTime = audioEl.current?.currentTime;
+      const resumeAt =
+        Number.isFinite(elementTime) && (elementTime as number) > 0
+          ? (elementTime as number)
+          : playbackRef.current.currentTime || 0;
+      needsReloadRef.current = false;
+      explicitSeekRef.current = resumeAt > 0 ? resumeAt : null;
+      setPlayback((snapshot) => ({ ...snapshot, error: null, isLoading: true, isPlaying: true }));
+      setReloadToken((token) => token + 1);
+      if (announce) notify('正在重新连接音频…');
+      return true;
+    },
+    [notify],
+  );
+
   const requestPlay = useCallback(() => {
     if (isNativePlatform()) {
       nativePlay();
@@ -571,11 +602,22 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     const audio = audioEl.current;
     if (!audio) return;
     if (hlsPendingRef.current) return;
+    // The element has no usable source any more (network dropped while paused,
+    // or the media resource was released in the background). play() alone would
+    // reject with NotSupportedError and leave the UI stuck.
+    if (audio.error || needsReloadRef.current) {
+      rearmSource(false);
+      return;
+    }
     ensureSpectrum();
     const result = audio.play();
     if (result?.catch) {
       result.catch((err: DOMException) => {
         if (err?.name === 'AbortError') return;
+        // A dead source is worth one rebuild before telling the user off.
+        if ((err?.name === 'NotSupportedError' || err?.name === 'NotReadableError') && rearmSource(false)) {
+          return;
+        }
         setPlayback((snapshot) => ({ ...snapshot, isPlaying: false, isLoading: false }));
         if (err?.name === 'NotAllowedError') {
           notify('浏览器拦截了自动播放，请再点一次播放。', 'error');
@@ -584,7 +626,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         }
       });
     }
-  }, [notify, ensureSpectrum]);
+  }, [notify, ensureSpectrum, rearmSource]);
 
   const destroyHls = useCallback(() => {
     if (hlsRef.current) {
@@ -608,6 +650,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     // Switching episodes invalidates the previous blob: URL.
     releasePlaybackUrl(cachedObjectUrlRef.current);
     cachedObjectUrlRef.current = null;
+    // A fresh load always starts from a clean element.
+    needsReloadRef.current = false;
     if (isNativePlatform()) {
       // ExoPlayer is the only audio source on Android.
       destroyHls();
@@ -1679,7 +1723,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       const target = currentRef.current;
       if (!target) return;
       if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
-      const hadError = Boolean(playbackRef.current.error);
+      // The element can die without React ever seeing it (the error event fires
+      // while the page is hidden), so both flags count as an error.
+      const hadError = Boolean(playbackRef.current.error) || Boolean(audioEl.current?.error);
       // Visibility alone must not touch a healthy session.
       if (reason === 'visible' && !hadError) return;
       if (reason === 'online' && !hadError && !wasOfflineRef.current) return;
@@ -1999,6 +2045,42 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
             setPlayback((snapshot) => ({ ...snapshot, isLoading: true }));
           }
         }}
+        onError={() => {
+          const target = currentRef.current;
+          const audio = audioEl.current;
+          if (!audio || !target) return;
+          // Clearing the source on purpose (switching items, native mode) fires
+          // an error too; only a real load failure should stop the UI.
+          const source = audio.currentSrc || audio.getAttribute('src') || '';
+          if (!source) return;
+          if (hlsRef.current) return; // hls.js owns its own retry/teardown
+          const code = audio.error?.code ?? 0;
+          if (code === 1) return; // MEDIA_ERR_ABORTED: we cancelled it
+
+          // A CORS-enabled media request can fail even though the stream itself
+          // is fine. Retry once without it so playback still works; the analyser
+          // then stays silent and the spectrum uses its fallback animation.
+          if (!STATIC_DEMO && corsFallbackRef.current !== target.key && audio.getAttribute('crossorigin')) {
+            corsFallbackRef.current = target.key;
+            setSpectrumBlocked(true);
+            audio.removeAttribute('crossorigin');
+            const retryUrl = target.kind === 'episode' ? target.episode.audioUrl : target.station.url;
+            audio.src = audioSource(retryUrl);
+            audio.load();
+            if (playbackRef.current.isPlaying) requestPlay();
+            return;
+          }
+
+          // The source is gone for good (long background pause, dropped network).
+          // Remember it so the next play rebuilds instead of failing forever.
+          needsReloadRef.current = true;
+          setPlayback((snapshot) => ({
+            ...snapshot,
+            isLoading: false,
+            isPlaying: false,
+            error: code === 3 ? '音频解码失败' : '音频连接中断',
+          }));
+        }}
         onCanPlay={() => setPlayback((snapshot) => ({ ...snapshot, isLoading: false }))}
         onPlaying={() => setPlayback((snapshot) => ({ ...snapshot, isLoading: false, error: null }))}
         onEnded={() => {
@@ -2030,31 +2112,6 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
           } else {
             setPlayback((snapshot) => ({ ...snapshot, isPlaying: false }));
           }
-        }}
-        onError={() => {
-          const target = currentRef.current;
-          const audio = audioEl.current;
-          if (!target) return;
-          // A CORS-enabled media request can fail even though the stream itself
-          // is fine. Retry once without it so playback still works; the analyser
-          // then stays silent and the spectrum uses its fallback animation.
-          if (audio && !STATIC_DEMO && corsFallbackRef.current !== target.key && audio.getAttribute('crossorigin')) {
-            corsFallbackRef.current = target.key;
-            setSpectrumBlocked(true);
-            audio.removeAttribute('crossorigin');
-            const retryUrl = target.kind === 'episode' ? target.episode.audioUrl : target.station.url;
-            audio.src = audioSource(retryUrl);
-            audio.load();
-            if (playbackRef.current.isPlaying) requestPlay();
-            return;
-          }
-          setPlayback((snapshot) => ({
-            ...snapshot,
-            isLoading: false,
-            isPlaying: false,
-            error: '音频无法播放',
-          }));
-          notify('音频无法播放，请检查网络或换一段内容。', 'error');
         }}
       />
       {children}

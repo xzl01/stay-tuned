@@ -64,6 +64,8 @@ public class PlaybackService extends Service {
 
     private static final boolean REAR_SCREEN_DEVICE = isXiaomiRearScreenDevice();
     private static final String POSITION_PREFS = "stay_tuned_positions";
+    /** Survives a service restart so a paused item can still be resumed. */
+    private static final String SOURCE_PREFS = "stay_tuned_source";
     private static final String CHANNEL_ID = "playback";
     private static final int NOTIFICATION_ID = 1201;
     private static final int CONTENT_REQUEST = 1202;
@@ -262,6 +264,8 @@ public class PlaybackService extends Service {
                 forward("prev");
                 break;
             case ACTION_STOP:
+                // An explicit stop throws the snapshot away; a system kill must not.
+                clearSource();
                 release();
                 stopSelf();
                 return START_NOT_STICKY;
@@ -312,19 +316,72 @@ public class PlaybackService extends Service {
         playing = autoplay;
 
         loadArtwork(orEmpty(intent.getStringExtra("artwork")));
+        persistSource();
         syncWidget();
         publish();
         showNotification();
         emitState();
     }
 
+    /**
+     * Snapshot the current item. Android may stop this service while the user
+     * has the app paused in the background; without this snapshot a later
+     * resume() has no URL to rebuild and silently plays nothing.
+     */
+    private void persistSource() {
+        if (currentUrl.isEmpty()) return;
+        getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putString("url", currentUrl)
+                .putString("title", title)
+                .putString("subtitle", subtitle)
+                .putString("artwork", artworkUrl)
+                .putString("chapter", chapterLabel)
+                .putString("key", episodeKey)
+                .putBoolean("live", live)
+                .putFloat("rate", rate)
+                .putFloat("volume", volume)
+                .putLong("position", positionMs)
+                .apply();
+    }
+
+    /** Restore the snapshot after a process restart. False when there is none. */
+    private boolean restoreSource() {
+        if (!currentUrl.isEmpty()) return true;
+        SharedPreferences prefs = getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE);
+        String url = prefs.getString("url", "");
+        if (url == null || url.isEmpty()) return false;
+        currentUrl = url;
+        title = orEmpty(prefs.getString("title", ""));
+        subtitle = orEmpty(prefs.getString("subtitle", ""));
+        artworkUrl = orEmpty(prefs.getString("artwork", ""));
+        chapterLabel = orEmpty(prefs.getString("chapter", ""));
+        episodeKey = orEmpty(prefs.getString("key", ""));
+        live = prefs.getBoolean("live", live);
+        rate = prefs.getFloat("rate", rate);
+        volume = prefs.getFloat("volume", volume);
+        positionMs = prefs.getLong("position", 0);
+        lastPersistedMs = positionMs;
+        return true;
+    }
+
+    private void clearSource() {
+        getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE).edit().clear().apply();
+    }
+
     private void resume() {
         ensurePlayer();
+        // A restart while paused leaves the fresh player without a media item;
+        // fall back to the snapshot so the notification / widget button still works.
+        if (!restoreSource()) return;
+        player.setPlaybackSpeed(rate);
+        player.setVolume(volume);
         playWhenReadyWanted = true;
         mainHandler.removeCallbacks(retryPrepare);
         int state = player.getPlaybackState();
         boolean finished = state == Player.STATE_ENDED;
-        if (needsPrepare || state == Player.STATE_IDLE || finished) {
+        boolean hasItem = player.getMediaItemCount() > 0;
+        if (!hasItem || needsPrepare || state == Player.STATE_IDLE || finished) {
             // ExoPlayer cannot leave STATE_IDLE after an error (or STATE_ENDED
             // after a finished item) by playing alone; rebuilding the media item
             // is what makes recovery possible without restarting the whole app.
@@ -343,7 +400,9 @@ public class PlaybackService extends Service {
         }
         player.setPlayWhenReady(true);
         playing = true;
+        persistSource();
         publish();
+        showNotification();
         emitState();
     }
 
@@ -806,6 +865,13 @@ public class PlaybackService extends Service {
     private void persistCurrentPosition() {
         lastPersistedMs = positionMs;
         persistPosition();
+        // Keep the snapshot's resume point in step with the saved progress.
+        if (!currentUrl.isEmpty()) {
+            getSharedPreferences(SOURCE_PREFS, Context.MODE_PRIVATE)
+                    .edit()
+                    .putLong("position", positionMs)
+                    .apply();
+        }
     }
 
     private void persistPosition() {
