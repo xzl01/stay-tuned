@@ -55,7 +55,9 @@ jobs:
       # rotting unnoticed between releases.
       - name: Compile instrumentation tests
         working-directory: android
-        run: ./gradlew assembleDebugAndroidTest --no-daemon
+        # Scope to :app: the Capacitor plugin modules fail their own
+        # androidTest duplicate-class check for reasons unrelated to this repo.
+        run: ./gradlew :app:assembleDebugAndroidTest --no-daemon
 
       - name: Prepare signing key
         id: keystore
