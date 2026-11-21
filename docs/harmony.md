@@ -98,6 +98,46 @@ npm run harmony:hap         # 产出 harmony/entry/build/default/outputs/default
 
 `harmony:hap` 首次运行会把 `@ohos/hvigor` 与 `@ohos/hvigor-ohos-plugin`（默认 6.26.20，可用 `HVIGOR_VERSION` 覆盖）装进 `.harmony-tools/`，之后复用；hvigor 缓存也留在那里，不污染用户目录。
 
+## 在 Linux 构建机上编译
+
+macOS 上只能拿到 darwin-x64 工具链，需要 Rosetta；x86_64 Linux 构建机可以直接跑原生工具链，速度也更快。以下流程已在 **Arch Linux x86_64 + JDK 21 + Node 26** 上实测通过（构建产物与本地 macOS 构建同为 17 MB HAP，内容一致）。
+
+```bash
+# 1. 代码
+git clone --depth 1 https://github.com/xzl01/stay-tuned.git ~/stay-tuned-build
+cd ~/stay-tuned-build
+
+# 2. SDK（2.4 GB 下载，解压后约 4 GB）
+mkdir -p ~/ohos-sdk && cd ~/ohos-sdk
+curl -sS -L -o ohos-sdk-windows_linux-public.tar.gz \
+  https://repo.huaweicloud.com/openharmony/os/6.0-Release/ohos-sdk-windows_linux-public.tar.gz
+mkdir -p extract root/20 && tar xzf ohos-sdk-windows_linux-public.tar.gz -C extract
+find extract -name '*-linux-*.zip' -print0 | while IFS= read -r -d '' zip; do
+  unzip -q -o "$zip" -d root/20          # 注意：Linux 包解压为 linux/*.zip
+done
+rm -rf extract
+
+# 3. 构建
+cd ~/stay-tuned-build
+npm ci
+export OHOS_BASE_SDK_HOME=~/ohos-sdk/root
+export JAVA_HOME=$(dirname $(dirname $(readlink -f $(command -v java))))
+npm run harmony:sync && npm run harmony:hap
+```
+
+产物路径：`harmony/entry/build/default/outputs/default/entry-default-unsigned.hap`。取回本机：
+
+```bash
+scp xzl@<构建机>:/home/xzl/stay-tuned-build/harmony/entry/build/default/outputs/default/entry-default-unsigned.hap \
+  harmony-dist/stay-tuned-1.6.2-unsigned.hap
+```
+
+注意点：
+
+- `JAVA_HOME` 必须是**真正的 JDK**（脚本会读环境变量，其次尝试 `/usr/libexec/java_home`）。JDK 17 与 21 均可。
+- hvigor 首次运行会从 HarmonyOS registry 安装到仓库内的 `.harmony-tools/`（约 330 MB），之后复用。
+- 构建机不需要安装 DevEco Studio。
+
 ## 签名与安装
 
 当前产物是**未签名 HAP**，只能用于验证构建，不能直接安装：

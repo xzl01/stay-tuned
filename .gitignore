@@ -31,6 +31,8 @@ playwright-report
 # the SDK stay out of the tree, and build output is disposable.
 .harmony-dist
 .harmony-tools
+# HAP pulled back from a build host.
+harmony-dist/
 harmony/entry/src/main/resources/rawfile/www
 harmony/build/
 harmony/entry/build/
