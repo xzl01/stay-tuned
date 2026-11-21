@@ -46,6 +46,11 @@ import { stationImage } from '../lib/stations';
 import { assetUrl, STATIC_DEMO } from '../lib/env';
 import { isNativePlatform } from '../lib/serverConfig';
 import {
+  isHarmonyMediaAvailable,
+  onHarmonyMediaCommand,
+  pushHarmonyMedia,
+} from '../lib/engine/harmonyMedia';
+import {
   cacheStatusFor,
   clearCache,
   downloadEpisode,
@@ -288,6 +293,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const nextRef = useRef<() => void>(() => undefined);
   const previousRef = useRef<() => void>(() => undefined);
   const seekRef = useRef<(seconds: number) => void>(() => undefined);
+  const togglePlayRef = useRef<() => void>(() => undefined);
+  const pauseRef = useRef<() => void>(() => undefined);
   const hlsRef = useRef<Hls | null>(null);
   const hlsPendingRef = useRef(false);
   const cachedObjectUrlRef = useRef<string | null>(null);
@@ -1770,10 +1777,44 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   nextRef.current = next;
   previousRef.current = previous;
   seekRef.current = seek;
+  togglePlayRef.current = togglePlay;
+  pauseRef.current = pause;
 
-  nextRef.current = next;
-  previousRef.current = previous;
-  seekRef.current = seek;
+  // HarmonyOS: the system media session sends transport commands here.
+  useEffect(() => {
+    if (!isHarmonyMediaAvailable()) return undefined;
+    return onHarmonyMediaCommand((command, value) => {
+      const playing = playbackRef.current.isPlaying;
+      if (command === 'play') {
+        if (!playing) togglePlayRef.current();
+      } else if (command === 'pause') {
+        if (playing) pauseRef.current();
+      } else if (command === 'next') {
+        nextRef.current();
+      } else if (command === 'prev') {
+        previousRef.current();
+      } else if (command === 'seek' && typeof value === 'number' && Number.isFinite(value)) {
+        seekRef.current(value);
+      }
+    });
+  }, []);
+
+  // HarmonyOS: tell the session what is playing so the lock screen can show it.
+  useEffect(() => {
+    if (!isHarmonyMediaAvailable()) return;
+    if (!current) {
+      pushHarmonyMedia({ title: '', artist: '', playing: false, position: 0, duration: 0, speed: data.preferences.rate });
+      return;
+    }
+    pushHarmonyMedia({
+      title: current.kind === 'episode' ? current.episode.title : current.station.name,
+      artist: current.kind === 'episode' ? current.show.title : current.station.group || '电台',
+      playing: playback.isPlaying,
+      position: playback.currentTime,
+      duration: playback.duration,
+      speed: data.preferences.rate,
+    });
+  }, [current, playback.isPlaying, playback.currentTime, playback.duration, data.preferences.rate]);
 
   // Automatic cache #1: cache newly discovered episodes. A seen-key set is
   // seeded with everything known at the moment the switch is enabled, so
