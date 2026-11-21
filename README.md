@@ -220,6 +220,21 @@ npm run harmony:hap    # 产出 harmony/entry/build/default/outputs/default/entr
 构建需要 **JDK 17+** 与 **OpenHarmony SDK（API 20）**，并设置 `OHOS_BASE_SDK_HOME`；hvigor 会在首次运行时自动装进 `.harmony-tools/`，不依赖 DevEco Studio。完整步骤、SDK 目录分层要求与已知限制见 [docs/harmony.md](docs/harmony.md)。
 
 当前产物为**未签名 HAP**，可验证构建但不能直接安装；签名需在 DevEco Studio 里生成调试证书后写回 `harmony/build-profile.json5`。鸿蒙端复用同一套解析模块：ArkTS 侧通过 `registerJavaScriptProxy` 暴露 `StayTunedHttp` 网络桥，页面把它接到既有的 `setFetchTransport`，因此 RSS / 搜索 / M3U 与安卓一样直连，不需要服务端。
+
+鸿蒙端与安卓的能力对应关系：
+
+| 能力 | 鸿蒙实现 |
+| --- | --- |
+| 免服务端解析 | `StayTunedHttp`（`@kit.NetworkKit`） |
+| 本地文件导入 / 备份导出 | `onShowFileSelector` + `StayTunedFiles`（保存选择器） |
+| 后台播放 | `KEEP_BACKGROUND_RUNNING` + AUDIO_PLAYBACK 长时任务 |
+| 锁屏 / 耳机控制、封面 | `AVSession`（`mediaImage`） |
+| 触感反馈 | `StayTunedHaptics`（`@kit.SensorServiceKit`，复用安卓 cue 表） |
+| 边到边与系统栏配色 | `setWindowLayoutFullScreen` + `StayTunedChrome` |
+| 桌面服务卡片 | `EntryFormAbility` + `StayTunedCard`（含播放/暂停按钮） |
+| 外链与下载 | `onLoadIntercept` / `onDownloadStart` 交给系统浏览器 |
+| WebView 崩溃恢复 | `onRenderExited` 自动重载 |
+
 ### 桌面应用（Windows / macOS / Linux）
 
 仓库内置 Electron 桌面端打包配置，用户无需单独安装 Node.js 或启动服务：应用内嵌 Express 服务，固定监听 `127.0.0.1:18787`，同时提供完整 RSS / M3U / HLS 代理能力。订阅、进度与主题仍保存在本机 localStorage；桌面端不注册 service worker，避免缓存与内置服务不同步。
