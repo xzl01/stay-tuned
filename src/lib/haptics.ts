@@ -265,7 +265,11 @@ export function pulse(cue: HapticCue, options: HapticOptions = {}): void {
   if (isHarmonyHapticsAvailable()) {
     // Amplitude shaping is Android-only; keep the rhythm, let the motor pick
     // the strength from the system setting.
-    pulseHarmony(custom ? { duration: custom.duration, timings: custom.timings } : { duration: 8 });
+    pulseHarmony(
+      custom
+        ? { duration: custom.duration, timings: custom.timings, amplitudes: custom.amplitudes }
+        : { duration: 8 },
+    );
     return;
   }
 

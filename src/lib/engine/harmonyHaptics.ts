@@ -22,6 +22,8 @@ declare global {
 export interface HarmonyHapticShape {
   duration?: number;
   timings?: number[];
+  /** 1-255 per segment, mirroring the Android cue table. */
+  amplitudes?: number[];
 }
 
 export function isHarmonyHapticsAvailable(): boolean {
@@ -39,7 +41,7 @@ export function pulseHarmony(shape: HarmonyHapticShape): void {
 
   const spec =
     shape.timings && shape.timings.length >= 2
-      ? { pattern: shape.timings }
+      ? { timings: shape.timings, amplitudes: shape.amplitudes ?? [] }
       : { duration: shape.duration ?? 8 };
 
   try {
