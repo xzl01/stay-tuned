@@ -51,6 +51,12 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
 
+      # The smoke tests run on a device, but compiling them here keeps them from
+      # rotting unnoticed between releases.
+      - name: Compile instrumentation tests
+        working-directory: android
+        run: ./gradlew assembleDebugAndroidTest --no-daemon
+
       - name: Prepare signing key
         id: keystore
         env:
