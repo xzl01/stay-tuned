@@ -6,10 +6,16 @@ import { common, wantAgent } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { webview } from '@kit.ArkWeb';
+import { http } from '@kit.NetworkKit';
+import { image } from '@kit.ImageKit';
+import { util } from '@kit.ArkTS';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'StayTunedMedia';
 const SESSION_TAG: string = 'stay-tuned';
+/** Lock-screen covers are drawn small; decoding megabytes for them is waste. */
+const ARTWORK_PX: number = 512;
+const ARTWORK_MAX_BYTES: number = 8 * 1024 * 1024;
 
 /** What the page reports about the item it is playing. */
 interface MediaStatePayload {
@@ -19,6 +25,8 @@ interface MediaStatePayload {
   position?: number;
   duration?: number;
   speed?: number;
+  /** Remote https URL or a `data:image/...;base64` string; empty when unknown. */
+  artwork?: string;
 }
 
 function finiteOr(value: number | undefined, fallback: number): number {
@@ -43,6 +51,11 @@ export class MediaHost {
   private running: boolean = false;
   private starting: boolean = false;
   private lastPlaying: boolean = false;
+  private lastTitle: string = '';
+  private lastArtist: string = '';
+  private lastDuration: number = 0;
+  private artworkSource: string = '';
+  private artwork?: image.PixelMap;
 
   setController(controller: webview.WebviewController): void {
     this.controller = controller;
@@ -86,15 +99,15 @@ export class MediaHost {
     const title = payload.title ?? '';
     const artist = payload.artist ?? '';
     if (title.length > 0) {
-      this.session.setAVMetadata({
-        assetId: SESSION_TAG,
-        title: title,
-        artist: artist,
-        album: '留频',
-        duration: finiteOr(payload.duration, 0) * 1000,
-      }).catch((error: BusinessError) => {
-        hilog.warn(DOMAIN, TAG, 'setAVMetadata failed: %{public}d', error.code);
-      });
+      this.lastTitle = title;
+      this.lastArtist = artist;
+      this.lastDuration = finiteOr(payload.duration, 0);
+      this.applyMetadata();
+      const artworkSource = payload.artwork ?? '';
+      if (artworkSource !== this.artworkSource) {
+        // Decoding is async; metadata is refreshed once the cover is ready.
+        this.loadArtwork(artworkSource).catch(() => undefined);
+      }
     }
 
     const elapsed = finiteOr(payload.position, 0) * 1000;
@@ -109,9 +122,94 @@ export class MediaHost {
     });
   }
 
+  /** Re-publish everything the lock screen shows, including the cover. */
+  private applyMetadata(): void {
+    const session = this.session;
+    if (!session) return;
+    const metadata: avSession.AVMetadata = {
+      assetId: SESSION_TAG,
+      title: this.lastTitle,
+      artist: this.lastArtist,
+      album: '留频',
+      duration: this.lastDuration * 1000,
+    };
+    if (this.artwork) {
+      metadata.artwork = this.artwork;
+    }
+    session.setAVMetadata(metadata).catch((error: BusinessError) => {
+      hilog.warn(DOMAIN, TAG, 'setAVMetadata failed: %{public}d', error.code);
+    });
+  }
+
+  private async loadArtwork(source: string): Promise<void> {
+    this.artworkSource = source;
+    if (source.length === 0) {
+      this.artwork = undefined;
+      this.applyMetadata();
+      return;
+    }
+    try {
+      const buffer = await this.fetchArtwork(source);
+      if (!buffer || this.artworkSource !== source) return;
+      const imageSource = image.createImageSource(buffer);
+      if (!imageSource) return;
+      const pixelMap = await imageSource.createPixelMap({
+        desiredSize: { width: ARTWORK_PX, height: ARTWORK_PX },
+      });
+      await imageSource.release();
+      // The user may have skipped to another item while the image decoded.
+      if (this.artworkSource !== source) {
+        await pixelMap.release();
+        return;
+      }
+      this.artwork = pixelMap;
+      this.applyMetadata();
+    } catch (error) {
+      const failure = error as BusinessError;
+      hilog.warn(DOMAIN, TAG, 'artwork decode failed: %{public}s', JSON.stringify(failure));
+    }
+  }
+
+  /** Accepts a remote URL or an inline `data:` image (uploaded station covers). */
+  private async fetchArtwork(source: string): Promise<ArrayBuffer | undefined> {
+    if (source.startsWith('data:')) {
+      const comma = source.indexOf(',');
+      if (comma < 0) return undefined;
+      if (!source.slice(5, comma).includes('base64')) return undefined;
+      const helper = new util.Base64Helper();
+      const bytes = helper.decodeSync(source.slice(comma + 1));
+      return bytes.buffer as ArrayBuffer;
+    }
+    if (!source.startsWith('http')) return undefined;
+
+    const request = http.createHttp();
+    try {
+      const response = await request.request(source, {
+        method: http.RequestMethod.GET,
+        expectDataType: http.HttpDataType.ARRAY_BUFFER,
+        connectTimeout: 8000,
+        readTimeout: 8000,
+        usingCache: true,
+      });
+      if (response.responseCode !== 200) return undefined;
+      const data = response.result;
+      if (!(data instanceof ArrayBuffer)) return undefined;
+      if (data.byteLength > ARTWORK_MAX_BYTES) return undefined;
+      return data;
+    } catch (error) {
+      return undefined;
+    } finally {
+      request.destroy();
+    }
+  }
+
   /** Stop the long-running task when the app leaves the playback flow. */
   async teardown(): Promise<void> {
     await this.stopBackground();
+    if (this.artwork) {
+      await this.artwork.release();
+      this.artwork = undefined;
+    }
     const session = this.session;
     this.session = undefined;
     if (!session) return;

@@ -27,6 +27,8 @@ export interface HarmonyMediaState {
   position: number;
   duration: number;
   speed: number;
+  /** Remote cover URL or an inline `data:` image; empty when there is none. */
+  artwork?: string;
 }
 
 export type HarmonyMediaCommand = 'play' | 'pause' | 'next' | 'prev' | 'seek';
@@ -37,6 +39,18 @@ const PUSH_INTERVAL_MS = 1000;
 let lastPushAt = 0;
 let lastSignature = '';
 
+/**
+ * Only sources the ArkTS side can actually read: a remote URL or an inline
+ * data URL. Generated SVG covers have neither, so the session simply shows no
+ * artwork rather than failing.
+ */
+export function remoteArtwork(url: string | undefined): string {
+  if (!url) return '';
+  if (/^data:image\//i.test(url)) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  return '';
+}
+
 export function isHarmonyMediaAvailable(): boolean {
   if (typeof window === 'undefined') return false;
   return typeof window.StayTunedMedia?.update === 'function';
@@ -44,7 +58,7 @@ export function isHarmonyMediaAvailable(): boolean {
 
 function signature(state: HarmonyMediaState): string {
   // Everything except the position: those changes must go out immediately.
-  return `${state.title}|${state.artist}|${state.playing ? 1 : 0}|${Math.round(state.duration)}|${state.speed}`;
+  return `${state.title}|${state.artist}|${state.playing ? 1 : 0}|${Math.round(state.duration)}|${state.speed}|${state.artwork ?? ''}`;
 }
 
 export function pushHarmonyMedia(state: HarmonyMediaState): void {
@@ -67,6 +81,7 @@ export function pushHarmonyMedia(state: HarmonyMediaState): void {
         position: Number.isFinite(state.position) ? state.position : 0,
         duration: Number.isFinite(state.duration) ? state.duration : 0,
         speed: Number.isFinite(state.speed) ? state.speed : 1,
+        artwork: state.artwork ?? '',
       }),
     );
   } catch {

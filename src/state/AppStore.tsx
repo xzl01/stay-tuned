@@ -49,6 +49,7 @@ import {
   isHarmonyMediaAvailable,
   onHarmonyMediaCommand,
   pushHarmonyMedia,
+  remoteArtwork,
 } from '../lib/engine/harmonyMedia';
 import {
   cacheStatusFor,
@@ -1818,6 +1819,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       position: playback.currentTime,
       duration: playback.duration,
       speed: data.preferences.rate,
+      artwork:
+        current.kind === 'episode'
+          ? remoteArtwork(current.episode.image) || remoteArtwork(current.show.image)
+          : remoteArtwork(current.station.customLogo) || remoteArtwork(current.station.logo),
     });
   }, [current, playback.isPlaying, playback.currentTime, playback.duration, data.preferences.rate]);
 
