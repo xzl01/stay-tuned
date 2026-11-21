@@ -9,11 +9,6 @@ on:
 permissions:
   contents: write
 
-# Shares the release lock with the Android and desktop uploaders.
-concurrency:
-  group: release-assets-${{ github.ref_name }}
-  cancel-in-progress: false
-
 env:
   SDK_ARCHIVE: ohos-sdk-windows_linux-public.tar.gz
   SDK_BASE: https://repo.huaweicloud.com/openharmony/os/6.0-Release

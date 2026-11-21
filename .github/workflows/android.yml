@@ -9,12 +9,6 @@ on:
 permissions:
   contents: write
 
-# The desktop workflow publishes to the same release. Serialise them so the
-# two uploaders never rewrite each other's assets mid-flight.
-concurrency:
-  group: release-assets-${{ github.ref_name }}
-  cancel-in-progress: false
-
 jobs:
   apk:
     runs-on: ubuntu-latest

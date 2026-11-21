@@ -9,10 +9,8 @@ on:
 permissions:
   contents: read
 
-# Shared with the Android workflow: both publish to the same release, so they
-# must not rewrite each other's assets mid-flight.
 concurrency:
-  group: release-assets-${{ github.ref_name }}
+  group: desktop-${{github.ref}}
   cancel-in-progress: false
 
 jobs:
@@ -137,20 +135,20 @@ jobs:
           path: desktop-dist
           merge-multiple: true
 
+      # `gh release upload` only touches the files it is given, so it cannot
+      # rewrite another workflow's asset metadata. The Android and HarmonyOS
+      # workflows publish to the same release at the same time, and a
+      # release-wide sync here used to fail with "Not Found" mid-upload.
       - name: Attach desktop packages to release
-        uses: softprops/action-gh-release@v3
-        with:
-          files: |
-            desktop-dist/**/*.exe
-            desktop-dist/**/*.dmg
-            desktop-dist/**/*.zip
-            desktop-dist/**/*.AppImage
-            desktop-dist/**/*.deb
-            desktop-dist/**/*.rpm
-            desktop-dist/**/*.tar.gz
-            desktop-dist/**/*.blockmap
-            desktop-dist/latest*.yml
-          generate_release_notes: true
-          draft: false
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
+            gh release create "$GITHUB_REF_NAME" --title "留频 $GITHUB_REF_NAME" --generate-notes
+          mapfile -d '' assets < <(find desktop-dist -type f \
+            \( -name '*.exe' -o -name '*.dmg' -o -name '*.zip' -o -name '*.AppImage' \
+               -o -name '*.deb' -o -name '*.rpm' -o -name '*.tar.gz' -o -name '*.blockmap' \
+               -o -name 'latest*.yml' \) -print0)
+          printf 'uploading %s files\n' "${#assets[@]}"
+          gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
