@@ -3,6 +3,7 @@
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import type { PersistedState, Show, Station } from '../types';
+import { isHarmonyFilesAvailable, saveTextWithPicker } from './engine/harmonyFiles';
 import { isNativePlatform } from './serverConfig';
 import { sanitizePersistedState } from './storage';
 
@@ -141,6 +142,13 @@ export async function exportBackupFile(state: PersistedState): Promise<string> {
       // Dismissing the share sheet is fine; the file is already written.
     }
     return `Documents/${name}`;
+  }
+
+  // HarmonyOS: ArkWeb cannot route a blob: download to a downloader, so write
+  // the file through the system save picker instead.
+  if (isHarmonyFilesAvailable()) {
+    const saved = await saveTextWithPicker(name, json);
+    return saved ? saved : '';
   }
 
   const blob = new Blob([json], { type: 'application/json' });

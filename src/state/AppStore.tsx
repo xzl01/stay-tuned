@@ -1251,6 +1251,11 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   const exportBackup = useCallback(async () => {
     const path = await exportBackupFile(dataRef.current);
+    // An empty path means the save picker was dismissed.
+    if (!path) {
+      notify('已取消导出。');
+      return '';
+    }
     notify('已导出订阅配置。', 'success');
     return path;
   }, [notify]);
