@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
-import { assertHttpUrl, fetchText, hashId } from './http.mjs';
+import { assertHttpUrl, fetchText, hashId, safeFetch } from './http.mjs';
 
 const AUDIO_EXTENSION = /\.(mp3|aac|m4a|ogg|opus|flac|wav|pls)(\?|$)/i;
 
@@ -147,12 +147,17 @@ async function probeContentType(url) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 6000);
   try {
-    const response = await fetch(url, {
-      method: 'HEAD',
-      redirect: 'follow',
-      signal: controller.signal,
-      headers: { 'user-agent': 'Mozilla/5.0 StayTuned/1.0', accept: '*/*' },
-    });
+    // Go through the shared transport: on Android a raw fetch would be blocked
+    // by the WebView's CORS rules and silently fall back to "unknown type".
+    const { response } = await safeFetch(
+      url,
+      {
+        method: 'HEAD',
+        signal: controller.signal,
+        headers: { 'user-agent': 'Mozilla/5.0 StayTuned/1.0', accept: '*/*' },
+      },
+      'M3U 地址',
+    );
     if (!response.ok) return '';
     return response.headers.get('content-type') || '';
   } catch {
@@ -176,6 +181,7 @@ export async function fetchPlaylist(rawUrl) {
   }
 
   const { text, buffer, contentType, finalUrl } = await fetchText(url, {
+    label: 'M3U 地址',
     headers: { accept: 'application/vnd.apple.mpegurl, application/x-mpegURL, audio/*, text/plain, */*' },
   });
 

@@ -97,6 +97,20 @@ npm start
 | `PORT` | `8787` | Node 服务端口 |
 | `HOST` | `0.0.0.0` | 监听地址；只想本机访问可设为 `127.0.0.1` |
 | `CORS_ORIGINS` | 空（允许任意来源） | 逗号分隔的允许来源，例如 `https://app.example.com`；留空时返回 `*` |
+| `STAY_TUNED_ALLOW_PRIVATE_HOSTS` | 关闭 | 设为 `1` 后允许代理访问局域网 / 本机地址（例如自建局域网电台）。云元数据地址始终被拒绝 |
+
+#### 代理安全边界
+
+`/api/feed`、`/api/playlist`、`/api/audio`、`/api/hls`、`/api/image`、`/api/chapters`、`/api/transcript` 都会用客户端传来的 URL 发起请求，因此 Node 服务默认把它当作**不可信的开放代理**处理：
+
+- 拒绝 `localhost`、`.local`、`.internal`、单段主机名、环回 / 私网 / 链路本地 / CGNAT / 保留网段和 IPv6 私有地址，以及 `169.254.169.254`、`fd00:ec2::254` 等云元数据地址；
+- 域名会先解析再校验，避免用公网域名指向内网（DNS rebinding 的常见形式）；
+- 重定向由服务端自己逐跳跟随，每一跳都重新做上述校验，禁止跨协议跳转；
+- 文本类响应超过 48 MB、封面超过 6 MB、HLS 清单超过 4 MB 时中止读取。
+
+局域网电台需要显式打开 `STAY_TUNED_ALLOW_PRIVATE_HOSTS=1`；即使打开，云元数据地址仍然拒绝。Android 应用直接由手机发请求，不受这一层限制。
+
+> 仍建议把服务放在反向代理或内网之后，并为公网部署加上访问控制。默认 `HOST=0.0.0.0` 与 `CORS_ORIGINS` 留空是为了本地局域网调试方便，不适合直接暴露到公网。
 
 ### 离线缓存
 

@@ -323,7 +323,7 @@ export function parseFeed(xml, feedUrl) {
 /** Fetch + parse a public RSS feed. */
 export async function fetchFeed(rawUrl) {
   const url = assertHttpUrl(rawUrl, 'RSS 地址').toString();
-  const { text, finalUrl, contentType } = await fetchText(url);
+  const { text, finalUrl, contentType } = await fetchText(url, { label: 'RSS 地址' });
   if (/text\/html/i.test(contentType) && !/^\s*<\?xml|^\s*<rss|^\s*<feed/i.test(text)) {
     throw new Error('该地址返回的是网页而不是 RSS。请检查是否填错了订阅链接。');
   }

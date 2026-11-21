@@ -6,7 +6,8 @@ import fs from 'node:fs';
 import process from 'node:process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { HttpError, USER_AGENT, assertHttpUrl, fetchJson, fetchText } from './http.mjs';
+import { HttpError, USER_AGENT, assertPublicUrl, fetchJson, fetchText, safeFetch } from './http.mjs';
+import { installNetworkGuard } from './net-guard.mjs';
 import { FEATURED_STATIONS, ITUNES_SEARCH_ENDPOINT, RADIO_MIRRORS, mapItunesPodcast, normalizeStation } from './catalog.mjs';
 import { fetchFeed } from './feed.mjs';
 import { fetchPlaylist, parsePlaylist } from './playlist.mjs';
@@ -27,6 +28,10 @@ export function resolveDistDir() {
 
 const app = express();
 app.disable('x-powered-by');
+
+// Every proxy route below fetches a URL supplied by the client, so install the
+// egress policy before the server can reach the network.
+installNetworkGuard();
 
 // The packaged Android app runs from the WebView origin https://localhost, so
 // every API call is cross-origin. CORS defaults to open for this local-first
@@ -63,6 +68,8 @@ app.use(express.json({ limit: '2mb' }));
 // ---------------------------------------------------------------------------
 const cache = new Map();
 const CACHE_LIMITS = { feed: 120, playlist: 80, search: 120, imageBytes: 24 * 1024 * 1024 };
+/** A rewritten HLS manifest is small; anything larger is not a playlist. */
+const MAX_MANIFEST_BYTES = 4 * 1024 * 1024;
 let imageBytes = 0;
 
 async function cached(key, ttlMs, producer) {
@@ -92,7 +99,7 @@ app.get('/api/health', (_req, res) => {
 // ---------------------------------------------------------------------------
 app.get('/api/feed', async (req, res, next) => {
   try {
-    const url = assertHttpUrl(req.query.url, 'RSS 地址').toString();
+    const url = (await assertPublicUrl(req.query.url, 'RSS 地址')).toString();
     const force = req.query.refresh === '1';
     if (force) cache.delete(`feed:${url}`);
     const data = await cached(`feed:${url}`, 5 * 60 * 1000, async () => {
@@ -114,7 +121,7 @@ app.get('/api/feed', async (req, res, next) => {
 // ---------------------------------------------------------------------------
 app.get('/api/playlist', async (req, res, next) => {
   try {
-    const url = assertHttpUrl(req.query.url, 'M3U 地址').toString();
+    const url = (await assertPublicUrl(req.query.url, 'M3U 地址')).toString();
     const data = await cached(`playlist:${url}`, 10 * 60 * 1000, () => fetchPlaylist(url));
     res.set('cache-control', 'public, max-age=600');
     res.json(data);
@@ -143,7 +150,7 @@ app.post('/api/playlist/parse', (req, res, next) => {
 // ---------------------------------------------------------------------------
 app.get('/api/audio', async (req, res, next) => {
   try {
-    const url = assertHttpUrl(req.query.url, '音频地址').toString();
+    const url = (await assertPublicUrl(req.query.url, '音频地址')).toString();
     const headers = {
       'user-agent': USER_AGENT,
       accept: '*/*',
@@ -155,7 +162,7 @@ app.get('/api/audio', async (req, res, next) => {
     const timer = setTimeout(() => controller.abort(), 25_000);
     let upstream;
     try {
-      upstream = await fetch(url, { headers, redirect: 'follow', signal: controller.signal });
+      ({ response: upstream } = await safeFetch(url, { headers, signal: controller.signal }, '音频地址'));
     } finally {
       clearTimeout(timer);
     }
@@ -171,7 +178,6 @@ app.get('/api/audio', async (req, res, next) => {
     }
     if (!upstream.headers.get('content-type')) res.set('content-type', 'audio/mpeg');
     res.set('cache-control', 'no-cache');
-    res.set('access-control-allow-origin', '*');
     await pipeUpstream(upstream, res);
   } catch (err) {
     if (res.headersSent) {
@@ -188,15 +194,18 @@ app.get('/api/audio', async (req, res, next) => {
 // ---------------------------------------------------------------------------
 app.get('/api/hls', async (req, res, next) => {
   try {
-    const url = assertHttpUrl(req.query.url, '串流地址').toString();
+    const url = (await assertPublicUrl(req.query.url, '串流地址')).toString();
     const headers = { 'user-agent': USER_AGENT, accept: '*/*' };
     if (req.headers.range) headers.range = req.headers.range;
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 20_000);
     let upstream;
+    let finalUrl = url;
     try {
-      upstream = await fetch(url, { headers, redirect: 'follow', signal: controller.signal });
+      const proxied = await safeFetch(url, { headers, signal: controller.signal }, '串流地址');
+      upstream = proxied.response;
+      finalUrl = proxied.url;
     } finally {
       clearTimeout(timer);
     }
@@ -206,24 +215,27 @@ app.get('/api/hls', async (req, res, next) => {
     }
 
     const contentType = upstream.headers.get('content-type') || '';
-    const pathname = new URL(url).pathname.toLowerCase();
+    const pathname = new URL(finalUrl).pathname.toLowerCase();
     const mightBeManifest =
       /mpegurl|m3u/i.test(contentType) ||
       pathname.endsWith('.m3u8') ||
       pathname.endsWith('.m3u');
 
     if (mightBeManifest) {
-      const text = await upstream.text();
+      // Read bytes, not text: a *.m3u8 URL can still answer with a binary body,
+      // and decoding that as UTF-8 would corrupt the stream.
+      const bytes = Buffer.from(await upstream.arrayBuffer());
+      if (bytes.length > MAX_MANIFEST_BYTES) throw new HttpError(413, '串流清单过大。');
+      const text = bytes.toString('utf8');
       if (text.trimStart().startsWith('#EXTM3U')) {
         res.set('content-type', 'application/vnd.apple.mpegurl; charset=utf-8');
         res.set('cache-control', 'no-cache');
-        res.set('access-control-allow-origin', '*');
-        res.send(rewriteHlsPlaylist(text, upstream.url || url));
+        res.send(rewriteHlsPlaylist(text, finalUrl));
         return;
       }
-      // A URL named *.m3u8 that is not a manifest: pass bytes through.
+      // Not a manifest after all: pass the original bytes through untouched.
       res.set('content-type', contentType || 'application/octet-stream');
-      res.send(Buffer.from(text, 'utf8'));
+      res.send(bytes);
       return;
     }
 
@@ -233,7 +245,6 @@ app.get('/api/hls', async (req, res, next) => {
       if (value) res.set(header, value);
     }
     res.set('cache-control', 'no-cache');
-    res.set('access-control-allow-origin', '*');
     await pipeUpstream(upstream, res);
   } catch (err) {
     if (res.headersSent) {
@@ -249,7 +260,7 @@ app.get('/api/hls', async (req, res, next) => {
 // ---------------------------------------------------------------------------
 app.get('/api/image', async (req, res, next) => {
   try {
-    const url = assertHttpUrl(req.query.url, '图片地址').toString();
+    const url = (await assertPublicUrl(req.query.url, '图片地址')).toString();
     const key = `image:${url}`;
     const hit = cache.get(key);
     if (hit && hit.expires > Date.now()) {
@@ -263,15 +274,20 @@ app.get('/api/image', async (req, res, next) => {
     const timer = setTimeout(() => controller.abort(), 12_000);
     let upstream;
     try {
-      upstream = await fetch(url, {
-        headers: { 'user-agent': USER_AGENT, accept: 'image/avif,image/webp,image/*,*/*' },
-        redirect: 'follow',
-        signal: controller.signal,
-      });
+      ({ response: upstream } = await safeFetch(
+        url,
+        {
+          headers: { 'user-agent': USER_AGENT, accept: 'image/avif,image/webp,image/*,*/*' },
+          signal: controller.signal,
+        },
+        '图片地址',
+      ));
     } finally {
       clearTimeout(timer);
     }
     if (!upstream.ok) throw new HttpError(502, '封面加载失败。');
+    const declaredSize = Number(upstream.headers.get('content-length') || 0);
+    if (declaredSize > 6 * 1024 * 1024) throw new HttpError(413, '封面图片过大。');
     const type = upstream.headers.get('content-type') || '';
     if (!/^image\//i.test(type)) throw new HttpError(415, '远程内容不是图片。');
     const buffer = Buffer.from(await upstream.arrayBuffer());
@@ -295,9 +311,10 @@ app.get('/api/image', async (req, res, next) => {
 // ---------------------------------------------------------------------------
 app.get('/api/chapters', async (req, res, next) => {
   try {
-    const url = assertHttpUrl(req.query.url, '章节地址').toString();
+    const url = (await assertPublicUrl(req.query.url, '章节地址')).toString();
     const data = await cached(`chapters:${url}`, 60 * 60 * 1000, async () => {
       const { text, buffer, contentType, finalUrl } = await fetchText(url, {
+        label: '章节地址',
         timeout: 15_000,
         headers: { accept: 'application/json, application/json+chapters, text/plain, */*' },
       });
@@ -317,10 +334,11 @@ app.get('/api/chapters', async (req, res, next) => {
 
 app.get('/api/transcript', async (req, res, next) => {
   try {
-    const url = assertHttpUrl(req.query.url, '文字稿地址').toString();
+    const url = (await assertPublicUrl(req.query.url, '文字稿地址')).toString();
     const hintType = String(req.query.type || '').trim();
     const data = await cached(`transcript:${url}:${hintType}`, 60 * 60 * 1000, async () => {
       const { text, buffer, contentType, finalUrl } = await fetchText(url, {
+        label: '文字稿地址',
         timeout: 20_000,
         headers: { accept: 'text/vtt, application/json, application/x-subrip, text/plain, text/html, */*' },
       });

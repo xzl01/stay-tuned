@@ -4,6 +4,7 @@ import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import type { PersistedState, Show, Station } from '../types';
 import { isNativePlatform } from './serverConfig';
+import { sanitizePersistedState } from './storage';
 
 export const BACKUP_SCHEMA = 1;
 
@@ -25,70 +26,40 @@ export function buildBackup(state: PersistedState): BackupFile {
   };
 }
 
-function isShow(value: unknown): value is Show {
-  return Boolean(
-    value &&
-      typeof value === 'object' &&
-      typeof (value as Show).id === 'string' &&
-      typeof (value as Show).title === 'string' &&
-      Array.isArray((value as Show).episodes),
-  );
-}
+/** A backup is JSON text; refuse anything large enough to be an attack. */
+const MAX_BACKUP_CHARS = 8 * 1024 * 1024;
 
-function isStation(value: unknown): value is Station {
-  return Boolean(
-    value &&
-      typeof value === 'object' &&
-      typeof (value as Station).id === 'string' &&
-      typeof (value as Station).url === 'string' &&
-      typeof (value as Station).name === 'string',
-  );
-}
-
-/** Accept our own export or a plain persisted-state file from an older build. */
+/**
+ * Accept our own export or a plain persisted-state file from an older build.
+ * The result goes through the same full sanitizer as localStorage, so an
+ * imported file cannot smuggle in out-of-range numbers, unknown fields or
+ * non-http URLs.
+ */
 export function parseBackup(text: string): PersistedState {
+  if (text.length > MAX_BACKUP_CHARS) throw new Error('备份文件太大，已停止导入。');
   let raw: unknown;
   try {
     raw = JSON.parse(text);
   } catch {
     throw new Error('这个文件不是有效的 JSON。');
   }
+  if (raw && typeof raw === 'object' && 'app' in raw) {
+    const app = (raw as { app?: unknown }).app;
+    if (typeof app === 'string' && app !== 'stay-tuned') {
+      throw new Error('这个文件不是留频的订阅备份。');
+    }
+  }
   const candidate =
     raw && typeof raw === 'object' && 'data' in (raw as Record<string, unknown>)
       ? (raw as { data: unknown }).data
       : raw;
   if (!candidate || typeof candidate !== 'object') throw new Error('文件内容不是留频的订阅配置。');
-  const state = candidate as Partial<PersistedState>;
-  if (state.version !== 1) throw new Error('配置文件版本不受支持。');
-  if (!Array.isArray(state.shows) || !Array.isArray(state.stations)) {
-    throw new Error('配置文件缺少订阅列表。');
-  }
-  const shows = state.shows.filter(isShow);
-  const stations = state.stations.filter(isStation);
-  if (!shows.length && !stations.length) throw new Error('配置文件里没有可导入的订阅。');
-  return {
-    version: 1,
-    shows,
-    stations,
-    queue: Array.isArray(state.queue) ? state.queue : [],
-    current: state.current ?? null,
-    positions: state.positions && typeof state.positions === 'object' ? state.positions : {},
-    favorites: Array.isArray(state.favorites)
-      ? state.favorites.filter((key): key is string => typeof key === 'string')
-      : [],
-    preferences: {
-      theme: 'light',
-      mode: 'skeuo',
-      volume: 0.72,
-      rate: 1,
-      followTranscript: true,
-      haptics: true,
-      autoCacheNewEpisodes: false,
-      autoCachePlaying: false,
-      history: [],
-      ...(state.preferences && typeof state.preferences === 'object' ? state.preferences : {}),
-    },
-  };
+  if ((candidate as Partial<PersistedState>).version !== 1) throw new Error('配置文件版本不受支持。');
+
+  const state = sanitizePersistedState(candidate);
+  if (!state) throw new Error('配置文件缺少订阅列表。');
+  if (!state.shows.length && !state.stations.length) throw new Error('配置文件里没有可导入的订阅。');
+  return state;
 }
 
 function feedKey(show: Show): string {

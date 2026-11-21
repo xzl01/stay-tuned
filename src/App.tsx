@@ -86,7 +86,10 @@ function AppShell() {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target;
       if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
-      if (libraryOpen || queueOpen) {
+      // Any open sheet owns the keyboard. Otherwise Space / arrows / M / Q / L
+      // would toggle playback while the user is typing in a dialog.
+      const sheetOpen = libraryOpen || queueOpen || serverOpen || dataOpen || cacheOpen || settingsOpen;
+      if (sheetOpen) {
         if (event.key === 'Escape') {
           setLibraryOpen(false);
           setQueueOpen(false);
@@ -122,7 +125,21 @@ function AppShell() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [libraryOpen, queueOpen, receiver3DOpen, closeReceiver3D, resolvedTheme, skip, setTheme, toggleMute, togglePlay]);
+  }, [
+    libraryOpen,
+    queueOpen,
+    serverOpen,
+    dataOpen,
+    cacheOpen,
+    settingsOpen,
+    receiver3DOpen,
+    closeReceiver3D,
+    resolvedTheme,
+    skip,
+    setTheme,
+    toggleMute,
+    togglePlay,
+  ]);
 
   const openLibrary = () => {
     setQueueOpen(false);
