@@ -35,6 +35,8 @@ struct Index {
   private haptics: HapticsHost = new HapticsHost();
   private chrome: ChromeHost = new ChromeHost();
   private context?: common.UIAbilityContext;
+  /** Set by EntryAbility when the home-screen card asked for a transport action. */
+  @StorageLink('stayTunedAction') @Watch('onCardAction') cardAction: string = '';
 
   aboutToAppear(): void {
     this.context = getContext(this) as common.UIAbilityContext;
@@ -63,6 +65,14 @@ struct Index {
       return ['播放列表: .m3u, .m3u8, .txt'];
     }
     return [];
+  }
+
+  onCardAction(): void {
+    const action = this.cardAction;
+    if (action.length === 0) return;
+    // Consume it so the next launch does not replay the command.
+    AppStorage.setOrCreate('stayTunedAction', '');
+    this.media.sendAction(action);
   }
 
   /** Re-enter the bundled page after the renderer was killed. */

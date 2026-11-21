@@ -313,6 +313,11 @@ export class MediaHost {
     }
   }
 
+  /** Entry point for actions that arrive from outside the page (e.g. the card). */
+  sendAction(action: string): void {
+    this.command(action);
+  }
+
   /** Push a transport command into the page, which owns the actual player. */
   private command(action: string, value?: number): void {
     const controller = this.controller;

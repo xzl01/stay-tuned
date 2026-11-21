@@ -49,13 +49,25 @@ struct StayTunedCard {
       Blank()
 
       Row() {
+        // Tapping the glyph asks the app to flip playback; the rest of the card
+        // simply opens it. Both end up in EntryAbility: the page owns the player.
         Text(this.playing ? '⏸' : '▶')
-          .fontSize(14)
+          .fontSize(18)
           .fontColor('#C85235')
+          .width(32)
+          .height(32)
+          .textAlign(TextAlign.Center)
+          .onClick(() => {
+            postCardAction(this, {
+              action: 'router',
+              abilityName: 'EntryAbility',
+              params: { stayTunedAction: 'toggle' },
+            });
+          })
         Text(this.playing ? '在听' : '点按打开留频')
           .fontSize(12)
           .fontColor('#7A7D72')
-          .margin({ left: 6 })
+          .margin({ left: 4 })
         Blank()
       }
       .width('100%')

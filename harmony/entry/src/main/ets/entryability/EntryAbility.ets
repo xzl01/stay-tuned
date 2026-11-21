@@ -15,6 +15,22 @@ const TAG: string = 'StayTuned';
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     hilog.info(DOMAIN, TAG, 'onCreate');
+    this.applyCardAction(want);
+  }
+
+  /** The card can only reach us by launching the ability; hand the intent on. */
+  onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    this.applyCardAction(want);
+  }
+
+  private applyCardAction(want: Want): void {
+    const parameters = want.parameters;
+    if (!parameters) return;
+    const action = String(parameters['stayTunedAction'] ?? '');
+    if (action.length > 0) {
+      // The page links this through @StorageLink and consumes it once.
+      AppStorage.setOrCreate('stayTunedAction', action);
+    }
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
