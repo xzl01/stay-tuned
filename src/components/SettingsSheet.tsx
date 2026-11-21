@@ -7,6 +7,7 @@ import { useAppStore } from '../state/AppStore';
 import { formatCacheSize, getCacheStats } from '../lib/cache';
 import { canConfigureServer, getServerBase, isNativePlatform } from '../lib/serverConfig';
 import { DESKTOP_APP, STATIC_DEMO } from '../lib/env';
+import { RELEASES_URL, REPOSITORY_URL } from '../lib/links';
 import type { Mode, Theme } from '../types';
 
 interface SettingsSheetProps {
@@ -51,12 +52,15 @@ function Row({
   control,
   onClick,
   chevron = false,
+  href,
 }: {
   title: string;
   hint?: ReactNode;
   control?: ReactNode;
   onClick?: () => void;
   chevron?: boolean;
+  /** Render as a real link so WebView / Electron hand it to the system browser. */
+  href?: string;
 }) {
   const body = (
     <>
@@ -68,6 +72,18 @@ function Row({
       {chevron ? <Icon name="chevronRight" size={15} className="settings-row-chevron" /> : null}
     </>
   );
+  if (href) {
+    return (
+      <a
+        className="settings-row settings-row--action"
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {body}
+      </a>
+    );
+  }
   if (!onClick) return <div className="settings-row">{body}</div>;
   return (
     <button type="button" className="settings-row settings-row--action" onClick={onClick}>
@@ -268,10 +284,16 @@ export function SettingsSheet({
         <Row title="版本" control={<span className="settings-row-value is-mono">v{__APP_VERSION__}</span>} />
         <Row title="运行环境" control={<span className="settings-row-value">{platformLabel}</span>} />
         <Row
+          title="下载更新"
+          hint="打开 GitHub Releases 下载各平台最新安装包。"
+          control={<Icon name="external" size={14} className="settings-row-chevron" />}
+          href={RELEASES_URL}
+        />
+        <Row
           title="开源许可"
           hint="GPL-3.0-only"
           control={<Icon name="external" size={14} className="settings-row-chevron" />}
-          onClick={() => window.open('https://github.com/xzl01/stay-tuned', '_blank', 'noopener')}
+          href={REPOSITORY_URL}
         />
       </Group>
     </Sheet>
