@@ -9,8 +9,10 @@ on:
 permissions:
   contents: read
 
+# Shared with the Android workflow: both publish to the same release, so they
+# must not rewrite each other's assets mid-flight.
 concurrency:
-  group: desktop-${{github.ref}}
+  group: release-assets-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
