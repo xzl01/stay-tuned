@@ -8,6 +8,7 @@ import { common } from '@kit.AbilityKit';
 import { StayTunedHttp } from '../common/HttpBridge';
 import { MediaHost } from '../common/MediaHost';
 import { FilesHost } from '../common/FilesHost';
+import { HapticsHost } from '../common/HapticsHost';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'StayTuned';
@@ -20,6 +21,7 @@ const TAG: string = 'StayTuned';
  *   StayTunedHttp   CORS-free network access for the bundled parsers
  *   StayTunedMedia  background task + AVSession for lock screen control
  *   StayTunedFiles  writing exports through the system save picker
+ *   StayTunedHaptics  fader / button cues on the linear motor
  *   onShowFileSelector  `<input type="file">` (M3U import, backup restore, covers)
  */
 @Entry
@@ -29,6 +31,7 @@ struct Index {
   private bridge: StayTunedHttp = new StayTunedHttp();
   private media: MediaHost = new MediaHost();
   private files: FilesHost = new FilesHost();
+  private haptics: HapticsHost = new HapticsHost();
   private context?: common.UIAbilityContext;
 
   aboutToAppear(): void {
@@ -112,6 +115,7 @@ struct Index {
             this.controller.registerJavaScriptProxy(this.bridge, 'StayTunedHttp', [], ['request']);
             this.controller.registerJavaScriptProxy(this.media, 'StayTunedMedia', ['update']);
             this.controller.registerJavaScriptProxy(this.files, 'StayTunedFiles', [], ['saveText']);
+            this.controller.registerJavaScriptProxy(this.haptics, 'StayTunedHaptics', ['pulse']);
           } catch (error) {
             const failure = error as BusinessError;
             hilog.error(DOMAIN, TAG, 'registerJavaScriptProxy failed: %{public}s', JSON.stringify(failure));

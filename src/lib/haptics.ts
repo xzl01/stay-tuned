@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import { isHarmonyHapticsAvailable, pulseHarmony } from './engine/harmonyHaptics';
 
 /**
  * Haptic vocabulary for the physical receiver.
@@ -53,7 +54,9 @@ const Haptics = registerPlugin<HapticsPlugin>('Haptics');
 const HAPTICS_PLATFORM = 'android';
 
 function isHapticsPlatform(): boolean {
-  return Capacitor.getPlatform() === HAPTICS_PLATFORM;
+  // Android replays these cues through a Capacitor plugin; the HarmonyOS shell
+  // forwards the same shapes over its ArkTS bridge.
+  return Capacitor.getPlatform() === HAPTICS_PLATFORM || isHarmonyHapticsAvailable();
 }
 
 /** HapticFeedbackConstants values; the comment is the API level that added it. */
@@ -95,6 +98,21 @@ const lastAt = new Map<HapticCue, number>();
 /** Probe the motor once; safe to call repeatedly. */
 export function initHaptics(): Promise<HapticsCapabilities | null> {
   if (!isHapticsPlatform()) return Promise.resolve(null);
+  if (isHarmonyHapticsAvailable()) {
+    // ArkWeb exposes no capability probe; the ArkTS side always targets the
+    // linear motor and honours the system touch-feedback switch itself.
+    const caps: HapticsCapabilities = {
+      hasVibrator: true,
+      amplitude: false,
+      apiLevel: 12,
+      primitives: true,
+      envelope: false,
+      touchFeedbackEnabled: true,
+      custom: true,
+    };
+    capabilities = caps;
+    return Promise.resolve(caps);
+  }
   if (!initPromise) {
     initPromise = Haptics.capabilities()
       .then((result) => {
@@ -244,6 +262,13 @@ export function pulse(cue: HapticCue, options: HapticOptions = {}): void {
   if (capabilities && !capabilities.hasVibrator) return;
 
   const custom = customPattern(cue, options.amplitude);
+  if (isHarmonyHapticsAvailable()) {
+    // Amplitude shaping is Android-only; keep the rhythm, let the motor pick
+    // the strength from the system setting.
+    pulseHarmony(custom ? { duration: custom.duration, timings: custom.timings } : { duration: 8 });
+    return;
+  }
+
   if (custom && capabilities?.custom !== false) {
     void Haptics.play(scaledPattern(custom)).catch(() => undefined);
     return;
