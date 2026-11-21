@@ -134,7 +134,8 @@ export class MediaHost {
       duration: this.lastDuration * 1000,
     };
     if (this.artwork) {
-      metadata.artwork = this.artwork;
+      // AVMetadata calls the cover `mediaImage`; it accepts a PixelMap or a URI.
+      metadata.mediaImage = this.artwork;
     }
     session.setAVMetadata(metadata).catch((error: BusinessError) => {
       hilog.warn(DOMAIN, TAG, 'setAVMetadata failed: %{public}d', error.code);
