@@ -59,7 +59,9 @@ jobs:
           # hvigor 6.x expects <root>/<api>/<component>, not the flat layout the
           # archive ships. Unpack every component under the API level.
           mkdir -p "$RUNNER_TEMP/ohos-sdk/root/$OHOS_API"
-          find sdk/packages/ohos-sdk -name '*-linux-*.zip' -print0 | while IFS= read -r -d '' zip; do
+          # The Linux archive unpacks as linux/*.zip (the macOS one nests under
+          # sdk/packages/ohos-sdk), so search the whole extraction root.
+          find . -name '*-linux-*.zip' -print0 | while IFS= read -r -d '' zip; do
             unzip -q -o "$zip" -d "$RUNNER_TEMP/ohos-sdk/root/$OHOS_API"
           done
           rm -rf "$RUNNER_TEMP/ohos-sdk/download"
