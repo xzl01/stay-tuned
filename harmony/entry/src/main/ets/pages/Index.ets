@@ -104,6 +104,7 @@ struct Index {
 
   /** Re-enter the bundled page after the renderer was killed. */
   private reloadPage(): void {
+    this.media.markNotReady();
     try {
       this.controller.loadUrl('resource://rawfile/www/index.html');
     } catch (error) {
@@ -157,6 +158,13 @@ struct Index {
           this.openFilePicker(event);
           // Returning true means ArkWeb waits for handleFileList().
           return true;
+        })
+        .onPageBegin(() => {
+          // A reload (renderer recovery) invalidates the previous page.
+          this.media.markNotReady();
+        })
+        .onPageEnd(() => {
+          this.media.markReady();
         })
         .onLoadIntercept((event: OnLoadInterceptEvent) => {
           const url = event.data.getRequestUrl();

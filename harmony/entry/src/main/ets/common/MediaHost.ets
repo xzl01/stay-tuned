@@ -60,6 +60,10 @@ export class MediaHost {
   private artwork?: image.PixelMap;
   /** Avoids rewriting the card snapshot on every position tick. */
   private lastSnapshotKey: string = '';
+  /** True once the bundle finished loading and can accept commands. */
+  private pageReady: boolean = false;
+  /** Commands that arrived before the page was ready. */
+  private pending: string[] = [];
 
   setController(controller: webview.WebviewController): void {
     this.controller = controller;
@@ -320,10 +324,38 @@ export class MediaHost {
 
   /** Push a transport command into the page, which owns the actual player. */
   private command(action: string, value?: number): void {
+    // A cold start from the card can fire a command before the bundle is ready;
+    // dropping it would look like the button did nothing.
+    if (!this.pageReady) {
+      this.pending.push(this.scriptFor(action, value));
+      return;
+    }
+    this.run(this.scriptFor(action, value));
+  }
+
+  /** Called once the page finished loading; replays anything queued earlier. */
+  markReady(): void {
+    this.pageReady = true;
+    const queued = this.pending;
+    this.pending = [];
+    for (let index = 0; index < queued.length; index += 1) {
+      this.run(queued[index]);
+    }
+  }
+
+  /** The renderer is going away; commands have to wait for the reload. */
+  markNotReady(): void {
+    this.pageReady = false;
+  }
+
+  private scriptFor(action: string, value?: number): string {
+    const argument = value === undefined ? '' : ', ' + value;
+    return `window.__stayTunedMediaCommand && window.__stayTunedMediaCommand('${action}'${argument})`;
+  }
+
+  private run(script: string): void {
     const controller = this.controller;
     if (!controller) return;
-    const argument = value === undefined ? '' : ', ' + value;
-    const script = `window.__stayTunedMediaCommand && window.__stayTunedMediaCommand('${action}'${argument})`;
     controller.runJavaScript(script).catch((error: BusinessError) => {
       hilog.warn(DOMAIN, TAG, 'runJavaScript failed: %{public}d', error.code);
     });
