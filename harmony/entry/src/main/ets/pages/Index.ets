@@ -59,7 +59,7 @@ struct Index {
     return [];
   }
 
-  private openFilePicker(event: OnFileSelectorEvent): void {
+  private openFilePicker(event: OnShowFileSelectorEvent): void {
     const context = this.context;
     if (!context) {
       event.result.handleFileList([]);
@@ -99,7 +99,7 @@ struct Index {
         .horizontalScrollBarAccess(false)
         .verticalScrollBarAccess(false)
         .darkMode(WebDarkMode.Auto)
-        .onShowFileSelector((event: OnFileSelectorEvent) => {
+        .onShowFileSelector((event: OnShowFileSelectorEvent) => {
           this.openFilePicker(event);
           // Returning true means ArkWeb waits for handleFileList().
           return true;
