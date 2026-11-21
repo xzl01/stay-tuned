@@ -2,6 +2,12 @@ name: Build desktop packages
 
 on:
   workflow_dispatch:
+    inputs:
+      # Set this to an existing tag to re-attach packages without moving the tag.
+      tag:
+        description: 标签（留空则按本次 push 的标签发布）
+        required: false
+        type: string
   push:
     tags:
       - 'v*'
@@ -10,8 +16,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: desktop-${{github.ref}}
+  group: desktop-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   build:
@@ -122,7 +131,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.tag != ''
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -146,11 +155,14 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
-            gh release create "$GITHUB_REF_NAME" --title "留频 $GITHUB_REF_NAME" --generate-notes
-          mapfile -d '' assets < <(find desktop-dist -type f \
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || \
+            gh release create "$RELEASE_TAG" --title "留频 $RELEASE_TAG" --generate-notes
+          # Only the packaged artifacts sit at the top level; the *-unpacked
+          # directories hold the same files under duplicate names (two
+          # elevate.exe copies broke the previous upload with a 422).
+          mapfile -d '' assets < <(find desktop-dist -maxdepth 1 -type f \
             \( -name '*.exe' -o -name '*.dmg' -o -name '*.zip' -o -name '*.AppImage' \
                -o -name '*.deb' -o -name '*.rpm' -o -name '*.tar.gz' -o -name '*.blockmap' \
                -o -name 'latest*.yml' \) -print0)
-          printf 'uploading %s files\n' "${#assets[@]}"
-          gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
+          printf 'uploading %s files to %s\n' "${#assets[@]}" "$RELEASE_TAG"
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
