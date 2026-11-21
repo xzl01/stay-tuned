@@ -9,6 +9,8 @@ import { webview } from '@kit.ArkWeb';
 import { http } from '@kit.NetworkKit';
 import { image } from '@kit.ImageKit';
 import { util } from '@kit.ArkTS';
+import { preferences } from '@kit.ArkData';
+import { formBindingData, formProvider } from '@kit.FormKit';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'StayTunedMedia';
@@ -56,6 +58,8 @@ export class MediaHost {
   private lastDuration: number = 0;
   private artworkSource: string = '';
   private artwork?: image.PixelMap;
+  /** Avoids rewriting the card snapshot on every position tick. */
+  private lastSnapshotKey: string = '';
 
   setController(controller: webview.WebviewController): void {
     this.controller = controller;
@@ -103,6 +107,11 @@ export class MediaHost {
       this.lastArtist = artist;
       this.lastDuration = finiteOr(payload.duration, 0);
       this.applyMetadata();
+      const snapshotKey = title + '|' + artist + '|' + (playing ? '1' : '0');
+      if (snapshotKey !== this.lastSnapshotKey) {
+        this.lastSnapshotKey = snapshotKey;
+        this.syncCard(title, artist, playing).catch(() => undefined);
+      }
       const artworkSource = payload.artwork ?? '';
       if (artworkSource !== this.artworkSource) {
         // Decoding is async; metadata is refreshed once the cover is ready.
@@ -201,6 +210,35 @@ export class MediaHost {
       return undefined;
     } finally {
       request.destroy();
+    }
+  }
+
+  /**
+   * Mirror what is playing into preferences and onto every home-screen card.
+   * The card runs in its own process, so preferences are the only hand-off.
+   */
+  private async syncCard(title: string, artist: string, playing: boolean): Promise<void> {
+    if (!this.context) return;
+    try {
+      const snapshot = await preferences.getPreferences(this.context, { name: 'stay_tuned_now' });
+      await snapshot.put('title', title);
+      await snapshot.put('artist', artist);
+      await snapshot.put('playing', playing);
+      await snapshot.flush();
+
+      const forms = await preferences.getPreferences(this.context, { name: 'stay_tuned_forms' });
+      const raw = await forms.get('ids', '') as string;
+      if (raw.length === 0) return;
+      const data = formBindingData.createFormBindingData({ title: title, artist: artist, playing: playing });
+      const ids = raw.split(',');
+      for (let index = 0; index < ids.length; index += 1) {
+        const formId = ids[index];
+        if (formId.length === 0) continue;
+        formProvider.updateForm(formId, data).catch(() => undefined);
+      }
+    } catch (error) {
+      const failure = error as BusinessError;
+      hilog.warn(DOMAIN, TAG, 'card sync failed: %{public}s', JSON.stringify(failure));
     }
   }
 
