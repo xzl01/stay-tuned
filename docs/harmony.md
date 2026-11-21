@@ -161,6 +161,7 @@ hvigor WARN: No signingConfig found for product default
 | 窗口外观 | 边到边铺满 + 状态栏/导航栏图标随主题切换（`EntryAbility` + `StayTunedChrome`）；页面用 `env(safe-area-inset-*)` 自行避让 |
 | Media Session / 锁屏控制 | 已由 AVSession 接管：标题/作者/状态/进度可见，播放暂停与前后切换可回灌页面；锁屏封面用 `AVMetadata.mediaImage`（远程 URL 或 `data:` 图片解码成 PixelMap，按条目缓存并在切换时释放） |
 | 后台播放 | 已申请 `ohos.permission.KEEP_BACKGROUND_RUNNING`，播放期间开启 AUDIO_PLAYBACK 长时任务，并用 AVSession 接收锁屏 / 耳机按键；仍需真机验证 |
+| 桌面服务卡片 | 已实现信息卡（当前节目 + 播放状态，点按打开应用）；播放/暂停按钮与卡片封面尚未做，见「桌面服务卡片」 |
 | 3D 彩蛋 | 依赖 WebGL，需真机验证 |
 
 ## 网络桥
@@ -213,6 +214,29 @@ ArkWeb 默认不处理 `<input type="file">`，所以本地 `.m3u` 导入、订�
 | 备份导出 | `src/lib/backup.ts`：鸿蒙走保存选择器，安卓保持 Documents + 分享面板，其他平台仍是浏览器下载 |
 
 用户取消选择时 `handleFileList([])` 会让 `<input>` 保持空值；导出取消则返回空路径，界面提示“已取消导出”。
+
+## 桌面服务卡片
+
+安卓有主屏小组件，鸿蒙对应的是服务卡片：
+
+| 文件 | 作用 |
+| --- | --- |
+| `harmony/entry/src/main/resources/base/profile/form_config.json` | 卡片定义（2*4、默认卡片、定期刷新兜底） |
+| `harmony/entry/src/main/ets/widget/StayTunedCard.ets` | 卡片 UI：品牌行 + 当前节目 + 作者 + 播放状态，点按经 `postCardAction` 打开应用 |
+| `harmony/entry/src/main/ets/entryformability/EntryFormAbility.ets` | `FormExtensionAbility`：创建时读快照、记录 formId、移除时清理 |
+| `harmony/entry/src/main/ets/common/MediaHost.ets` | 播放状态变化时把快照写进 `preferences` 并调用 `formProvider.updateForm` |
+
+数据流：
+
+```text
+页面 StayTunedMedia.update(json) → MediaHost
+    ├─ preferences('stay_tuned_now')   ← 标题 / 作者 / 播放状态
+    └─ formProvider.updateForm(formId, …) → 卡片进程读取并重绘
+```
+
+卡片运行在独立进程，所以只能通过 `preferences` 交换数据；`form_config.json` 里的 `updateEnabled` 只是兜底刷新，真正的更新由播放状态变化驱动。
+
+尚未实现：卡片上的播放/暂停按钮（需要 `postCardAction` 配合后台能力，属于跨进程控制），以及卡片封面（需要把 PixelMap 交给卡片进程，或改用 `mediaImage` 的 URI 形式）。
 
 ## 后续可做
 
