@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Sheet, Spinner } from './ui/Primitives';
 import { useAppStore } from '../state/AppStore';
-import { isNativePlatform } from '../lib/serverConfig';
+import { isHarmonyShell, isNativePlatform } from '../lib/serverConfig';
 import type { ImportMode } from '../lib/backup';
 
 interface DataSheetProps {
@@ -20,6 +20,7 @@ export function DataSheet({ open, onClose }: DataSheetProps) {
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const native = isNativePlatform();
+  const harmony = isHarmonyShell();
 
   const runExport = async () => {
     setBusy('export');
@@ -71,9 +72,13 @@ export function DataSheet({ open, onClose }: DataSheetProps) {
         </p>
         <button type="button" className="solid-button backup-action" disabled={busy !== null} onClick={() => void runExport()}>
           {busy === 'export' ? <Spinner label="导出中" /> : <Icon name="external" size={15} />}
-          {busy === 'export' ? '导出中…' : native ? '导出并分享文件' : '下载备份文件'}
+          {busy === 'export' ? '导出中…' : native ? '导出并分享文件' : harmony ? '保存备份文件' : '下载备份文件'}
         </button>
-        {lastPath ? <p className="backup-note">已保存：{lastPath}</p> : null}
+        {lastPath ? (
+          <p className="backup-note" title={lastPath}>
+            已保存：{lastPath.split('/').pop() || lastPath}
+          </p>
+        ) : null}
       </section>
 
       <section className="backup-block">

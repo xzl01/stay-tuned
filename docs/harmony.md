@@ -154,6 +154,7 @@ hvigor WARN: No signingConfig found for product default
 | --- | --- |
 | 界面与本地示例内容 | 完整可用，示例音频随包（`rawfile/www/audio`） |
 | RSS 订阅 / 播客与电台搜索 / M3U 导入 | 由 ArkTS 网络桥 `StayTunedHttp` 直连（见下节），无需服务端；仍需真机验证 |
+| 本地文件（.m3u 导入、备份导入导出、电台封面上传）| `onShowFileSelector` + `DocumentViewPicker` / `DocumentSavePicker`（见「文件选择与保存」）；仍需真机验证 |
 | 音频播放 | 走 ArkWeb 的 HTML5 音频；HLS 由 `hls.js`（MSE）处理。暂停后音源失效会在下次播放时自动重连（与桌面端同一套恢复逻辑） |
 | 实时频谱 | 依赖 Web Audio 分析器，ArkWeb 支持情况需真机验证 |
 | Media Session / 锁屏控制 | ArkWeb 未提供对应能力，暂不生效；后续可用 ArkTS 媒体会话补齐 |
@@ -198,6 +199,18 @@ AVSession 回调 ─► controller.runJavaScript ─► window.__stayTunedMediaC
 - 页面侧上报做了节流：状态变化立即发送，位置最多 1 秒一次。
 - 传输命令是回灌给页面的：播放 / 暂停 / 上一集 / 下一集 / 进度都走现有 store，与界面按钮同一条路径，不会出现两套状态。
 - 尚未实现：锁屏封面（AVSession 需要 PixelMap，页面只有 SVG 封面）、播放列表浏览、倍速同步到系统。
+
+## 文件选择与保存
+
+ArkWeb 默认不处理 `<input type="file">`，所以本地 `.m3u` 导入、订阅备份导入、电台封面上传在鸿蒙上原本是“点了没反应”。现在：
+
+| 用途 | 实现 |
+| --- | --- |
+| 选择文件 | `Web().onShowFileSelector` → `picker.DocumentViewPicker`，后缀过滤由元素上的 `accept` 推导（图片 / 备份 / 播放列表） |
+| 保存文件 | `StayTunedFiles.saveText(name, text)` → `picker.DocumentSavePicker` + `fileIo` 写入；页面侧 `src/lib/engine/harmonyFiles.ts` 判断桥是否存在 |
+| 备份导出 | `src/lib/backup.ts`：鸿蒙走保存选择器，安卓保持 Documents + 分享面板，其他平台仍是浏览器下载 |
+
+用户取消选择时 `handleFileList([])` 会让 `<input>` 保持空值；导出取消则返回空路径，界面提示“已取消导出”。
 
 ## 后续可做
 
