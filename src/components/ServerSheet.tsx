@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Icon } from './Icon';
 import { Sheet, Spinner } from './ui/Primitives';
 import { useAppStore } from '../state/AppStore';
-import { canConfigureServer, getServerBase, isNativePlatform, normalizeServerBase, setServerBase } from '../lib/serverConfig';
+import { canConfigureServer, getServerBase, isHarmonyShell, isNativePlatform, isPackagedApp, normalizeServerBase, setServerBase } from '../lib/serverConfig';
 import { DESKTOP_APP } from '../lib/env';
 
 interface ServerSheetProps {
@@ -20,6 +20,7 @@ export function ServerSheet({ open, onClose }: ServerSheetProps) {
   const [probe, setProbe] = useState<Probe>({ state: 'idle' });
   const [desktopInfo, setDesktopInfo] = useState<{ version: string; platform: string; arch: string } | null>(null);
   const native = isNativePlatform();
+  const harmony = isHarmonyShell();
   const configurable = canConfigureServer();
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export function ServerSheet({ open, onClose }: ServerSheetProps) {
     }
   };
 
-  const localEngine = isNativePlatform() && !getServerBase();
+  const localEngine = isPackagedApp() && !getServerBase();
 
   return (
     <Sheet
@@ -150,6 +151,7 @@ export function ServerSheet({ open, onClose }: ServerSheetProps) {
               清空（使用默认引擎）
             </button>
             {native ? <span className="server-badge">Android 应用</span> : null}
+            {harmony ? <span className="server-badge">鸿蒙应用</span> : null}
           </div>
         </form>
       ) : null}

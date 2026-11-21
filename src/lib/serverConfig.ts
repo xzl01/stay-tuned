@@ -7,13 +7,29 @@ const STORAGE_KEY = 'stay-tuned:server';
 /** Build-time default, e.g. VITE_API_BASE=https://radio.example.com */
 const BUILD_DEFAULT = (import.meta.env.VITE_API_BASE ?? '').trim();
 
+/**
+ * True on a Capacitor build (Android/iOS): native player owns audio and native
+ * storage owns the offline cache.
+ */
 export function isNativePlatform(): boolean {
   if (typeof window === 'undefined') return false;
   const capacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-  if (capacitor?.isNativePlatform?.()) return true;
-  // HarmonyOS shell: ArkWeb registers an ArkTS network bridge, which also means
-  // the page runs from a packaged origin with no `/api` server behind it.
+  return Boolean(capacitor?.isNativePlatform?.());
+}
+
+/**
+ * True inside the HarmonyOS ArkWeb shell. It has no Node server (the ArkTS
+ * bridge fetches for us) but it plays through the page's <audio> element and
+ * caches into IndexedDB, so it must not be treated as a Capacitor build.
+ */
+export function isHarmonyShell(): boolean {
+  if (typeof window === 'undefined') return false;
   return typeof (window as Window & { StayTunedHttp?: unknown }).StayTunedHttp !== 'undefined';
+}
+
+/** Any packaged build that has no `/api` server behind it. */
+export function isPackagedApp(): boolean {
+  return isNativePlatform() || isHarmonyShell();
 }
 
 /** Normalize a server address; an empty string means "same origin". */
@@ -59,7 +75,7 @@ export function canConfigureServer(): boolean {
 }
 
 export function hasServerBase(): boolean {
-  return Boolean(getServerBase()) || (!DESKTOP_APP && !isNativePlatform());
+  return Boolean(getServerBase()) || (!DESKTOP_APP && !isPackagedApp());
 }
 
 /** Absolute URL for an API path, honouring the configured server. */

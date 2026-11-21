@@ -2,7 +2,7 @@
 
 import type { Chapter, FeedResponse, PodcastSearchResult, Station, TranscriptLine } from '../types';
 import { STATIC_DEMO } from './env';
-import { apiUrl, absolutize, getServerBase, isNativePlatform } from './serverConfig';
+import { apiUrl, absolutize, getServerBase, isPackagedApp } from './serverConfig';
 import type * as LocalEngine from './engine/local';
 
 /**
@@ -13,7 +13,7 @@ import type * as LocalEngine from './engine/local';
  * refuse CORS.
  */
 export function useLocalEngine(): boolean {
-  return isNativePlatform() && !getServerBase();
+  return isPackagedApp() && !getServerBase();
 }
 
 /**

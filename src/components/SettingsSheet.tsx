@@ -5,7 +5,7 @@ import { Icon } from './Icon';
 import { Sheet, Switch } from './ui/Primitives';
 import { useAppStore } from '../state/AppStore';
 import { formatCacheSize, getCacheStats } from '../lib/cache';
-import { canConfigureServer, getServerBase, isNativePlatform } from '../lib/serverConfig';
+import { canConfigureServer, getServerBase, isHarmonyShell, isNativePlatform, isPackagedApp } from '../lib/serverConfig';
 import { DESKTOP_APP, STATIC_DEMO } from '../lib/env';
 import { RELEASES_URL, REPOSITORY_URL } from '../lib/links';
 import type { Mode, Theme } from '../types';
@@ -133,7 +133,7 @@ export function SettingsSheet({
     const base = getServerBase();
     if (base) return base.replace(/^https?:\/\//, '');
     if (DESKTOP_APP) return '内置服务 · 127.0.0.1';
-    if (isNativePlatform()) return '本地解析引擎';
+    if (isPackagedApp()) return '本地解析引擎';
     return '同源服务';
   })();
   const platformLabel = DESKTOP_APP
@@ -142,9 +142,11 @@ export function SettingsSheet({
       : '桌面版'
     : isNativePlatform()
       ? 'Android'
-      : STATIC_DEMO
-        ? '静态演示'
-        : '浏览器';
+      : isHarmonyShell()
+        ? '鸿蒙'
+        : STATIC_DEMO
+          ? '静态演示'
+          : '浏览器';
 
   const cacheSummary = stats.count
     ? stats.count + ' 期 · ' + formatCacheSize(stats.bytes) +
