@@ -1,0 +1,10 @@
+{
+  "app": {
+    "bundleName": "io.github.xzl01.staytuned",
+    "vendor": "xzl01",
+    "versionCode": 1000018,
+    "versionName": "1.6.2",
+    "icon": "$media:app_icon",
+    "label": "$string:app_name"
+  }
+}

@@ -14,6 +14,8 @@
     "android:sync": "npm run build && cap sync android",
     "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "android:open": "cap open android",
+    "harmony:sync": "node scripts/harmony-sync.mjs",
+    "harmony:hap": "node scripts/harmony-build.mjs",
     "notices": "node scripts/generate-notices.mjs",
     "desktop:icons": "python3 scripts/desktop-icons.py",
     "desktop:prepare": "npm run build && npm run desktop:icons",

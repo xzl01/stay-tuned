@@ -1,0 +1,11 @@
+{
+  "modelVersion": "6.0.0",
+  "name": "stay-tuned",
+  "version": "1.6.2",
+  "description": "留频 — 播客与电台调谐器（鸿蒙壳工程）",
+  "main": "",
+  "author": "HarryLoong",
+  "license": "GPL-3.0-only",
+  "dependencies": {},
+  "devDependencies": {}
+}

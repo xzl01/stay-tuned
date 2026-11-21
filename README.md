@@ -207,6 +207,19 @@ APK 内置原生媒体会话与桌面小组件：
 
 调试签名已固定为仓库内的 `android/keystore/debug.keystore`（密码 `staytuned`），本地构建与 CI 产物可以互相覆盖安装，不会再出现签名冲突。
 
+### 鸿蒙应用（HarmonyOS）
+
+仓库内置 ArkTS 工程（`harmony/`），界面、播放与状态复用同一套 Vite 产物，原生侧只负责 ArkWeb 容器：
+
+```bash
+npm ci
+npm run harmony:sync   # 构建前端并以相对路径写入 harmony/entry/src/main/resources/rawfile/www
+npm run harmony:hap    # 产出 harmony/entry/build/default/outputs/default/entry-default-unsigned.hap
+```
+
+构建需要 **JDK 17+** 与 **OpenHarmony SDK（API 20）**，并设置 `OHOS_BASE_SDK_HOME`；hvigor 会在首次运行时自动装进 `.harmony-tools/`，不依赖 DevEco Studio。完整步骤、SDK 目录分层要求与已知限制见 [docs/harmony.md](docs/harmony.md)。
+
+当前产物为**未签名 HAP**，可验证构建但不能直接安装；签名需在 DevEco Studio 里生成调试证书后写回 `harmony/build-profile.json5`。鸿蒙端的 RSS / 搜索 / M3U 解析暂需在「设置 → 解析引擎」填写服务端地址（ArkWeb 没有 Capacitor 的原生 HTTP 通道），示例内容与本地音频开箱可用。
 ### 桌面应用（Windows / macOS / Linux）
 
 仓库内置 Electron 桌面端打包配置，用户无需单独安装 Node.js 或启动服务：应用内嵌 Express 服务，固定监听 `127.0.0.1:18787`，同时提供完整 RSS / M3U / HLS 代理能力。订阅、进度与主题仍保存在本机 localStorage；桌面端不注册 service worker，避免缓存与内置服务不同步。

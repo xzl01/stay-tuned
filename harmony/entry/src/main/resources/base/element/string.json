@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "留频播客与电台壳"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "留频主界面"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "留频"
+    }
+  ]
+}

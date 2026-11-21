@@ -1,0 +1,101 @@
+name: Build HarmonyOS HAP
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+# Shares the release lock with the Android and desktop uploaders.
+concurrency:
+  group: release-assets-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  SDK_ARCHIVE: ohos-sdk-windows_linux-public.tar.gz
+  SDK_BASE: https://repo.huaweicloud.com/openharmony/os/6.0-Release
+  OHOS_API: '20'
+
+jobs:
+  hap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache OpenHarmony SDK
+        id: sdk-cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ runner.temp }}/ohos-sdk
+          key: ohos-sdk-6.0-${{ env.OHOS_API }}-linux
+
+      - name: Download OpenHarmony SDK
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ohos-sdk/download"
+          cd "$RUNNER_TEMP/ohos-sdk/download"
+          curl -sS -L --retry 3 -o "$SDK_ARCHIVE" "$SDK_BASE/$SDK_ARCHIVE"
+          curl -sS -L --retry 3 -o "$SDK_ARCHIVE.sha256" "$SDK_BASE/$SDK_ARCHIVE.sha256"
+          echo "$(awk '{print $1}' "$SDK_ARCHIVE.sha256")  $SDK_ARCHIVE" | sha256sum -c -
+          tar xzf "$SDK_ARCHIVE"
+
+          # hvigor 6.x expects <root>/<api>/<component>, not the flat layout the
+          # archive ships. Unpack every component under the API level.
+          mkdir -p "$RUNNER_TEMP/ohos-sdk/root/$OHOS_API"
+          find sdk/packages/ohos-sdk -name '*-linux-*.zip' -print0 | while IFS= read -r -d '' zip; do
+            unzip -q -o "$zip" -d "$RUNNER_TEMP/ohos-sdk/root/$OHOS_API"
+          done
+          rm -rf "$RUNNER_TEMP/ohos-sdk/download"
+          ls "$RUNNER_TEMP/ohos-sdk/root/$OHOS_API"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web bundle for ArkWeb
+        run: npm run harmony:sync
+
+      - name: Build HAP
+        env:
+          OHOS_BASE_SDK_HOME: ${{ runner.temp }}/ohos-sdk/root
+        run: npm run harmony:hap
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p artifacts
+          for hap in $(find harmony/entry/build -name '*.hap'); do
+            cp "$hap" "artifacts/stay-tuned-${{ github.ref_name }}-$(basename "$hap")"
+          done
+          ls -lh artifacts
+
+      - name: Upload HAP artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: stay-tuned-hap
+          path: artifacts/*.hap
+          if-no-files-found: error
+
+      - name: Attach HAP to release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
+            gh release create "$GITHUB_REF_NAME" --title "留频 $GITHUB_REF_NAME" --generate-notes
+          gh release upload "$GITHUB_REF_NAME" artifacts/*.hap --clobber
