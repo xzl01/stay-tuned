@@ -1,7 +1,7 @@
 {
   "name": "stay-tuned",
   "private": true,
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "留频 — 播客与电台调谐器。订阅 RSS 播客，播放 M3U 电台，PC / 移动双端界面。",
   "type": "module",
   "scripts": {

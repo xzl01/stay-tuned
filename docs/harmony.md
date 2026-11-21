@@ -129,7 +129,7 @@ npm run harmony:sync && npm run harmony:hap
 
 ```bash
 scp xzl@<构建机>:/home/xzl/stay-tuned-build/harmony/entry/build/default/outputs/default/entry-default-unsigned.hap \
-  harmony-dist/stay-tuned-1.6.2-unsigned.hap
+  harmony-dist/stay-tuned-<版本>-unsigned.hap
 ```
 
 注意点：
