@@ -376,6 +376,7 @@ public class PlaybackService extends Service {
         if (!restoreSource()) return;
         player.setPlaybackSpeed(rate);
         player.setVolume(volume);
+        if (artwork == null && !artworkUrl.isEmpty()) loadArtwork(artworkUrl);
         playWhenReadyWanted = true;
         mainHandler.removeCallbacks(retryPrepare);
         int state = player.getPlaybackState();

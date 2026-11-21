@@ -2064,9 +2064,12 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
             corsFallbackRef.current = target.key;
             setSpectrumBlocked(true);
             audio.removeAttribute('crossorigin');
+            // Reloading resets currentTime, so remember where we were.
+            const resumeAt = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
             const retryUrl = target.kind === 'episode' ? target.episode.audioUrl : target.station.url;
             audio.src = audioSource(retryUrl);
             audio.load();
+            pendingSeekRef.current = resumeAt > 0 ? resumeAt : null;
             if (playbackRef.current.isPlaying) requestPlay();
             return;
           }
