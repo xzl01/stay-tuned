@@ -65,6 +65,16 @@ struct Index {
     return [];
   }
 
+  /** Re-enter the bundled page after the renderer was killed. */
+  private reloadPage(): void {
+    try {
+      this.controller.loadUrl('resource://rawfile/www/index.html');
+    } catch (error) {
+      const failure = error as BusinessError;
+      hilog.error(DOMAIN, TAG, 'reload failed: %{public}s', JSON.stringify(failure));
+    }
+  }
+
   private openFilePicker(event: OnShowFileSelectorEvent): void {
     const context = this.context;
     if (!context) {
@@ -110,6 +120,13 @@ struct Index {
           this.openFilePicker(event);
           // Returning true means ArkWeb waits for handleFileList().
           return true;
+        })
+        .onRenderExited((event: RenderExitReason) => {
+          // The renderer can be reclaimed while the app sits in the background.
+          // Reloading is the difference between "the receiver is back" and a
+          // permanently blank window.
+          hilog.warn(DOMAIN, TAG, 'renderer exited: %{public}d', event as number);
+          this.reloadPage();
         })
         .onControllerAttached(() => {
           try {
