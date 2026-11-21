@@ -154,10 +154,10 @@ hvigor WARN: No signingConfig found for product default
 | --- | --- |
 | 界面与本地示例内容 | 完整可用，示例音频随包（`rawfile/www/audio`） |
 | RSS 订阅 / 播客与电台搜索 / M3U 导入 | 由 ArkTS 网络桥 `StayTunedHttp` 直连（见下节），无需服务端；仍需真机验证 |
-| 音频播放 | 走 ArkWeb 的 HTML5 音频；HLS 由 `hls.js`（MSE）处理 |
+| 音频播放 | 走 ArkWeb 的 HTML5 音频；HLS 由 `hls.js`（MSE）处理。暂停后音源失效会在下次播放时自动重连（与桌面端同一套恢复逻辑） |
 | 实时频谱 | 依赖 Web Audio 分析器，ArkWeb 支持情况需真机验证 |
 | Media Session / 锁屏控制 | ArkWeb 未提供对应能力，暂不生效；后续可用 ArkTS 媒体会话补齐 |
-| 后台播放 | 未申请长时任务（`ohos.permission.KEEP_BACKGROUND_RUNNING`） |
+| 后台播放 | 未申请长时任务（`ohos.permission.KEEP_BACKGROUND_RUNNING`），切到后台后音频可能被系统挂起，回来需要重新点播放 |
 | 3D 彩蛋 | 依赖 WebGL，需真机验证 |
 
 ## 网络桥
