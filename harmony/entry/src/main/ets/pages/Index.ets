@@ -67,7 +67,8 @@ struct Index {
     }
     const options = new picker.DocumentSelectOptions();
     options.maxSelectNumber = 1;
-    const filters = this.suffixFilters(event.fileSelector?.acceptTypes ?? []);
+    const acceptTypes: string[] = event.fileSelector ? event.fileSelector.getAcceptType() : [];
+    const filters = this.suffixFilters(acceptTypes);
     if (filters.length > 0) {
       options.fileSuffixFilters = filters;
     }
