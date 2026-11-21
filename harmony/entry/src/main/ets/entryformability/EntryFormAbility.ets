@@ -51,7 +51,9 @@ async function rememberForm(context: Context, formId: string, add: boolean): Pro
 export default class EntryFormAbility extends FormExtensionAbility {
   onAddForm(want: Want): formBindingData.FormBindingData {
     const parameters = want.parameters;
-    const formId = parameters ? String(parameters[formBindingData.FormParam.IDENTITY_KEY] ?? '') : '';
+    // formBindingData has no FormParam enum in the OpenHarmony SDK; this is the
+    // documented identity key the system passes to onAddForm.
+    const formId = parameters ? String(parameters['ohos.extra.param.key.form_identity'] ?? '') : '';
     if (formId) {
       rememberForm(this.context, formId, true).catch(() => undefined);
       // onAddForm must answer synchronously, so hand back the placeholder and
