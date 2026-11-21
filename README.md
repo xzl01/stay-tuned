@@ -219,7 +219,7 @@ npm run harmony:hap    # 产出 harmony/entry/build/default/outputs/default/entr
 
 构建需要 **JDK 17+** 与 **OpenHarmony SDK（API 20）**，并设置 `OHOS_BASE_SDK_HOME`；hvigor 会在首次运行时自动装进 `.harmony-tools/`，不依赖 DevEco Studio。完整步骤、SDK 目录分层要求与已知限制见 [docs/harmony.md](docs/harmony.md)。
 
-当前产物为**未签名 HAP**，可验证构建但不能直接安装；签名需在 DevEco Studio 里生成调试证书后写回 `harmony/build-profile.json5`。鸿蒙端的 RSS / 搜索 / M3U 解析暂需在「设置 → 解析引擎」填写服务端地址（ArkWeb 没有 Capacitor 的原生 HTTP 通道），示例内容与本地音频开箱可用。
+当前产物为**未签名 HAP**，可验证构建但不能直接安装；签名需在 DevEco Studio 里生成调试证书后写回 `harmony/build-profile.json5`。鸿蒙端复用同一套解析模块：ArkTS 侧通过 `registerJavaScriptProxy` 暴露 `StayTunedHttp` 网络桥，页面把它接到既有的 `setFetchTransport`，因此 RSS / 搜索 / M3U 与安卓一样直连，不需要服务端。
 ### 桌面应用（Windows / macOS / Linux）
 
 仓库内置 Electron 桌面端打包配置，用户无需单独安装 Node.js 或启动服务：应用内嵌 Express 服务，固定监听 `127.0.0.1:18787`，同时提供完整 RSS / M3U / HLS 代理能力。订阅、进度与主题仍保存在本机 localStorage；桌面端不注册 service worker，避免缓存与内置服务不同步。

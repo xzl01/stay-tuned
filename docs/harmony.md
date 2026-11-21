@@ -113,16 +113,35 @@ hvigor WARN: No signingConfig found for product default
 | 项目 | 现状 |
 | --- | --- |
 | 界面与本地示例内容 | 完整可用，示例音频随包（`rawfile/www/audio`） |
-| RSS 订阅 / 播客与电台搜索 / M3U 导入 | 需在设置 → 解析引擎填服务端地址。ArkWeb 没有 Capacitor 的 `CapacitorHttp`，同源 `/api` 在 `resource://` 下不存在 |
+| RSS 订阅 / 播客与电台搜索 / M3U 导入 | 由 ArkTS 网络桥 `StayTunedHttp` 直连（见下节），无需服务端；仍需真机验证 |
 | 音频播放 | 走 ArkWeb 的 HTML5 音频；HLS 由 `hls.js`（MSE）处理 |
 | 实时频谱 | 依赖 Web Audio 分析器，ArkWeb 支持情况需真机验证 |
 | Media Session / 锁屏控制 | ArkWeb 未提供对应能力，暂不生效；后续可用 ArkTS 媒体会话补齐 |
 | 后台播放 | 未申请长时任务（`ohos.permission.KEEP_BACKGROUND_RUNNING`） |
 | 3D 彩蛋 | 依赖 WebGL，需真机验证 |
 
+## 网络桥
+
+ArkWeb 没有 Capacitor 的 `CapacitorHttp`，而播客源普遍不返回 CORS 头。工程用 `registerJavaScriptProxy` 把 ArkTS 的 `@kit.NetworkKit` 暴露成页面里的 `window.StayTunedHttp`：
+
+```text
+ArkTS  harmony/entry/src/main/ets/common/HttpBridge.ets   StayTunedHttp.request(url, method, headersJson, body) → JSON 字符串
+JS     src/lib/engine/harmony.ts                          harmonyTransport：把上面的 JSON 包装成 fetch 兼容的 Response
+```
+
+契约：`request` 返回 `{ status, headers, body, error? }` 的 JSON 字符串；`body` 以文本返回（订阅源、M3U、章节、文字稿都是文本，音频由 `<audio>` 直接加载，不走这条通道）。
+
+接入点是既有的 `setFetchTransport`：
+
+- 页面检测到 `window.StayTunedHttp` 后，`isNativePlatform()` 返回 true，应用按“无服务端”模式运行，与安卓一致；
+- `src/lib/engine/local.ts` 优先选 Capacitor 传输，其次鸿蒙传输，最后退回浏览器 `fetch`；
+- 因此在鸿蒙上订阅、搜索、M3U 导入、章节与文字稿都走原生请求，不受 CORS 限制，也不需要填写服务端地址。
+
+若将来要在鸿蒙上改用远端服务端（例如自建代理），在「设置 → 解析引擎」填地址即可覆盖本地引擎。
+
 ## 后续可做
 
-1. **HTTP 桥**：用 `registerJavaScriptProxy` 暴露 ArkTS `@kit.NetworkKit` 的请求能力，复用 `src/lib/engine/local.ts` 的 `setFetchTransport`，让鸿蒙端像安卓一样免服务端解析。
+1. **真机联调**：验证 ArkWeb 的 `localStorage`、`<audio>` 与 `hls.js`（MSE）在设备上的行为，确认桥的 20 秒超时是否足够。
 2. **媒体会话**：接 ArkTS `avSession`，补齐锁屏与耳机按键。
 3. **签名进 CI**：把 DevEco 产出的证书以 Secret 注入，产出可直接安装的 HAP。
 4. **设备类型**：接 HarmonyOS 商业 SDK 后把 `module.json5` 的 `deviceTypes` 从 `default` 改为 `phone`/`tablet`/`2in1`。

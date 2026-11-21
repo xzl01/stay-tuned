@@ -10,7 +10,10 @@ const BUILD_DEFAULT = (import.meta.env.VITE_API_BASE ?? '').trim();
 export function isNativePlatform(): boolean {
   if (typeof window === 'undefined') return false;
   const capacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-  return Boolean(capacitor?.isNativePlatform?.());
+  if (capacitor?.isNativePlatform?.()) return true;
+  // HarmonyOS shell: ArkWeb registers an ArkTS network bridge, which also means
+  // the page runs from a packaged origin with no `/api` server behind it.
+  return typeof (window as Window & { StayTunedHttp?: unknown }).StayTunedHttp !== 'undefined';
 }
 
 /** Normalize a server address; an empty string means "same origin". */

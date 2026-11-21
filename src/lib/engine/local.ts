@@ -18,6 +18,7 @@ import {
   normalizeStation,
 } from '../../../server/catalog.mjs';
 import type { Chapter, FeedResponse, PodcastSearchResult, Station, TranscriptLine } from '../../types';
+import { isHarmonyBridgeAvailable, harmonyTransport } from './harmony';
 import { isNativeHttpAvailable, nativeTransport, webTransport } from './transport';
 
 let installed = false;
@@ -26,7 +27,14 @@ let installed = false;
 export function installLocalTransport(): void {
   if (installed) return;
   installed = true;
-  setFetchTransport(isNativeHttpAvailable() ? nativeTransport : webTransport);
+  if (isNativeHttpAvailable()) {
+    setFetchTransport(nativeTransport);
+  } else if (isHarmonyBridgeAvailable()) {
+    // ArkWeb: the ArkTS proxy performs the request outside the WebView's CORS rules.
+    setFetchTransport(harmonyTransport);
+  } else {
+    setFetchTransport(webTransport);
+  }
 }
 
 function ensureTransport(): void {
