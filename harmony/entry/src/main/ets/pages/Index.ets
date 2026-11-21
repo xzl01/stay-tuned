@@ -131,11 +131,11 @@ struct Index {
           // Returning true means ArkWeb waits for handleFileList().
           return true;
         })
-        .onRenderExited((event: RenderExitReason) => {
+        .onRenderExited(() => {
           // The renderer can be reclaimed while the app sits in the background.
           // Reloading is the difference between "the receiver is back" and a
           // permanently blank window.
-          hilog.warn(DOMAIN, TAG, 'renderer exited: %{public}d', event as number);
+          hilog.warn(DOMAIN, TAG, 'renderer exited, reloading');
           this.reloadPage();
         })
         .onControllerAttached(() => {
