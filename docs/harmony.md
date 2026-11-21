@@ -155,6 +155,7 @@ hvigor WARN: No signingConfig found for product default
 | 界面与本地示例内容 | 完整可用，示例音频随包（`rawfile/www/audio`） |
 | RSS 订阅 / 播客与电台搜索 / M3U 导入 | 由 ArkTS 网络桥 `StayTunedHttp` 直连（见下节），无需服务端；仍需真机验证 |
 | 本地文件（.m3u 导入、备份导入导出、电台封面上传）| `onShowFileSelector` + `DocumentViewPicker` / `DocumentSavePicker`（见「文件选择与保存」）；仍需真机验证 |
+| 外部链接与下载 | `onLoadIntercept` 拦下非 `resource://` 的 http(s) 跳转，用 `startAbility({action: 'ohos.want.action.viewData'})` 交给系统浏览器；`onDownloadStart` 同样转交，避免点了没反应 |
 | 音频播放 | 走 ArkWeb 的 HTML5 音频；HLS 由 `hls.js`（MSE）处理。暂停后音源失效会在下次播放时自动重连（与桌面端同一套恢复逻辑） |
 | WebView 崩溃/回收 | `onRenderExited` 自动重载 `resource://rawfile/www/index.html`，不会停在白屏 |
 | 实时频谱 | 依赖 Web Audio 分析器，ArkWeb 支持情况需真机验证 |
