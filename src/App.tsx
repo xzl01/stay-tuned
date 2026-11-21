@@ -14,6 +14,7 @@ import { SettingsSheet } from './components/SettingsSheet';
 import { ToastStack } from './components/ui/Primitives';
 import { Receiver3DEggContext } from './hooks/usePlayEasterEgg';
 import { STATIC_DEMO } from './lib/env';
+import { pushSystemBars } from './lib/engine/harmonyChrome';
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -72,6 +73,8 @@ function AppShell() {
     document.documentElement.dataset.mode = prefs.mode;
     const meta = document.querySelector('meta[name="theme-color"]');
     meta?.setAttribute('content', resolvedTheme === 'dark' ? '#121410' : '#efece4');
+    // HarmonyOS draws the system bars over the page, so their icons must follow.
+    pushSystemBars(resolvedTheme === 'dark');
   }, [resolvedTheme, prefs.mode]);
 
   useEffect(() => {

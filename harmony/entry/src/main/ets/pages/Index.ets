@@ -9,6 +9,7 @@ import { StayTunedHttp } from '../common/HttpBridge';
 import { MediaHost } from '../common/MediaHost';
 import { FilesHost } from '../common/FilesHost';
 import { HapticsHost } from '../common/HapticsHost';
+import { ChromeHost } from '../common/ChromeHost';
 
 const DOMAIN: number = 0x0000;
 const TAG: string = 'StayTuned';
@@ -32,12 +33,14 @@ struct Index {
   private media: MediaHost = new MediaHost();
   private files: FilesHost = new FilesHost();
   private haptics: HapticsHost = new HapticsHost();
+  private chrome: ChromeHost = new ChromeHost();
   private context?: common.UIAbilityContext;
 
   aboutToAppear(): void {
     this.context = getContext(this) as common.UIAbilityContext;
     this.media.setController(this.controller);
     this.files.setContext(this.context);
+    this.chrome.setContext(this.context);
     this.media.init(this.context).catch((error: BusinessError) => {
       hilog.error(DOMAIN, TAG, 'media host init failed: %{public}s', JSON.stringify(error));
     });
@@ -116,6 +119,7 @@ struct Index {
             this.controller.registerJavaScriptProxy(this.media, 'StayTunedMedia', ['update']);
             this.controller.registerJavaScriptProxy(this.files, 'StayTunedFiles', [], ['saveText']);
             this.controller.registerJavaScriptProxy(this.haptics, 'StayTunedHaptics', ['pulse']);
+            this.controller.registerJavaScriptProxy(this.chrome, 'StayTunedChrome', [], ['setBars']);
           } catch (error) {
             const failure = error as BusinessError;
             hilog.error(DOMAIN, TAG, 'registerJavaScriptProxy failed: %{public}s', JSON.stringify(failure));

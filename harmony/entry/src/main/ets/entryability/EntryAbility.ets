@@ -18,6 +18,17 @@ export default class EntryAbility extends UIAbility {
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
+    // Edge to edge: the page already pads with env(safe-area-inset-*), so the
+    // window hands it the whole screen instead of a status-bar inset one.
+    try {
+      windowStage.getMainWindowSync().setWindowLayoutFullScreen(true).catch((error: BusinessError) => {
+        hilog.warn(DOMAIN, TAG, 'setWindowLayoutFullScreen failed: %{public}d', error.code);
+      });
+    } catch (error) {
+      const failure = error as BusinessError;
+      hilog.warn(DOMAIN, TAG, 'main window unavailable: %{public}s', JSON.stringify(failure));
+    }
+
     windowStage.loadContent('pages/Index', (err: BusinessError) => {
       if (err.code) {
         hilog.error(DOMAIN, TAG, 'loadContent failed: %{public}s', JSON.stringify(err));
