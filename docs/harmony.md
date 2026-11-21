@@ -157,7 +157,7 @@ hvigor WARN: No signingConfig found for product default
 | 音频播放 | 走 ArkWeb 的 HTML5 音频；HLS 由 `hls.js`（MSE）处理。暂停后音源失效会在下次播放时自动重连（与桌面端同一套恢复逻辑） |
 | 实时频谱 | 依赖 Web Audio 分析器，ArkWeb 支持情况需真机验证 |
 | Media Session / 锁屏控制 | ArkWeb 未提供对应能力，暂不生效；后续可用 ArkTS 媒体会话补齐 |
-| 后台播放 | 未申请长时任务（`ohos.permission.KEEP_BACKGROUND_RUNNING`），切到后台后音频可能被系统挂起，回来需要重新点播放 |
+| 后台播放 | 已申请 `ohos.permission.KEEP_BACKGROUND_RUNNING`，播放期间开启 AUDIO_PLAYBACK 长时任务，并用 AVSession 接收锁屏 / 耳机按键；仍需真机验证 |
 | 3D 彩蛋 | 依赖 WebGL，需真机验证 |
 
 ## 网络桥
@@ -178,6 +178,26 @@ JS     src/lib/engine/harmony.ts                          harmonyTransport：把
 - 因此在鸿蒙上订阅、搜索、M3U 导入、章节与文字稿都走原生请求，不受 CORS 限制，也不需要填写服务端地址。
 
 若将来要在鸿蒙上改用远端服务端（例如自建代理），在「设置 → 解析引擎」填地址即可覆盖本地引擎。
+
+## 后台播放与媒体会话
+
+音频仍然由页面里的 <audio> 播放（ArkTS 不碰解码），ArkTS 负责系统侧的两件事：别把 WebView 冻结、让系统看见正在播放什么。
+
+```text
+页面  src/lib/engine/harmonyMedia.ts   →  window.StayTunedMedia.update(json)
+                                          title / artist / playing / position / duration / speed
+ArkTS harmony/.../common/MediaHost.ets  ├─ startBackgroundRunning(AUDIO_PLAYBACK)  播放时
+                                         ├─ stopBackgroundRunning()               暂停时
+                                         └─ AVSession.setAVMetadata / setAVPlaybackState
+AVSession 回调 ─► controller.runJavaScript ─► window.__stayTunedMediaCommand('play'|'pause'|'next'|'prev'|'seek', 秒)
+```
+
+要点：
+
+- 只有页面报告 `playing: true` 才开启长时任务，暂停即关闭，不会长期占用后台配额。
+- 页面侧上报做了节流：状态变化立即发送，位置最多 1 秒一次。
+- 传输命令是回灌给页面的：播放 / 暂停 / 上一集 / 下一集 / 进度都走现有 store，与界面按钮同一条路径，不会出现两套状态。
+- 尚未实现：锁屏封面（AVSession 需要 PixelMap，页面只有 SVG 封面）、播放列表浏览、倍速同步到系统。
 
 ## 后续可做
 
