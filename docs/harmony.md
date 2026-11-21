@@ -159,7 +159,7 @@ hvigor WARN: No signingConfig found for product default
 | 实时频谱 | 依赖 Web Audio 分析器，ArkWeb 支持情况需真机验证 |
 | 触感反馈 | `StayTunedHaptics` → `@kit.SensorServiceKit`；沿用在安卓调过的 cue 表，timings 转成 `VibratorPattern` 的连续事件，振幅按 1-255 → 0-100 映射；仍需真机验证 |
 | 窗口外观 | 边到边铺满 + 状态栏/导航栏图标随主题切换（`EntryAbility` + `StayTunedChrome`）；页面用 `env(safe-area-inset-*)` 自行避让 |
-| Media Session / 锁屏控制 | 已由 AVSession 接管：标题/作者/状态/进度可见，播放暂停与前后切换可回灌页面；锁屏封面（PixelMap）尚未接 |
+| Media Session / 锁屏控制 | 已由 AVSession 接管：标题/作者/状态/进度可见，播放暂停与前后切换可回灌页面；锁屏封面用 `AVMetadata.mediaImage`（远程 URL 或 `data:` 图片解码成 PixelMap，按条目缓存并在切换时释放） |
 | 后台播放 | 已申请 `ohos.permission.KEEP_BACKGROUND_RUNNING`，播放期间开启 AUDIO_PLAYBACK 长时任务，并用 AVSession 接收锁屏 / 耳机按键；仍需真机验证 |
 | 3D 彩蛋 | 依赖 WebGL，需真机验证 |
 
