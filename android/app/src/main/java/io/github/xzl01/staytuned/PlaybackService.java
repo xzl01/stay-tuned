@@ -89,7 +89,13 @@ public class PlaybackService extends Service {
         @Override
         public void run() {
             if (!spectrumLoop) return;
+            long now = android.os.SystemClock.elapsedRealtime();
             float[] bands = SpectrumAudioProcessor.snapshot();
+            // 断流超过 ~1 秒就别再推旧数据，让柱子自然回到底部。
+            boolean fresh = now - SpectrumTap.lastFrameAtMs() < 1000;
+            if (bands != null && !fresh) {
+                java.util.Arrays.fill(bands, 0f);
+            }
             if (bands != null) {
                 StringBuilder joined = new StringBuilder(bands.length * 6);
                 for (int i = 0; i < bands.length; i++) {
@@ -174,7 +180,7 @@ public class PlaybackService extends Service {
             // The ticker is the only thing guaranteed to run after the UI comes
             // back to the foreground, so start/stop the spectrum loop here too.
             syncSpectrumLoop();
-            if (playing) {
+            if (playing || playWhenReadyWanted) {
                 // ~5s cadence: survives a process kill without hammering flash.
                 if (Math.abs(positionMs - lastPersistedMs) >= 5_000) persistCurrentPosition();
                 mainHandler.postDelayed(this, uiVisible ? 1000 : 5000);
@@ -635,7 +641,9 @@ public class PlaybackService extends Service {
 
     /** 只有真正出声、且界面可见时才推频谱，避免后台白耗电。 */
     private void syncSpectrumLoop() {
-        boolean shouldRun = playing && uiVisible;
+        // 直播流会周期性掉进 BUFFERING，isPlaying 因此反复真假；频谱应该跟着
+        // 「用户想不想播」而不是「这一刻是否恰好有声音」。
+        boolean shouldRun = (playing || playWhenReadyWanted) && uiVisible;
         if (shouldRun == spectrumLoop) return;
         spectrumLoop = shouldRun;
         mainHandler.removeCallbacks(spectrumTick);

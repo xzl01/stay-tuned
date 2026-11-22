@@ -15,6 +15,7 @@ final class SpectrumTap {
 
     private static final float[] LEVELS = new float[BANDS];
     private static volatile boolean attached;
+    private static volatile long lastFrameAtMs;
 
     private SpectrumTap() {
     }
@@ -32,6 +33,12 @@ final class SpectrumTap {
         synchronized (LEVELS) {
             System.arraycopy(levels, 0, LEVELS, 0, Math.min(levels.length, BANDS));
         }
+        lastFrameAtMs = android.os.SystemClock.elapsedRealtime();
+    }
+
+    /** 最近一帧的时间戳；直播流断流时可以据此判断数据是否还是新的。 */
+    static long lastFrameAtMs() {
+        return lastFrameAtMs;
     }
 
     static void clear() {

@@ -609,12 +609,23 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     if (isNativePlatform()) {
       const bands = nativeBandsRef.current;
       if (!bands || bands.length === 0) return false;
-      // Spread the 24 native bands across the bar count the component asked for.
+      // The native bands are log-spaced 30 Hz–16 kHz; the component reads the
+      // array as linear FFT bins up to a 22.05 kHz Nyquist. Resample here so a
+      // 220 Hz tone lands on the low bars instead of an arbitrary place.
+      const BAND_LOW = 30;
+      const BAND_HIGH = 16000;
+      const NYQUIST = 22050;
       for (let i = 0; i < data.length; i++) {
-        const at = (i / data.length) * bands.length;
-        const low = Math.floor(at);
+        const freq = (i / data.length) * NYQUIST;
+        if (freq < BAND_LOW || freq > BAND_HIGH) {
+          data[i] = 0;
+          continue;
+        }
+        const position = (Math.log(freq / BAND_LOW) / Math.log(BAND_HIGH / BAND_LOW))
+          * (bands.length - 1);
+        const low = Math.max(0, Math.min(bands.length - 1, Math.floor(position)));
         const high = Math.min(bands.length - 1, low + 1);
-        const mix = at - low;
+        const mix = position - low;
         const value = bands[low] + (bands[high] - bands[low]) * mix;
         data[i] = Math.max(0, Math.min(255, Math.round(value * 255)));
       }
