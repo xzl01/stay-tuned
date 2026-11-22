@@ -25,7 +25,9 @@ import java.nio.ShortBuffer;
 @UnstableApi
 public final class SpectrumAudioProcessor extends BaseAudioProcessor {
 
-    private static final int FFT_SIZE = 1024;
+    // 4096 点在 48 kHz 下 bin 宽约 11.7 Hz，低频几个对数频段才分得开；
+    // 代价是每帧约 85 ms 音频，对频谱显示完全够用。
+    private static final int FFT_SIZE = 4096;
     private static final int BANDS = SpectrumTap.BANDS;
     private static final float SMOOTH_UP = 0.55f;
     private static final float SMOOTH_DOWN = 0.85f;
