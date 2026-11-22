@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
-import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
+import { AbilityConstant, Configuration, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
@@ -21,6 +21,12 @@ export default class EntryAbility extends UIAbility {
   /** The card can only reach us by launching the ability; hand the intent on. */
   onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     this.applyCardAction(want);
+  }
+
+  /** Light/dark switch while the app is alive: the page re-renders from this. */
+  onConfigurationUpdate(newConfig: Configuration): void {
+    const dark = newConfig.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK;
+    AppStorage.setOrCreate('systemDark', dark);
   }
 
   private applyCardAction(want: Want): void {
