@@ -248,6 +248,33 @@ ArkWeb 默认不处理 `<input type="file">`，所以本地 `.m3u` 导入、订�
 
 - 应用图标使用 `build/icon.png`（1024×1024），同时作为 `startWindowIcon`；此前沿用的是安卓 192 px mipmap。
 - `resources/dark/element/color.json` 提供暗色的 `start_window_background`，夜间启动不会先闪一块奶白。
+## 真机验证清单
+
+设备接上后按这张表过一遍，失败时先看对应的 hilog TAG（`hdc shell hilog | grep StayTuned`）。
+
+| # | 场景 | 预期 | 失败时看 |
+| --- | --- | --- | --- |
+| 1 | 安装后首次启动 | 启动图背景不闪白，随后进入播放器 | `StayTuned` / `onRenderExited` |
+| 2 | 启动页深浅色 | 系统深色时启动背景为炭灰，浅色为奶白 | `resources/dark` 资源 |
+| 3 | 播放示例内容 | 有声、可拖进度、倍速生效 | `StayTunedMedia` |
+| 4 | 订阅真实 RSS | 能拉到节目与单集（不需要填服务端） | `StayTunedHttp` |
+| 5 | HLS 电台 | 能出声音（ArkWeb 的 MSE 支持决定成败） | `StayTunedHttp` / 页面控制台 |
+| 6 | 暂停 5 分钟后回前台 | 点播放能续上，不报「无法播放」 | 页面 `audio` 状态 |
+| 7 | 切后台播放 | 长时任务生效，息屏不中断 | `background task started` |
+| 8 | 锁屏 / 控制中心 | 标题、作者、封面、进度正确，播放暂停可用 | `AVSession` / `setAVMetadata` |
+| 9 | 耳机按键 / 蓝牙 | 播放暂停与切歌回灌页面 | `__stayTunedMediaCommand` |
+| 10 | 桌面卡片 | 添加后显示当前节目，三键可用，状态随播放刷新 | `StayTunedForm` / `card sync` |
+| 11 | 卡片冷启动 | 应用未运行时点播放键，打开后立即开始播放 | 命令队列（`onPageEnd` 回放） |
+| 12 | 触感 | 推杆有刻度感、按键有回弹，跟随系统开关 | `StayTunedHaptics` |
+| 13 | 跟随系统主题 | 切系统深浅色，界面即时跟随 | `systemDark` |
+| 14 | 本地 `.m3u` 导入 | 弹出系统文件选择器并能导入 | `StayTunedFiles` / 选择器 |
+| 15 | 备份导出 | 弹出保存选择器，文件内容为 JSON | `FilesHost.saveText` |
+| 16 | 电台封面上传 | 能选图并生效 | 选择器后缀过滤 |
+| 17 | 设置里的「下载更新」 | 跳转到系统浏览器打开 GitHub Releases | `onLoadIntercept` |
+| 18 | 实时频谱 | 电台模式有真实频谱（否则是装饰动画，可接受） | 页面控制台 |
+| 19 | 5 秒长按彩蛋 | 3D 模型出现且可旋转 | WebGL 能力 |
+
+已知需要现场决定的两处：卡片封面（`formImages` 的绑定方式）与 HLS/MSE 是否能播。
 ## 后续可做
 
 1. **真机联调**：验证 ArkWeb 的 `localStorage`、`<audio>` 与 `hls.js`（MSE）在设备上的行为，确认桥的 20 秒超时是否足够。
