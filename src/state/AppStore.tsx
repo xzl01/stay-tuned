@@ -168,6 +168,9 @@ interface AppStoreValue {
   setMode: (mode: Mode) => void;
   setFollowTranscript: (value: boolean) => void;
   setHaptics: (value: boolean) => void;
+  /** Whether this device has the StepOS dot-matrix back screen to draw on. */
+  backScreenAvailable: boolean;
+  setBackScreen: (value: boolean) => void;
   setSleepMinutes: (minutes: number | null) => void;
   setSleepAtEpisodeEnd: () => void;
   retryCurrentExtras: () => void;
@@ -1145,6 +1148,13 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const setBackScreen = useCallback((value: boolean) => {
+    setData((state) => ({
+      ...state,
+      preferences: { ...state.preferences, backScreen: value },
+    }));
+  }, []);
+
   const setAutoCacheNewEpisodes = useCallback((value: boolean) => {
     setData((state) => ({
       ...state,
@@ -1658,6 +1668,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       // Send the resolved theme, not the preference: the window chrome and the
       // receiver artwork both need "light" or "dark", never "system".
       theme: resolveTheme(data.preferences.theme, systemDark),
+      backScreen: data.preferences.backScreen,
     });
   }, [
     currentKey,
@@ -1666,6 +1677,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     data.preferences.volume,
     data.preferences.mode,
     data.preferences.theme,
+    data.preferences.backScreen,
     systemDark,
   ]);
 
@@ -1906,6 +1918,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       prefs: data.preferences,
       resolvedTheme,
       hapticsAvailable,
+      backScreenAvailable: isNativePlatform(),
+      setBackScreen,
       playback,
       sleep,
       sleepRemaining,

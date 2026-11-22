@@ -270,6 +270,7 @@ const defaultPreferences: PersistedState['preferences'] = {
   rate: 1,
   followTranscript: true,
   haptics: true,
+  backScreen: true,
   autoCacheNewEpisodes: false,
   autoCachePlaying: false,
   history: [],

@@ -114,6 +114,8 @@ export function SettingsSheet({
     setMode,
     setHaptics,
     hapticsAvailable,
+    backScreenAvailable,
+    setBackScreen,
     setFollowTranscript,
     cacheIndex,
     setAutoCacheNewEpisodes,
@@ -205,6 +207,15 @@ export function SettingsSheet({
             hint="推杆刻度、按键与提示使用线性马达；跟随系统触感开关。"
             control={
               <Switch checked={prefs.haptics} onChange={setHaptics} label="触感反馈" hideLabel />
+            }
+          />
+        ) : null}
+        {backScreenAvailable ? (
+          <Row
+            title="点阵背屏"
+            hint="播放时在机身背面的点阵屏上显示波形与进度；暂停后交还系统。"
+            control={
+              <Switch checked={prefs.backScreen} onChange={setBackScreen} label="点阵背屏" hideLabel />
             }
           />
         ) : null}

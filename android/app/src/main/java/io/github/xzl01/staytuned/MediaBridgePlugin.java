@@ -113,6 +113,7 @@ public class MediaBridgePlugin extends Plugin {
         intent.putExtra("mode", call.getString("mode", "skeuo"));
         String theme = call.getString("theme", "light");
         intent.putExtra("theme", theme);
+        intent.putExtra("backScreen", call.getBoolean("backScreen", true));
         applyChromeTheme("dark".equals(theme));
         send(PlaybackService.ACTION_UPDATE_DISPLAY, intent);
         call.resolve();

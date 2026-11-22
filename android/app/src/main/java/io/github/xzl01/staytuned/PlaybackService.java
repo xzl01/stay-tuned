@@ -79,6 +79,8 @@ public class PlaybackService extends Service {
     private final LruCache<String, Bitmap> artworkCache = new LruCache<>(6);
     private BackScreen backScreen;
     private boolean screenLoop;
+    /** The user can switch the back screen off in settings; default is on. */
+    private boolean backScreenEnabled = true;
     private final Handler screenHandler = new Handler(Looper.getMainLooper());
     private final Runnable screenTick = new Runnable() {
         @Override
@@ -274,6 +276,7 @@ public class PlaybackService extends Service {
                 if (!mode.isEmpty()) displayMode = mode;
                 String theme = orEmpty(intent.getStringExtra("theme"));
                 if (!theme.isEmpty()) displayTheme = theme;
+                backScreenEnabled = intent.getBooleanExtra("backScreen", backScreenEnabled);
                 if (REAR_SCREEN_DEVICE) refreshReceiverArtwork();
                 break;
             }
@@ -597,6 +600,15 @@ public class PlaybackService extends Service {
             }
         }
         if (!backScreen.available()) return;
+        if (!backScreenEnabled) {
+            // Switched off: stop drawing and hand the panel back right away.
+            if (screenLoop) {
+                screenLoop = false;
+                screenHandler.removeCallbacks(screenTick);
+            }
+            backScreen.clear();
+            return;
+        }
         if (playing) {
             if (!screenLoop) {
                 backScreen.setAlwaysOn(true);

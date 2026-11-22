@@ -23,6 +23,8 @@ export interface NativeDisplayOptions {
   volume: number;
   mode: string;
   theme: string;
+  /** Draw the playing state on the StepOS dot-matrix back screen. */
+  backScreen: boolean;
 }
 
 export interface NativePlaybackState {

@@ -43,6 +43,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   rate: 1,
   followTranscript: true,
   haptics: true,
+  backScreen: true,
   autoCacheNewEpisodes: false,
   autoCachePlaying: false,
   history: [],
@@ -247,6 +248,7 @@ function sanitizePreferences(value: unknown): Preferences {
     // Older backups have no `haptics` field; keep the switch on unless it was
     // explicitly turned off.
     haptics: raw.haptics !== false,
+    backScreen: raw.backScreen !== false,
     autoCacheNewEpisodes: Boolean(raw.autoCacheNewEpisodes),
     autoCachePlaying: Boolean(raw.autoCachePlaying),
     history: Array.isArray(raw.history)
