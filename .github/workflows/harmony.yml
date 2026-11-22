@@ -73,6 +73,11 @@ jobs:
           OHOS_BASE_SDK_HOME: ${{ runner.temp }}/ohos-sdk/root
         run: npm run harmony:hap
 
+      # Package-level checks that a successful build does not prove: versions,
+      # permissions, the card extension and a relative-asset index.html.
+      - name: Verify the HAP
+        run: node scripts/harmony-verify.mjs harmony/entry/build/default/outputs/default/entry-default-unsigned.hap
+
       - name: Collect artifacts
         run: |
           mkdir -p artifacts
