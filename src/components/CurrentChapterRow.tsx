@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
+import type { Ref } from 'react';
 import { useAppStore } from '../state/AppStore';
 import { Icon } from './Icon';
 import { pad2 } from '../lib/format';
@@ -7,14 +8,21 @@ import { pad2 } from '../lib/format';
 interface CurrentChapterRowProps {
   onOpen: () => void;
   variant: 'desktop' | 'mobile';
+  /** 供一镜到底定位源卡片；不影响布局。 */
+  buttonRef?: Ref<HTMLButtonElement>;
 }
 
-export function CurrentChapterRow({ onOpen, variant }: CurrentChapterRowProps) {
+export function CurrentChapterRow({ onOpen, variant, buttonRef }: CurrentChapterRowProps) {
   const { current, currentChapterIndex } = useAppStore();
 
   if (!current) {
     return (
-      <button type="button" className={`current-chapter current-chapter--${variant}`} onClick={onOpen}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className={`current-chapter current-chapter--${variant}`}
+        onClick={onOpen}
+      >
         <span className="current-chapter-kicker">当前章节</span>
         <span className="current-chapter-value is-empty">还没有开始收听</span>
         <Icon name="chevronRight" size={19} />
@@ -25,6 +33,7 @@ export function CurrentChapterRow({ onOpen, variant }: CurrentChapterRowProps) {
   if (current.kind === 'radio') {
     return (
       <button
+        ref={buttonRef}
         type="button"
         className={`current-chapter current-chapter--${variant}`}
         onClick={onOpen}
@@ -41,6 +50,7 @@ export function CurrentChapterRow({ onOpen, variant }: CurrentChapterRowProps) {
   const chapter = chapters[currentChapterIndex];
   return (
     <button
+      ref={buttonRef}
       type="button"
       className={`current-chapter current-chapter--${variant}`}
       onClick={onOpen}

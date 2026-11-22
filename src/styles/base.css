@@ -818,7 +818,22 @@ html[data-theme='dark'] .cover-art::after {
   }
 }
 
+/* 一镜到底：源卡片与浮层共用 view-transition-name，时长与浮层开合同步。 */
+::view-transition-group(*) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.22, 0.8, 0.22, 1);
+}
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 260ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
   *,
   *::before,
   *::after {

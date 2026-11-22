@@ -28,6 +28,8 @@ interface SheetProps {
   side?: 'right' | 'bottom';
   className?: string;
   labelledBy?: string;
+  /** 一镜到底的转场名；与源卡片共用，关闭时交还给卡片。 */
+  transitionName?: string;
 }
 
 export function Sheet({
@@ -40,6 +42,7 @@ export function Sheet({
   side = 'right',
   className = '',
   labelledBy,
+  transitionName,
 }: SheetProps) {
   const [mounted, setMounted] = useState(open);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -126,6 +129,7 @@ export function Sheet({
         aria-modal="true"
         aria-labelledby={labelledBy ?? (title ? titleId : undefined)}
         aria-label={!title && !labelledBy ? '面板' : undefined}
+        style={open && transitionName ? { viewTransitionName: transitionName } : undefined}
       >
         <header className="sheet-header">
           <div className="sheet-heading">

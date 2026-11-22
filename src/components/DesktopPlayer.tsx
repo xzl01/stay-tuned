@@ -8,6 +8,7 @@ import { EpisodePanel } from './EpisodePanel';
 import { Transport } from './Transport';
 import { CurrentChapterRow } from './CurrentChapterRow';
 import { ChaptersSheet } from './ChaptersSheet';
+import { useSheetTransition } from '../lib/useSheetTransition';
 
 interface DesktopPlayerProps {
   onOpenLibrary: () => void;
@@ -18,6 +19,7 @@ interface DesktopPlayerProps {
 export function DesktopPlayer({ onOpenLibrary, onOpenQueue, onOpenSettings }: DesktopPlayerProps) {
   const { current, playback } = useAppStore();
   const [chaptersOpen, setChaptersOpen] = useState(false);
+  const chaptersTransition = useSheetTransition('stay-chapter');
   const episodeLabel =
     current?.kind === 'episode'
       ? `EP.${String(current.episode.episodeNumber ?? 1).padStart(3, '0')}`
@@ -44,7 +46,11 @@ export function DesktopPlayer({ onOpenLibrary, onOpenQueue, onOpenSettings }: De
               </div>
 
               <Receiver variant="desktop" onOpenQueue={onOpenQueue} />
-              <CurrentChapterRow variant="desktop" onOpen={() => setChaptersOpen(true)} />
+              <CurrentChapterRow
+                variant="desktop"
+                buttonRef={chaptersTransition.bindSource}
+                onOpen={() => chaptersTransition.begin(() => setChaptersOpen(true))}
+              />
             </div>
             <div className="desktop-right">
               <EpisodePanel />
@@ -56,7 +62,11 @@ export function DesktopPlayer({ onOpenLibrary, onOpenQueue, onOpenSettings }: De
           </div>
         </section>
       </main>
-      <ChaptersSheet open={chaptersOpen} onClose={() => setChaptersOpen(false)} />
+      <ChaptersSheet
+        open={chaptersOpen}
+        transitionName="stay-chapter"
+        onClose={() => chaptersTransition.end(() => setChaptersOpen(false))}
+      />
     </div>
   );
 }

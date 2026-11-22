@@ -11,6 +11,7 @@ import { Sheet, Switch } from './ui/Primitives';
 import { TranscriptList } from './EpisodePanel';
 import { CurrentChapterRow } from './CurrentChapterRow';
 import { ChaptersSheet } from './ChaptersSheet';
+import { useSheetTransition } from '../lib/useSheetTransition';
 import { balanceHeadline } from '../lib/format';
 import { showDisplayTitle } from '../lib/shows';
 import { stationImage } from '../lib/stations';
@@ -145,6 +146,7 @@ export function MobilePlayer({ onOpenLibrary, onOpenQueue, onOpenSettings }: Mob
   const { current } = useAppStore();
   const [chaptersOpen, setChaptersOpen] = useState(false);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const chaptersTransition = useSheetTransition('stay-chapter');
 
   return (
     <div className="mobile-app">
@@ -152,13 +154,21 @@ export function MobilePlayer({ onOpenLibrary, onOpenQueue, onOpenSettings }: Mob
       <main className="mobile-stage">
         <MobileHero />
         <Receiver variant="mobile" onOpenQueue={onOpenQueue} />
-        <CurrentChapterRow variant="mobile" onOpen={() => setChaptersOpen(true)} />
+        <CurrentChapterRow
+          variant="mobile"
+          buttonRef={chaptersTransition.bindSource}
+          onOpen={() => chaptersTransition.begin(() => setChaptersOpen(true))}
+        />
         <MobileTranscriptPreview onOpen={() => setTranscriptOpen(true)} />
         <Transport variant="mobile" onOpenQueue={onOpenQueue} />
         <div className={`mobile-safety ${current ? '' : 'is-empty'}`} aria-hidden="true" />
       </main>
 
-      <ChaptersSheet open={chaptersOpen} onClose={() => setChaptersOpen(false)} />
+      <ChaptersSheet
+        open={chaptersOpen}
+        transitionName="stay-chapter"
+        onClose={() => chaptersTransition.end(() => setChaptersOpen(false))}
+      />
       <TranscriptSheet open={transcriptOpen} onClose={() => setTranscriptOpen(false)} />
     </div>
   );

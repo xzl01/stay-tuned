@@ -10,9 +10,11 @@ import { formatTime, pad2 } from '../lib/format';
 interface ChaptersSheetProps {
   open: boolean;
   onClose: () => void;
+  /** 与「当前章节」卡片共用的转场名。 */
+  transitionName?: string;
 }
 
-export function ChaptersSheet({ open, onClose }: ChaptersSheetProps) {
+export function ChaptersSheet({ open, onClose, transitionName }: ChaptersSheetProps) {
   const { current, stations, currentChapterIndex, playStation, seek, playback } = useAppStore();
   const isRadio = current?.kind === 'radio';
 
@@ -23,6 +25,7 @@ export function ChaptersSheet({ open, onClose }: ChaptersSheetProps) {
       eyebrow={isRadio ? 'STATIONS' : 'CHAPTERS'}
       title={isRadio ? '切换电台' : '章节'}
       className="chapters-sheet"
+      transitionName={transitionName}
     >
       {isRadio ? (
         <div className="station-pick-list">
