@@ -39,6 +39,9 @@ struct Index {
   @StorageLink('stayTunedAction') @Watch('onCardAction') cardAction: string = '';
   /** Mirrors the OS light/dark mode for the page, which cannot read it itself. */
   @StorageLink('systemDark') @Watch('onSystemDark') systemDark: boolean = false;
+  /** Set when the bundled page fails to load, so we can offer a retry. */
+  @State loadFailed: boolean = false;
+  @State loadErrorDetail: string = '';
 
   aboutToAppear(): void {
     this.context = getContext(this) as common.UIAbilityContext;
@@ -153,7 +156,8 @@ struct Index {
   }
 
   build() {
-    Column() {
+    Stack() {
+      Column() {
       Web({ src: $rawfile('www/index.html'), controller: this.controller })
         .width('100%')
         .height('100%')
@@ -171,6 +175,14 @@ struct Index {
           this.openFilePicker(event);
           // Returning true means ArkWeb waits for handleFileList().
           return true;
+        })
+        .onErrorReceive((event: OnErrorReceiveEvent) => {
+          // Only a failed main frame leaves the user staring at nothing; a
+          // missing cover or segment is handled by the page itself.
+          if (!event.request.isMainFrame()) return;
+          this.loadErrorDetail = event.error.getErrorInfo();
+          this.loadFailed = true;
+          hilog.warn(DOMAIN, TAG, 'page load failed: %{public}s', this.loadErrorDetail);
         })
         .onPageBegin(() => {
           // A reload (renderer recovery) invalidates the previous page.
@@ -215,9 +227,43 @@ struct Index {
             hilog.error(DOMAIN, TAG, 'registerJavaScriptProxy failed: %{public}s', JSON.stringify(failure));
           }
         })
+      }
+      .width('100%')
+      .height('100%')
+      .backgroundColor('#EFECE4')
+
+      if (this.loadFailed) {
+        Column({ space: 12 }) {
+          Text('留频')
+            .fontSize(24)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#2E312B')
+          Text('页面没有加载成功')
+            .fontSize(14)
+            .fontColor('#5C6056')
+          if (this.loadErrorDetail.length > 0) {
+            Text(this.loadErrorDetail)
+              .fontSize(12)
+              .fontColor('#8A8D80')
+              .maxLines(3)
+              .textAlign(TextAlign.Center)
+          }
+          Button('重试')
+            .fontSize(14)
+            .backgroundColor('#C85235')
+            .onClick(() => {
+              this.loadFailed = false;
+              this.reloadPage();
+            })
+            .margin({ top: 8 })
+        }
+        .width('100%')
+        .height('100%')
+        .justifyContent(FlexAlign.Center)
+        .backgroundColor('#EFECE4')
+      }
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#EFECE4')
   }
 }
