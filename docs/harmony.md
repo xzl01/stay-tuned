@@ -163,7 +163,7 @@ hvigor WARN: No signingConfig found for product default
 | 窗口外观 | 边到边铺满 + 状态栏/导航栏图标随主题切换（`EntryAbility` + `StayTunedChrome`）；页面用 `env(safe-area-inset-*)` 自行避让 |
 | Media Session / 锁屏控制 | 已由 AVSession 接管：标题/作者/状态/进度可见，播放暂停与前后切换可回灌页面；锁屏封面用 `AVMetadata.mediaImage`（远程 URL 或 `data:` 图片解码成 PixelMap，按条目缓存并在切换时释放） |
 | 后台播放 | 已申请 `ohos.permission.KEEP_BACKGROUND_RUNNING`，播放期间开启 AUDIO_PLAYBACK 长时任务，并用 AVSession 接收锁屏 / 耳机按键；仍需真机验证 |
-| 桌面服务卡片 | 信息卡 + 播放/暂停按钮（按钮打开应用并回传动作）；卡片封面尚未做，见「桌面服务卡片」 |
+| 桌面服务卡片 | 信息卡 + 上一集 / 播放暂停 / 下一集三键（点击打开应用并回传动作）；卡片封面尚未做，见「桌面服务卡片」 |
 | 3D 彩蛋 | 依赖 WebGL，需真机验证 |
 
 ## 网络桥
@@ -238,9 +238,14 @@ ArkWeb 默认不处理 `<input type="file">`，所以本地 `.m3u` 导入、订�
 
 卡片运行在独立进程，所以只能通过 `preferences` 交换数据；`form_config.json` 里的 `updateEnabled` 只是兜底刷新，真正的更新由播放状态变化驱动。
 
-- **卡片上的播放/暂停**：按钮走 `postCardAction({ action: 'router' })` 带 `stayTunedAction: 'toggle'` 打开 `EntryAbility`，Ability 把动作写进 `AppStorage`，页面用 `@StorageLink` + `@Watch` 消费一次并转给媒体桥。音频在 WebView 里，卡片进程无法直接控制，所以这条路是「打开应用并切换」，与安卓小组件在应用未运行时的行为一致。
+- **卡片上的三键**：`⏮ / ⏯ / ⏭` 各自 `postCardAction({ action: 'router' })` 带 `stayTunedAction: 'prev' | 'toggle' | 'next'` 打开 `EntryAbility`，Ability 写进 `AppStorage`，页面用 `@StorageLink` + `@Watch` 消费一次并转给媒体桥（命令在页面就绪前会排队）。音频在 WebView 里，卡片进程无法直接控制，所以这条路是「打开应用并执行」，与安卓小组件在应用未运行时的行为一致。
 尚未实现：卡片封面（需要把 PixelMap 交给卡片进程，或改用 `mediaImage` 的 URI 形式）。
 
+
+### 图标与启动页
+
+- 应用图标使用 `build/icon.png`（1024×1024），同时作为 `startWindowIcon`；此前沿用的是安卓 192 px mipmap。
+- `resources/dark/element/color.json` 提供暗色的 `start_window_background`，夜间启动不会先闪一块奶白。
 ## 后续可做
 
 1. **真机联调**：验证 ArkWeb 的 `localStorage`、`<audio>` 与 `hls.js`（MSE）在设备上的行为，确认桥的 20 秒超时是否足够。
