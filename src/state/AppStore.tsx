@@ -1657,7 +1657,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       mode: data.preferences.mode,
       // Send the resolved theme, not the preference: the window chrome and the
       // receiver artwork both need "light" or "dark", never "system".
-      theme: resolvedTheme,
+      theme: resolveTheme(data.preferences.theme, systemDark),
     });
   }, [
     currentKey,
@@ -1665,7 +1665,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     current,
     data.preferences.volume,
     data.preferences.mode,
-    resolvedTheme,
+    data.preferences.theme,
+    systemDark,
   ]);
 
   useEffect(() => {
