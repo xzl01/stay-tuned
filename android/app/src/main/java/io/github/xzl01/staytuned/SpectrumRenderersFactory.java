@@ -8,7 +8,7 @@ import androidx.annotation.Nullable;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.audio.AudioSink;
-import androidx.media3.common.audio.DefaultAudioProcessorChain;
+import androidx.media3.common.audio.AudioProcessor;
 import androidx.media3.exoplayer.audio.DefaultAudioSink;
 
 /**
@@ -28,8 +28,7 @@ public final class SpectrumRenderersFactory extends DefaultRenderersFactory {
     protected AudioSink buildAudioSink(
             Context context, boolean enableFloatOutput, boolean enableAudioTrackPlaybackParams) {
         return new DefaultAudioSink.Builder(context)
-                .setAudioProcessorChain(
-                        new DefaultAudioProcessorChain(new SpectrumAudioProcessor()))
+                .setAudioProcessors(new AudioProcessor[] {new SpectrumAudioProcessor()})
                 .build();
     }
 }
