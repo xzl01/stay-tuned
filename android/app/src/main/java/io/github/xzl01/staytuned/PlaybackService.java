@@ -120,8 +120,12 @@ public class PlaybackService extends Service {
             float progress = (!live && durationMs > 0)
                     ? (float) positionMs / (float) durationMs
                     : 0f;
+            float[] bands = SpectrumAudioProcessor.snapshot();
+            boolean fresh = bands != null
+                    && android.os.SystemClock.elapsedRealtime() - SpectrumTap.lastFrameAtMs() < 1000;
             backScreen.show(BackScreenArt.frame(
-                    android.os.SystemClock.elapsedRealtime(), playing, live, progress));
+                    android.os.SystemClock.elapsedRealtime(), playing, live, progress,
+                    fresh ? bands : null));
             screenHandler.postDelayed(this, SCREEN_FRAME_MS);
         }
     };
@@ -687,7 +691,7 @@ public class PlaybackService extends Service {
         backScreen.setAlwaysOn(false);
         float progress = (!live && durationMs > 0) ? (float) positionMs / (float) durationMs : 0f;
         backScreen.show(BackScreenArt.frame(
-                android.os.SystemClock.elapsedRealtime(), false, live, progress));
+                android.os.SystemClock.elapsedRealtime(), false, live, progress, null));
     }
 
     private MediaMetadata buildMetadata() {

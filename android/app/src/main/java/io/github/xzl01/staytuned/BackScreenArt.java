@@ -23,7 +23,14 @@ final class BackScreenArt {
     private BackScreenArt() {
     }
 
-    static int[] frame(long timeMs, boolean playing, boolean live, float progress) {
+    /** 上一帧的柱高，用来做快升慢落，避免点阵跳动太生硬。 */
+    private static final float[] LEVELS = new float[COLS];
+
+    /**
+     * @param bands 真实频段（{@link SpectrumAudioProcessor} 采样，可能为 null）：
+     *              有数据就按频谱画，没有（断流、暂停）就回到底部基线。
+     */
+    static int[] frame(long timeMs, boolean playing, boolean live, float progress, float[] bands) {
         int[] frame = new int[BackScreen.CELLS];
 
         if (playing) {
@@ -32,10 +39,24 @@ final class BackScreenArt {
             pauseBars(frame);
         }
 
-        // 波形占据第 8–18 行，从基线向上生长。
+        // 24 个频段映射到 17 列；没有真实数据时柱子回到 1 格基线。
         int baseline = 18;
         for (int col = 0; col < COLS; col++) {
-            int height = playing ? barHeight(timeMs, col) : 1;
+            float target = 0f;
+            if (playing && bands != null && bands.length > 1) {
+                float at = (col / (float) (COLS - 1)) * (bands.length - 1);
+                int low = (int) Math.floor(at);
+                int high = Math.min(bands.length - 1, low + 1);
+                float mix = at - low;
+                target = bands[low] * (1 - mix) + bands[high] * mix;
+                target = (float) Math.pow(Math.max(0f, Math.min(1f, target)), 0.7f);
+            }
+            float previous = LEVELS[col];
+            float next = target > previous
+                    ? previous + (target - previous) * 0.55f
+                    : previous + (target - previous) * 0.25f;
+            LEVELS[col] = next;
+            int height = playing ? Math.max(1, Math.round(next * 10f)) : 1;
             for (int row = baseline; row > baseline - height && row >= 8; row--) {
                 int value = row == baseline - height + 1 ? GLYPH : BAR;
                 frame[row * COLS + col] = value;
@@ -78,13 +99,4 @@ final class BackScreenArt {
     }
 
     /** 三条不同频率的正弦叠加，看起来像真实电平而不是随机跳动。 */
-    private static int barHeight(long timeMs, int col) {
-        double t = timeMs / 1000.0;
-        double a = Math.sin(t * 4.1 + col * 0.55);
-        double b = Math.sin(t * 8.7 + col * 1.31 + 1.7);
-        double c = Math.sin(t * 15.3 + col * 0.23 + 3.1);
-        double mixed = (a * 0.52 + b * 0.31 + c * 0.17) * 0.5 + 0.5;
-        double envelope = 1.0 - Math.abs(col - COLS / 2.0) / COLS * 0.55;
-        return 1 + (int) Math.round(mixed * envelope * 9.0);
-    }
 }
