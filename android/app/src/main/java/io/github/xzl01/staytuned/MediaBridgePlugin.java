@@ -3,12 +3,16 @@
 package io.github.xzl01.staytuned;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -98,15 +102,42 @@ public class MediaBridgePlugin extends Plugin {
         call.resolve(new JSObject().put("ok", true));
     }
 
+    /** Last theme applied to the window chrome, so we only touch it on change. */
+    private String appliedChromeTheme = "";
+
     @PluginMethod
     public void updateDisplay(PluginCall call) {
         Intent intent = new Intent();
         intent.putExtra("chapter", call.getString("chapter", ""));
         intent.putExtra("volume", call.getDouble("volume", 1.0));
         intent.putExtra("mode", call.getString("mode", "skeuo"));
-        intent.putExtra("theme", call.getString("theme", "light"));
+        String theme = call.getString("theme", "light");
+        intent.putExtra("theme", theme);
+        applyChromeTheme("dark".equals(theme));
         send(PlaybackService.ACTION_UPDATE_DISPLAY, intent);
         call.resolve();
+    }
+
+    /**
+     * The window is drawn edge to edge, so the strip behind the status and
+     * gesture bars is painted by the window itself. Match it to the page's
+     * surface, and flip the bar icons so they stay legible on both themes.
+     */
+    private void applyChromeTheme(boolean dark) {
+        String key = dark ? "dark" : "light";
+        if (key.equals(appliedChromeTheme)) return;
+        appliedChromeTheme = key;
+
+        Activity activity = getActivity();
+        if (activity == null) return;
+        activity.runOnUiThread(() -> {
+            int color = dark ? 0xFF121410 : 0xFFEFECE4;
+            activity.getWindow().setBackgroundDrawable(new ColorDrawable(color));
+            WindowInsetsControllerCompat controller =
+                    WindowCompat.getInsetsController(activity.getWindow(), activity.getWindow().getDecorView());
+            controller.setAppearanceLightStatusBars(!dark);
+            controller.setAppearanceLightNavigationBars(!dark);
+        });
     }
 
     @PluginMethod

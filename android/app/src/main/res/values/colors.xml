@@ -3,4 +3,7 @@
     <color name="colorPrimary">#efece4</color>
     <color name="colorPrimaryDark">#121410</color>
     <color name="colorAccent">#c05a32</color>
+    <!-- Matches the web app's light surface; the window paints behind the
+         status and gesture bars when the app is drawn edge to edge. -->
+    <color name="app_background">#efece4</color>
 </resources>

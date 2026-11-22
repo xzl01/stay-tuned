@@ -1655,7 +1655,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       chapter: label,
       volume: data.preferences.volume,
       mode: data.preferences.mode,
-      theme: data.preferences.theme,
+      // Send the resolved theme, not the preference: the window chrome and the
+      // receiver artwork both need "light" or "dark", never "system".
+      theme: resolvedTheme,
     });
   }, [
     currentKey,
@@ -1663,7 +1665,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     current,
     data.preferences.volume,
     data.preferences.mode,
-    data.preferences.theme,
+    resolvedTheme,
   ]);
 
   useEffect(() => {
