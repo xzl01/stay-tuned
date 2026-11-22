@@ -53,8 +53,12 @@ public final class BackScreen {
             }
             setFrame = type.getMethod("setBackScreenAgentFrame", int[].class, Bundle.class);
             setAgentState = type.getMethod("setBackScreenAgentState", String.class, Bundle.class);
-            Class<?> clear = findClear(type);
-            if (clear != null) clearFrame = clear;
+            try {
+                clearFrame = type.getMethod("clearBackScreenAgentFrame");
+            } catch (Throwable ignored) {
+                // 清帧是可选的：没有它也能正常推帧，只是退出时系统会多留一帧。
+                clearFrame = null;
+            }
             available = true;
             lastError = "";
         } catch (Throwable error) {
@@ -62,13 +66,6 @@ public final class BackScreen {
             lastError = error.getClass().getSimpleName() + ": " + error.getMessage();
             Log.i(TAG, "back screen unavailable: " + lastError);
         }
-    }
-
-    private static Class<?> findClear(Class<?> type) {
-        for (Method method : type.getMethods()) {
-            if ("clearBackScreenAgentFrame".equals(method.getName())) return type;
-        }
-        return null;
     }
 
     /**
