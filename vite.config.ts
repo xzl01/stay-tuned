@@ -1,21 +1,29 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
 import { readFileSync, rmSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 
 /**
  * The sample audio only exists for the GitHub Pages showcase. Real builds would
  * otherwise ship three unused MP3s (about 14 MB) inside every APK and HAP.
+ *
+ * The output directory is read from the resolved config, not hard-coded: the
+ * HarmonyOS bundle is built into `.harmony-dist` and would otherwise keep them.
  */
 function dropDemoAudio(): Plugin {
+  let outDir = '';
   return {
     name: 'stay-tuned:drop-demo-audio',
     apply: 'build',
+    configResolved(config) {
+      outDir = path.resolve(config.root, config.build.outDir);
+    },
     closeBundle() {
       if (process.env.VITE_STATIC_DEMO === '1') return;
-      rmSync(fileURLToPath(new URL('./dist/audio', import.meta.url)), { recursive: true, force: true });
+      if (!outDir) return;
+      rmSync(path.join(outDir, 'audio'), { recursive: true, force: true });
     },
   };
 }
