@@ -10,6 +10,7 @@ import androidx.media3.common.audio.BaseAudioProcessor;
 import androidx.media3.common.util.UnstableApi;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 
 /**
@@ -36,8 +37,9 @@ public final class SpectrumAudioProcessor extends BaseAudioProcessor {
     private final float[] bands = new float[BANDS];
     private final int[] bandEdges = new int[BANDS + 1];
     private int sampleCount;
-    private int bandCursor;
     private boolean analysable;
+    private boolean loggedConfigure;
+    private boolean loggedFrame;
 
     public SpectrumAudioProcessor() {
         for (int i = 0; i < FFT_SIZE; i++) {
@@ -48,10 +50,15 @@ public final class SpectrumAudioProcessor extends BaseAudioProcessor {
 
     @Override
     protected AudioFormat onConfigure(AudioFormat inputAudioFormat) {
-        analysable = inputAudioFormat.encoding == C.ENCODING_PCM_16BIT
-                || inputAudioFormat.encoding == C.ENCODING_PCM_FLOAT;
+        analysable = inputAudioFormat.encoding == C.ENCODING_PCM_16BIT;
         sampleCount = 0;
         computeBandEdges(inputAudioFormat.sampleRate / 2f);
+        if (!loggedConfigure) {
+            loggedConfigure = true;
+            android.util.Log.i("StayTuned", "spectrum: configure encoding="
+                    + inputAudioFormat.encoding + " rate=" + inputAudioFormat.sampleRate
+                    + " analysable=" + analysable);
+        }
         return inputAudioFormat;
     }
 
@@ -70,22 +77,15 @@ public final class SpectrumAudioProcessor extends BaseAudioProcessor {
     public void queueInput(ByteBuffer inputBuffer) {
         int remaining = inputBuffer.remaining();
         if (remaining == 0) return;
+        if (analysable) {
+            // 只读副本：读它不会移动真正的输入游标，输出稍后按字节原样搬运。
+            ShortBuffer analysis = inputBuffer.duplicate().order(ByteOrder.nativeOrder()).asShortBuffer();
+            int frames = analysis.remaining();
+            for (int i = 0; i < frames; i++) feed(analysis.get() / 32768f);
+        }
         ByteBuffer out = replaceOutputBuffer(remaining);
-        if (!analysable) {
-            // 浮点或其它编码：原样搬运，绝不为了取样去碰音频数据。
-            out.put(inputBuffer);
-            out.flip();
-            return;
-        }
-        ShortBuffer in = inputBuffer.asShortBuffer();
-        ShortBuffer dst = out.asShortBuffer();
-        while (in.hasRemaining()) {
-            short sample = in.get();
-            dst.put(sample);
-            feed(sample / 32768f);
-        }
+        out.put(inputBuffer);
         out.flip();
-        inputBuffer.position(inputBuffer.limit());
     }
 
     private void feed(float value) {
@@ -118,6 +118,11 @@ public final class SpectrumAudioProcessor extends BaseAudioProcessor {
                     : previous + (level - previous) * SMOOTH_DOWN;
         }
         SpectrumTap.publish(bands);
+        if (!loggedFrame) {
+            loggedFrame = true;
+            android.util.Log.i("StayTuned", "spectrum: first frame bands="
+                    + java.util.Arrays.toString(bands));
+        }
     }
 
     /** 原地 radix-2 FFT。 */

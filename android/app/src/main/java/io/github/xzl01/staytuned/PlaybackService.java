@@ -83,6 +83,7 @@ public class PlaybackService extends Service {
     private boolean backScreenEnabled = true;
     private final Handler screenHandler = new Handler(Looper.getMainLooper());
     private boolean spectrumLoop;
+    private boolean spectrumLogged;
     /** ~15 fps: enough for the bars, cheap enough for the bridge. */
     private final Runnable spectrumTick = new Runnable() {
         @Override
@@ -98,6 +99,10 @@ public class PlaybackService extends Service {
                 JSObject data = new JSObject();
                 data.put("bands", joined.toString());
                 MediaBridgePlugin.emit("spectrum", data);
+                if (!spectrumLogged) {
+                    spectrumLogged = true;
+                    Log.i(TAG, "spectrum: first push " + joined);
+                }
             }
             mainHandler.postDelayed(this, 66);
         }
@@ -193,10 +198,9 @@ public class PlaybackService extends Service {
 
     private void ensurePlayer() {
         if (player != null) return;
-        // NOTE: the spectrum tap is not wired in here on purpose. Inserting an
-        // AudioProcessor into the sink silenced playback on device; until that is
-        // sorted out the player keeps the stock audio path.
-        player = new ExoPlayer.Builder(this).build();
+        // The processor only reads a duplicate of the input; the output is a
+        // byte-exact copy of it, so inserting it cannot change what is heard.
+        player = new ExoPlayer.Builder(this, new SpectrumRenderersFactory(this)).build();
         player.setAudioAttributes(
                 new AudioAttributes.Builder()
                         .setUsage(C.USAGE_MEDIA)
