@@ -123,9 +123,7 @@ public class PlaybackService extends Service {
             float[] bands = SpectrumAudioProcessor.snapshot();
             boolean fresh = bands != null
                     && android.os.SystemClock.elapsedRealtime() - SpectrumTap.lastFrameAtMs() < 1000;
-            backScreen.show(BackScreenArt.frame(
-                    android.os.SystemClock.elapsedRealtime(), playing, live, progress,
-                    fresh ? bands : null));
+            backScreen.show(BackScreenArt.frame(playing, fresh ? bands : null));
             screenHandler.postDelayed(this, SCREEN_FRAME_MS);
         }
     };
@@ -690,8 +688,8 @@ public class PlaybackService extends Service {
         // 暂停后画面留着，但不再常亮：翻过来才看得到，功耗交回系统。
         backScreen.setAlwaysOn(false);
         float progress = (!live && durationMs > 0) ? (float) positionMs / (float) durationMs : 0f;
-        backScreen.show(BackScreenArt.frame(
-                android.os.SystemClock.elapsedRealtime(), false, live, progress, null));
+        // 暂停时整屏熄灭：点阵只属于正在响的声音。
+        backScreen.show(BackScreenArt.frame(false, null));
     }
 
     private MediaMetadata buildMetadata() {
