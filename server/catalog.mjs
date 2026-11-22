@@ -54,6 +54,31 @@ export function normalizeStation(item) {
 
 export const FEATURED_STATIONS = [
   {
+    // 境外流在部分网络下会被 TLS 层直接重置，所以精选里先放两个国内可直连的台。
+    id: 'feat-cnr-voice',
+    kind: 'radio',
+    name: '央广 · 中国之声',
+    url: 'https://ngcdn001.cnr.cn/live/zgzs/index.m3u8',
+    group: '新闻 · 综合',
+    homepage: 'https://www.cnr.cn',
+    country: 'CN',
+    tags: ['news', 'talk'],
+    codec: 'HLS',
+    bitrate: 128,
+  },
+  {
+    id: 'feat-cnr-economy',
+    kind: 'radio',
+    name: '央广 · 经济之声',
+    url: 'https://ngcdn002.cnr.cn/live/jjzs/index.m3u8',
+    group: '财经 · 生活',
+    homepage: 'https://www.cnr.cn',
+    country: 'CN',
+    tags: ['business', 'talk'],
+    codec: 'HLS',
+    bitrate: 128,
+  },
+  {
     id: 'feat-somafm-groove',
     kind: 'radio',
     name: 'SomaFM · Groove Salad',
