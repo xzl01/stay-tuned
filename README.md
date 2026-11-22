@@ -54,6 +54,7 @@
 - **浅色 / 深色**：独立配色，随阅读环境切换。
 - **纯本地**：订阅、队列、收藏、进度、主题均存在浏览器 `localStorage`，没有账号和后端数据库。真实章节 / 文字稿按需读取并只保存在当前会话内存中。
 - **可安装 PWA**：生产构建包含 manifest 与离线 app shell service worker，可添加到桌面 / 主屏幕；界面可离线打开，RSS 与电台播放需要联网。
+- **一镜到底转场**：点「当前章节 / 当前电台」时，卡片与弹出的抽屉共用同一个 `view-transition-name`，由浏览器把两块盒子插值成连续动画；不支持 View Transitions 或用户开启了「减少动效」时自动退回普通切换。规则借自金标联盟的 SharedViewKit（运行时能力探测、源→目标命名、可取消），但圆角与尺寸直接取实测盒模型，不存在 dp/px 换算跳闪。实现见 `src/lib/viewTransition.ts` 与 `useSheetTransition.ts`。
 
 ---
 
