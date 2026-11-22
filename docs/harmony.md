@@ -98,6 +98,14 @@ npm run harmony:hap         # 产出 harmony/entry/build/default/outputs/default
 
 `harmony:hap` 首次运行会把 `@ohos/hvigor` 与 `@ohos/hvigor-ohos-plugin`（默认 6.26.20，可用 `HVIGOR_VERSION` 覆盖）装进 `.harmony-tools/`，之后复用；hvigor 缓存也留在那里，不污染用户目录。
 
+
+打包完成后可以单独校验产物：
+
+```bash
+npm run harmony:verify -- harmony/entry/build/default/outputs/default/entry-default-unsigned.hap
+```
+
+检查项：包内关键条目的存在、`rawfile/www` 是否有前端资源、`index.html` 是否使用相对路径、`module.json` 的版本是否与 `package.json` 一致、四个权限与卡片扩展是否齐全。CI 的 `Build HarmonyOS HAP` 也在上传前跑同一条命令。
 ## 在 Linux 构建机上编译
 
 macOS 上只能拿到 darwin-x64 工具链，需要 Rosetta；x86_64 Linux 构建机可以直接跑原生工具链，速度也更快。以下流程已在 **Arch Linux x86_64 + JDK 21 + Node 26** 上实测通过（构建产物与本地 macOS 构建同为 17 MB HAP，内容一致）。
