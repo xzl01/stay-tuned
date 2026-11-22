@@ -160,7 +160,7 @@ hvigor WARN: No signingConfig found for product default
 
 | 项目 | 现状 |
 | --- | --- |
-| 界面与本地示例内容 | 完整可用，示例音频随包（`rawfile/www/audio`） |
+| 界面与本地内容 | 完整可用；正式构建首次启动为空库，示例内容只在静态演示版里 |
 | RSS 订阅 / 播客与电台搜索 / M3U 导入 | 由 ArkTS 网络桥 `StayTunedHttp` 直连（见下节），无需服务端；仍需真机验证 |
 | 本地文件（.m3u 导入、备份导入导出、电台封面上传）| `onShowFileSelector` + `DocumentViewPicker` / `DocumentSavePicker`（见「文件选择与保存」）；仍需真机验证 |
 | 外部链接与下载 | `onLoadIntercept` 拦下非 `resource://` 的 http(s) 跳转，用 `startAbility({action: 'ohos.want.action.viewData'})` 交给系统浏览器；`onDownloadStart` 同样转交，避免点了没反应 |
@@ -264,7 +264,7 @@ ArkWeb 默认不处理 `<input type="file">`，所以本地 `.m3u` 导入、订�
 | --- | --- | --- | --- |
 | 1 | 安装后首次启动 | 启动图背景不闪白，随后进入播放器 | `StayTuned` / `onRenderExited` |
 | 2 | 启动页深浅色 | 系统深色时启动背景为炭灰，浅色为奶白 | `resources/dark` 资源 |
-| 3 | 播放示例内容 | 有声、可拖进度、倍速生效 | `StayTunedMedia` |
+| 3 | 订阅一个真实 RSS 后播放 | 有声、可拖进度、倍速生效 | `StayTunedMedia` |
 | 4 | 订阅真实 RSS | 能拉到节目与单集（不需要填服务端） | `StayTunedHttp` |
 | 5 | HLS 电台 | 能出声音（ArkWeb 的 MSE 支持决定成败） | `StayTunedHttp` / 页面控制台 |
 | 6 | 暂停 5 分钟后回前台 | 点播放能续上，不报「无法播放」 | 页面 `audio` 状态 |

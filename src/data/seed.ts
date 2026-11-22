@@ -2,7 +2,7 @@
 
 import type { Episode, Show, Station } from '../types';
 import type { PersistedState } from '../types';
-import { assetUrl } from '../lib/env';
+import { assetUrl, STATIC_DEMO } from '../lib/env';
 
 const dailyEpisodes: Episode[] = [
   {
@@ -263,7 +263,40 @@ export const seedStations: Station[] = [
   },
 ];
 
+const defaultPreferences: PersistedState['preferences'] = {
+  theme: 'light',
+  mode: 'skeuo',
+  volume: 0.72,
+  rate: 1,
+  followTranscript: true,
+  haptics: true,
+  autoCacheNewEpisodes: false,
+  autoCachePlaying: false,
+  history: [],
+};
+
+/**
+ * First-run state.
+ *
+ * The demo podcast and the three sample stations exist only for the static
+ * GitHub Pages showcase: a real install starts with an empty library so the
+ * user's own subscriptions are the only thing in it.
+ */
+export function createEmptyState(): PersistedState {
+  return {
+    version: 1,
+    shows: [],
+    stations: [],
+    queue: [],
+    current: null,
+    positions: {},
+    favorites: [],
+    preferences: { ...defaultPreferences },
+  };
+}
+
 export function createSeedState(): PersistedState {
+  if (!STATIC_DEMO) return createEmptyState();
   return {
     version: 1,
     shows: seedShows,
@@ -276,16 +309,6 @@ export function createSeedState(): PersistedState {
     current: { kind: 'episode', showId: 'demo-daily', episodeId: 'ep-128' },
     positions: { 'episode:demo-daily:ep-128': 1122 },
     favorites: [],
-    preferences: {
-      theme: 'light',
-      mode: 'skeuo',
-      volume: 0.72,
-      rate: 1,
-      followTranscript: true,
-      haptics: true,
-      autoCacheNewEpisodes: false,
-      autoCachePlaying: false,
-      history: [],
-    },
+    preferences: { ...defaultPreferences },
   };
 }
