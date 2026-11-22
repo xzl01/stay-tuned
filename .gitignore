@@ -34,6 +34,9 @@ playwright-report
 # HAP / APK pulled back from a build host or CI for testing.
 harmony-dist/
 android-dist/
+# Local adb / platform-tools used to install builds on a connected phone.
+.tools/
+.adb-home/
 harmony/entry/src/main/resources/rawfile/www
 harmony/build/
 harmony/entry/build/
