@@ -77,6 +77,7 @@ import {
   nativeStop,
   nativeUpdateDisplay,
   nativeBackScreenSupport,
+  onNativeSpectrum,
   onMediaAction,
   onNativeEnded,
   onNativeError,
@@ -291,6 +292,15 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Android: the spectrum comes from the native audio pipeline, not Web Audio.
+  useEffect(() => {
+    if (!isNativePlatform()) return undefined;
+    return onNativeSpectrum((bands) => {
+      nativeBandsRef.current = bands;
+      setSpectrumReady(true);
+    });
+  }, []);
+
   useEffect(() => {
     if (!isNativePlatform()) return undefined;
     let cancelled = false;
@@ -313,6 +323,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   const audioEl = useRef<HTMLAudioElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  /** Bands tapped from the Android audio pipeline; null until audio flows. */
+  const nativeBandsRef = useRef<Float32Array | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const spectrumInitRef = useRef(false);
   const corsFallbackRef = useRef<string | null>(null);
@@ -594,6 +606,20 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const readSpectrum = useCallback((data: Uint8Array) => {
+    if (isNativePlatform()) {
+      const bands = nativeBandsRef.current;
+      if (!bands || bands.length === 0) return false;
+      // Spread the 24 native bands across the bar count the component asked for.
+      for (let i = 0; i < data.length; i++) {
+        const at = (i / data.length) * bands.length;
+        const low = Math.floor(at);
+        const high = Math.min(bands.length - 1, low + 1);
+        const mix = at - low;
+        const value = bands[low] + (bands[high] - bands[low]) * mix;
+        data[i] = Math.max(0, Math.min(255, Math.round(value * 255)));
+      }
+      return true;
+    }
     const analyser = analyserRef.current;
     if (!analyser) return false;
     analyser.getByteFrequencyData(data as Uint8Array<ArrayBuffer>);

@@ -52,7 +52,7 @@ interface MediaBridgePlugin {
   stop(): Promise<void>;
   consumePendingAction(): Promise<{ action?: string }>;
   addListener(
-    eventName: 'mediaAction' | 'nativeState' | 'ended' | 'nativeError',
+    eventName: 'mediaAction' | 'nativeState' | 'ended' | 'nativeError' | 'spectrum',
     listener: (event: Record<string, unknown>) => void,
   ): Promise<PluginListenerHandle>;
 }
@@ -85,6 +85,30 @@ export function nativeLoad(options: NativeLoadOptions): void {
 
 export function nativeUpdateDisplay(options: NativeDisplayOptions): void {
   quietly(() => MediaBridge.updateDisplay(options));
+}
+
+/**
+ * Real spectrum bands tapped from the native audio pipeline (Android).
+ * The payload is a comma-joined list of 0–1 levels, one per band.
+ */
+export function onNativeSpectrum(listener: (bands: Float32Array) => void): () => void {
+  let handle: PluginListenerHandle | null = null;
+  let disposed = false;
+  void MediaBridge.addListener('spectrum', (event) => {
+    const raw = typeof event.bands === 'string' ? event.bands : '';
+    if (!raw) return;
+    const parts = raw.split(',');
+    const bands = new Float32Array(parts.length);
+    for (let i = 0; i < parts.length; i++) bands[i] = Number(parts[i]) || 0;
+    listener(bands);
+  }).then((registered) => {
+    if (disposed) void registered.remove();
+    else handle = registered;
+  });
+  return () => {
+    disposed = true;
+    void handle?.remove();
+  };
 }
 
 /** Whether this device has the StepOS dot-matrix back screen. */

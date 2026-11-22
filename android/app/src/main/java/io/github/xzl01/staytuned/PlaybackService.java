@@ -82,6 +82,26 @@ public class PlaybackService extends Service {
     /** The user can switch the back screen off in settings; default is on. */
     private boolean backScreenEnabled = true;
     private final Handler screenHandler = new Handler(Looper.getMainLooper());
+    private boolean spectrumLoop;
+    /** ~15 fps: enough for the bars, cheap enough for the bridge. */
+    private final Runnable spectrumTick = new Runnable() {
+        @Override
+        public void run() {
+            if (!spectrumLoop) return;
+            float[] bands = SpectrumAudioProcessor.snapshot();
+            if (bands != null) {
+                StringBuilder joined = new StringBuilder(bands.length * 6);
+                for (int i = 0; i < bands.length; i++) {
+                    if (i > 0) joined.append(',');
+                    joined.append(Math.round(bands[i] * 100f) / 100f);
+                }
+                JSObject data = new JSObject();
+                data.put("bands", joined.toString());
+                MediaBridgePlugin.emit("spectrum", data);
+            }
+            mainHandler.postDelayed(this, 66);
+        }
+    };
     private final Runnable screenTick = new Runnable() {
         @Override
         public void run() {
@@ -173,7 +193,9 @@ public class PlaybackService extends Service {
 
     private void ensurePlayer() {
         if (player != null) return;
-        player = new ExoPlayer.Builder(this).build();
+        // The custom renderers factory lets us tap the decoded PCM for the
+        // spectrum bars; without it the analyser would only see silence.
+        player = new ExoPlayer.Builder(this, new SpectrumRenderersFactory(this)).build();
         player.setAudioAttributes(
                 new AudioAttributes.Builder()
                         .setUsage(C.USAGE_MEDIA)
@@ -574,6 +596,7 @@ public class PlaybackService extends Service {
         // A live stream that stalls is "buffering", not "paused": reporting the
         // latter makes the UI look stopped and hides a network hiccup behind a
         // pause icon. Only a user pause (wanted == false) is really paused.
+        syncSpectrumLoop();
         boolean buffering = player != null
                 && player.getPlaybackState() == Player.STATE_BUFFERING;
         int stateCode = playing
@@ -600,6 +623,15 @@ public class PlaybackService extends Service {
         if (foreground && notifyKey.equals(lastNotifyKey)) return;
         lastNotifyKey = notifyKey;
         showNotification();
+    }
+
+    /** 只有真正出声、且界面可见时才推频谱，避免后台白耗电。 */
+    private void syncSpectrumLoop() {
+        boolean shouldRun = playing && uiVisible;
+        if (shouldRun == spectrumLoop) return;
+        spectrumLoop = shouldRun;
+        mainHandler.removeCallbacks(spectrumTick);
+        if (shouldRun) mainHandler.post(spectrumTick);
     }
 
     /**
