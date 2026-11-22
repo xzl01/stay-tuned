@@ -70,13 +70,19 @@ public final class SpectrumAudioProcessor extends BaseAudioProcessor {
     public void queueInput(ByteBuffer inputBuffer) {
         int remaining = inputBuffer.remaining();
         if (remaining == 0) return;
-        ShortBuffer in = inputBuffer.asShortBuffer();
         ByteBuffer out = replaceOutputBuffer(remaining);
+        if (!analysable) {
+            // 浮点或其它编码：原样搬运，绝不为了取样去碰音频数据。
+            out.put(inputBuffer);
+            out.flip();
+            return;
+        }
+        ShortBuffer in = inputBuffer.asShortBuffer();
         ShortBuffer dst = out.asShortBuffer();
         while (in.hasRemaining()) {
             short sample = in.get();
             dst.put(sample);
-            if (analysable) feed(sample / 32768f);
+            feed(sample / 32768f);
         }
         out.flip();
         inputBuffer.position(inputBuffer.limit());
