@@ -131,7 +131,8 @@ public class MediaBridgePlugin extends Plugin {
         Activity activity = getActivity();
         if (activity == null) return;
         activity.runOnUiThread(() -> {
-            int color = dark ? 0xFF121410 : 0xFFEFECE4;
+            // Matches the page's `--page` token so the pre-paint frame is seamless.
+            int color = dark ? 0xFF181B17 : 0xFFEEECE7;
             activity.getWindow().setBackgroundDrawable(new ColorDrawable(color));
             WindowInsetsControllerCompat controller =
                     WindowCompat.getInsetsController(activity.getWindow(), activity.getWindow().getDecorView());

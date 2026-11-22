@@ -2,6 +2,7 @@
 
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { installSystemInsets } from './lib/engine/insets';
 import './styles/base.css';
 import './styles/shell.css';
 import './styles/receiver.css';
@@ -9,6 +10,10 @@ import './styles/episode.css';
 import './styles/transport.css';
 import './styles/mobile.css';
 import './styles/overlays.css';
+
+// Android draws edge to edge but the WebView reports no safe-area insets, so the
+// native side feeds them in as CSS variables before the first paint settles.
+installSystemInsets();
 
 const container = document.getElementById('root');
 if (!container) throw new Error('Root container not found');

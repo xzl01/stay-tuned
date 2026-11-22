@@ -4,11 +4,6 @@ package io.github.xzl01.staytuned;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
-
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.getcapacitor.BridgeActivity;
 
@@ -31,26 +26,9 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(MediaBridgePlugin.class);
         registerPlugin(HapticsPlugin.class);
+        registerPlugin(LayoutPlugin.class);
         super.onCreate(savedInstanceState);
-        applySystemBarInsets();
         readIntent(getIntent());
-    }
-
-    /**
-     * Android 15+ forces edge-to-edge for apps targeting SDK 35+, so the WebView
-     * was drawing under the status bar and the gesture bar. The page has its own
-     * paddings and expects a safe viewport, and WebView reports
-     * `env(safe-area-inset-*)` as 0 here, so inset the view instead.
-     */
-    private void applySystemBarInsets() {
-        View content = findViewById(android.R.id.content);
-        if (content == null) return;
-        ViewCompat.setOnApplyWindowInsetsListener(content, (view, windowInsets) -> {
-            Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
-            view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-            return windowInsets;
-        });
-        ViewCompat.requestApplyInsets(content);
     }
 
     @Override

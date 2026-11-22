@@ -21,7 +21,7 @@
     width: 100%;
     max-width: 720px;
     margin: 0 auto;
-    padding: calc(16px + env(safe-area-inset-top)) 22px 6px;
+    padding: calc(16px + var(--safe-top)) 22px 6px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -282,7 +282,7 @@
     z-index: 30;
     width: calc(100% + 44px);
     margin: auto -22px 0;
-    padding: 10px 22px calc(10px + env(safe-area-inset-bottom));
+    padding: 10px 22px calc(10px + var(--safe-bottom));
     background: linear-gradient(
       to top,
       color-mix(in srgb, var(--page) 96%, transparent) 0%,
@@ -556,6 +556,6 @@
 
 .site-header--mobile,
 .mobile-stage {
-  padding-left: max(var(--mobile-gutter), env(safe-area-inset-left, 0px));
-  padding-right: max(var(--mobile-gutter), env(safe-area-inset-right, 0px));
+  padding-left: max(var(--mobile-gutter), var(--safe-left));
+  padding-right: max(var(--mobile-gutter), var(--safe-right));
 }
