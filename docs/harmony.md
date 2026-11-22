@@ -158,6 +158,8 @@ hvigor WARN: No signingConfig found for product default
 | 外部链接与下载 | `onLoadIntercept` 拦下非 `resource://` 的 http(s) 跳转，用 `startAbility({action: 'ohos.want.action.viewData'})` 交给系统浏览器；`onDownloadStart` 同样转交，避免点了没反应 |
 | 音频播放 | 走 ArkWeb 的 HTML5 音频；HLS 由 `hls.js`（MSE）处理。暂停后音源失效会在下次播放时自动重连（与桌面端同一套恢复逻辑） |
 | WebView 崩溃/回收 | `onRenderExited` 自动重载 `resource://rawfile/www/index.html`，不会停在白屏 |
+| 主题跟随系统 | ArkWeb 不保证 `prefers-color-scheme`；由 `EntryAbility.onConfigurationUpdate` → `AppStorage` → `StayTunedChrome.applySystemDark` 主动下发给页面 |
+| 页面加载失败 | `onErrorReceive` 主框架失败时显示原生兜底层（错误信息 + 重试），不再只剩白屏 |
 | 实时频谱 | 依赖 Web Audio 分析器，ArkWeb 支持情况需真机验证 |
 | 触感反馈 | `StayTunedHaptics` → `@kit.SensorServiceKit`；沿用在安卓调过的 cue 表，timings 转成 `VibratorPattern` 的连续事件，振幅按 1-255 → 0-100 映射；仍需真机验证 |
 | 窗口外观 | 边到边铺满 + 状态栏/导航栏图标随主题切换（`EntryAbility` + `StayTunedChrome`）；页面用 `env(safe-area-inset-*)` 自行避让 |
