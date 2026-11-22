@@ -4,7 +4,7 @@ import { webview } from '@kit.ArkWeb';
 import { picker } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { common, Want } from '@kit.AbilityKit';
+import { common, ConfigurationConstant, Want } from '@kit.AbilityKit';
 import { StayTunedHttp } from '../common/HttpBridge';
 import { MediaHost } from '../common/MediaHost';
 import { FilesHost } from '../common/FilesHost';
@@ -37,12 +37,17 @@ struct Index {
   private context?: common.UIAbilityContext;
   /** Set by EntryAbility when the home-screen card asked for a transport action. */
   @StorageLink('stayTunedAction') @Watch('onCardAction') cardAction: string = '';
+  /** Mirrors the OS light/dark mode for the page, which cannot read it itself. */
+  @StorageLink('systemDark') @Watch('onSystemDark') systemDark: boolean = false;
 
   aboutToAppear(): void {
     this.context = getContext(this) as common.UIAbilityContext;
     this.media.setController(this.controller);
     this.files.setContext(this.context);
     this.chrome.setContext(this.context);
+    this.chrome.setController(this.controller);
+    // Seed the page with the current system mode; the change event updates it.
+    this.systemDark = this.isSystemDark(this.context);
     this.media.init(this.context).catch((error: BusinessError) => {
       hilog.error(DOMAIN, TAG, 'media host init failed: %{public}s', JSON.stringify(error));
     });
@@ -65,6 +70,14 @@ struct Index {
       return ['播放列表: .m3u, .m3u8, .txt'];
     }
     return [];
+  }
+
+  onSystemDark(): void {
+    this.chrome.applySystemDark(this.systemDark);
+  }
+
+  private isSystemDark(context: common.UIAbilityContext): boolean {
+    return context.config.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK;
   }
 
   onCardAction(): void {

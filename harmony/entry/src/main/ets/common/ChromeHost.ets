@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 
 import { window } from '@kit.ArkUI';
+import { webview } from '@kit.ArkWeb';
 import { common } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -22,9 +23,30 @@ interface BarsPayload {
  */
 export class ChromeHost {
   private context?: common.UIAbilityContext;
+  private controller?: webview.WebviewController;
 
   setContext(context: common.UIAbilityContext): void {
     this.context = context;
+  }
+
+  setController(controller: webview.WebviewController): void {
+    this.controller = controller;
+  }
+
+  /**
+   * ArkWeb does not reliably report `prefers-color-scheme`, so the system's
+   * light/dark choice is pushed into the page instead. The app treats it as the
+   * "follow the system" signal and re-renders when it changes.
+   */
+  applySystemDark(dark: boolean): void {
+    const controller = this.controller;
+    if (!controller) return;
+    const script =
+      'window.__stayTunedSystemDark = ' + (dark ? 'true' : 'false') + ';' +
+      'window.dispatchEvent(new Event(\'staytuned:systemdark\'));';
+    controller.runJavaScript(script).catch((error: BusinessError) => {
+      hilog.warn(DOMAIN, TAG, 'system colour push failed: %{public}d', error.code);
+    });
   }
 
   async setBars(payloadJson: string): Promise<void> {

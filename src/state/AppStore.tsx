@@ -45,6 +45,7 @@ import { showDisplayTitle } from '../lib/shows';
 import { stationImage } from '../lib/stations';
 import { assetUrl, STATIC_DEMO } from '../lib/env';
 import { isNativePlatform } from '../lib/serverConfig';
+import { systemDarkOverride } from '../lib/engine/harmonyChrome';
 import {
   isHarmonyMediaAvailable,
   onHarmonyMediaCommand,
@@ -270,10 +271,19 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
     const query = window.matchMedia(THEME_QUERY);
-    const sync = () => setSystemDark(query.matches);
+    const sync = () => {
+      // The HarmonyOS shell reports the OS choice explicitly; elsewhere the
+      // media query is the only source.
+      const override = systemDarkOverride();
+      setSystemDark(override === null ? query.matches : override);
+    };
     sync();
     query.addEventListener('change', sync);
-    return () => query.removeEventListener('change', sync);
+    window.addEventListener('staytuned:systemdark', sync);
+    return () => {
+      query.removeEventListener('change', sync);
+      window.removeEventListener('staytuned:systemdark', sync);
+    };
   }, []);
 
   useEffect(() => {

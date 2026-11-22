@@ -15,7 +15,20 @@ interface HarmonyChromeBridge {
 declare global {
   interface Window {
     StayTunedChrome?: HarmonyChromeBridge;
+    /** Pushed by ChromeHost when the OS light/dark mode changes. */
+    __stayTunedSystemDark?: boolean;
   }
+}
+
+/**
+ * ArkWeb does not reliably expose `prefers-color-scheme`, so the ArkTS side
+ * reports the system choice instead. Returns null when there is no answer yet
+ * and the media query should be trusted.
+ */
+export function systemDarkOverride(): boolean | null {
+  if (typeof window === 'undefined') return null;
+  const value = window.__stayTunedSystemDark;
+  return typeof value === 'boolean' ? value : null;
 }
 
 export function isHarmonyChromeAvailable(): boolean {
