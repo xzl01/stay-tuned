@@ -76,6 +76,7 @@ import {
   nativeSetVolume,
   nativeStop,
   nativeUpdateDisplay,
+  nativeBackScreenSupport,
   onMediaAction,
   onNativeEnded,
   onNativeError,
@@ -250,6 +251,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [spectrumReady, setSpectrumReady] = useState(false);
   const [spectrumBlocked, setSpectrumBlocked] = useState(false);
   const [hapticsAvailable, setHapticsAvailable] = useState(false);
+  const [backScreenAvailable, setBackScreenAvailable] = useState(false);
   /** Tracks the OS appearance so `theme: 'system'` can follow it live. */
   const [systemDark, setSystemDark] = useState(
     () => typeof window !== 'undefined'
@@ -286,6 +288,17 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return () => {
       query.removeEventListener('change', sync);
       window.removeEventListener('staytuned:systemdark', sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isNativePlatform()) return undefined;
+    let cancelled = false;
+    void nativeBackScreenSupport().then((support) => {
+      if (!cancelled) setBackScreenAvailable(Boolean(support?.available));
+    });
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -1918,7 +1931,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       prefs: data.preferences,
       resolvedTheme,
       hapticsAvailable,
-      backScreenAvailable: isNativePlatform(),
+      backScreenAvailable,
       setBackScreen,
       playback,
       sleep,

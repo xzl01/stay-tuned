@@ -4,10 +4,15 @@ package io.github.xzl01.staytuned;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * StepOS 点阵背屏（17×23，391 格，每格 0–255 亮度）。
@@ -29,6 +34,24 @@ public final class BackScreen {
      */
     private static final String PREFS = "stay_tuned_back_screen";
     private static final String FORCED = "forced_always_on";
+
+    /**
+     * 设备白名单：点阵背屏不是所有机型都有，StepOS 也可能出现在没有这块屏的机器上
+     * （它同样会带 {@code display_ext} 服务，所以光检测服务存在不可靠）。
+     * 新增机型时把 {@code Build.MODEL} 加进来即可；品牌还要匹配 STEPX。
+     */
+    private static final Set<String> SUPPORTED_MODELS =
+            new HashSet<>(Arrays.asList("PZ261A"));
+    private static final String SUPPORTED_BRAND_PREFIX = "STEPX";
+
+    /** 当前设备是否在白名单里——只看型号与品牌，不碰反射。 */
+    public static boolean isSupportedDevice() {
+        String model = Build.MODEL == null ? "" : Build.MODEL.toUpperCase(Locale.ROOT);
+        if (!SUPPORTED_MODELS.contains(model)) return false;
+        String brand = Build.BRAND == null ? "" : Build.BRAND.toUpperCase(Locale.ROOT);
+        String maker = Build.MANUFACTURER == null ? "" : Build.MANUFACTURER.toUpperCase(Locale.ROOT);
+        return brand.startsWith(SUPPORTED_BRAND_PREFIX) || maker.startsWith(SUPPORTED_BRAND_PREFIX);
+    }
 
     private SharedPreferences prefs;
     private Object manager;
@@ -53,6 +76,11 @@ public final class BackScreen {
     public void init(Context context) {
         if (prefs == null) prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         if (available) return;
+        if (!isSupportedDevice()) {
+            // 不在白名单：连反射都不做，避免在别的机型上碰到同名服务。
+            lastError = "unsupported device: " + Build.BRAND + " " + Build.MODEL;
+            return;
+        }
         try {
             Class<?> type = Class.forName("android.hardware.display.StepOSDisplayManager");
             manager = context.getSystemService("display_ext");

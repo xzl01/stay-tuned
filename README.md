@@ -204,7 +204,11 @@ APK 使用 **ExoPlayer** 播放，WebView 只负责界面：
 - **暂停时**：推一帧静态画面后把亮屏策略交回「自动」，不再常亮（省电）；
 - **进程被强杀**：常亮是全局状态，来不及恢复，所以把「我强制过常亮」记在 `staytuned_back_screen` 偏好里，下次启动第一件事就是把模式改回 `auto` 并清帧。
 
-实现见 `android/.../BackScreen.java`（反射与状态归还）与 `BackScreenArt.java`（17×23 画面）。非 StepOS 机型 `available()` 恒为 false，服务里直接跳过，不影响其它机型。
+实现见 `android/.../BackScreen.java`（反射与状态归还）与 `BackScreenArt.java`（17×23 画面）。
+
+**设备白名单**：点阵背屏不是所有机型都有，而光看 `display_ext` 服务是否存在的判断并不可靠——StepOS 也可能出现在没有这块屏的机器上。所以 `BackScreen.isSupportedDevice()` 只认白名单里的 `Build.MODEL`（当前是 `PZ261A`）并且品牌以 `STEPX` 开头；不在名单里连反射都不做。要支持新机型，把型号加进 `SUPPORTED_MODELS` 即可。
+
+页面通过原生方法 `backScreenSupport()` 询问能力，「设置 → 外观 → 点阵背屏」这个开关只有在白名单机型上才会出现；其它机型既看不到开关，也不会有任何后台开销。
 
 限制：这是厂商私有接口，StepOS 版本升级可能改动签名；官方没有承诺兼容性，属于「本机可用」级别的适配，不保证长期有效。
 ### 桌面小组件与系统媒体控制

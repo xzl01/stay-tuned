@@ -105,6 +105,20 @@ public class MediaBridgePlugin extends Plugin {
     /** Last theme applied to the window chrome, so we only touch it on change. */
     private String appliedChromeTheme = "";
 
+    /**
+     * Does this phone have the StepOS dot-matrix back screen we can draw on?
+     * The page uses this to decide whether to show the switch at all.
+     */
+    @PluginMethod
+    public void backScreenSupport(PluginCall call) {
+        BackScreen screen = new BackScreen();
+        screen.init(getContext());
+        JSObject result = new JSObject();
+        result.put("available", screen.available());
+        if (!screen.available()) result.put("reason", screen.lastError());
+        call.resolve(result);
+    }
+
     @PluginMethod
     public void updateDisplay(PluginCall call) {
         Intent intent = new Intent();

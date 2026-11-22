@@ -18,6 +18,11 @@ export interface NativeLoadOptions {
   key?: string;
 }
 
+export interface NativeBackScreenSupport {
+  available: boolean;
+  reason?: string;
+}
+
 export interface NativeDisplayOptions {
   chapter: string;
   volume: number;
@@ -38,6 +43,7 @@ export interface NativePlaybackState {
 interface MediaBridgePlugin {
   load(options: NativeLoadOptions): Promise<{ ok: boolean }>;
   updateDisplay(options: NativeDisplayOptions): Promise<void>;
+  backScreenSupport(): Promise<NativeBackScreenSupport>;
   play(): Promise<void>;
   pause(): Promise<void>;
   seekTo(options: { position: number }): Promise<void>;
@@ -79,6 +85,15 @@ export function nativeLoad(options: NativeLoadOptions): void {
 
 export function nativeUpdateDisplay(options: NativeDisplayOptions): void {
   quietly(() => MediaBridge.updateDisplay(options));
+}
+
+/** Whether this device has the StepOS dot-matrix back screen. */
+export async function nativeBackScreenSupport(): Promise<NativeBackScreenSupport> {
+  try {
+    return await MediaBridge.backScreenSupport();
+  } catch {
+    return { available: false };
+  }
 }
 
 export const nativePlay = (): void => quietly(() => MediaBridge.play());
