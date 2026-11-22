@@ -26,6 +26,8 @@ public final class BackScreen {
     private Method setFrame;
     private Method setAgentState;
     private Method clearFrame;
+    private Method setEnabled;
+    private Method setDisplayMode;
     private boolean available;
     private boolean stateSet;
     private String lastError = "";
@@ -59,6 +61,13 @@ public final class BackScreen {
                 // 清帧是可选的：没有它也能正常推帧，只是退出时系统会多留一帧。
                 clearFrame = null;
             }
+            try {
+                setEnabled = type.getMethod("setBackScreenEnabled", boolean.class);
+                setDisplayMode = type.getMethod("setBackScreenDisplayMode", int.class);
+            } catch (Throwable ignored) {
+                setEnabled = null;
+                setDisplayMode = null;
+            }
             available = true;
             lastError = "";
         } catch (Throwable error) {
@@ -75,8 +84,12 @@ public final class BackScreen {
     public boolean show(int[] frame) {
         if (!available || frame == null || frame.length < CELLS) return false;
         try {
-            if (!stateSet && setAgentState != null) {
-                setAgentState.invoke(manager, "wake_ai_key_click", null);
+            if (!stateSet) {
+                // 与点阵小游戏一致：打开背屏并切到「常显」，否则背屏朝向桌面时
+                // 系统会按策略把输出全部压掉，自定义帧只会停在 pending 状态。
+                if (setEnabled != null) setEnabled.invoke(manager, true);
+                if (setDisplayMode != null) setDisplayMode.invoke(manager, 1);
+                if (setAgentState != null) setAgentState.invoke(manager, "wake_ai_key_click", null);
                 stateSet = true;
             }
             setFrame.invoke(manager, frame, null);
@@ -95,6 +108,11 @@ public final class BackScreen {
             if (clearFrame != null) clearFrame.invoke(manager);
         } catch (Throwable ignored) {
             // 清帧失败不影响播放，下次启动会再试。
+        }
+        try {
+            // 交还控制权：恢复「自动」亮屏策略，背屏回到时间/天气。
+            if (setDisplayMode != null) setDisplayMode.invoke(manager, 0);
+        } catch (Throwable ignored) {
         }
         stateSet = false;
     }
