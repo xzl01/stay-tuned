@@ -3,6 +3,7 @@
 package io.github.xzl01.staytuned;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -22,6 +23,14 @@ public final class BackScreen {
     public static final int ROWS = 23;
     public static final int CELLS = COLS * ROWS;
 
+    /**
+     * 常亮是全局状态，进程被强杀时来不及恢复，所以把「我强制过常亮」记在盘上，
+     * 下次启动先擦干净，避免背屏一直亮着。
+     */
+    private static final String PREFS = "stay_tuned_back_screen";
+    private static final String FORCED = "forced_always_on";
+
+    private SharedPreferences prefs;
     private Object manager;
     private Method setFrame;
     private Method setAgentState;
@@ -42,6 +51,7 @@ public final class BackScreen {
 
     /** 尝试一次即可，失败不抛出：没有背屏的机型会一直返回 false。 */
     public void init(Context context) {
+        if (prefs == null) prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         if (available) return;
         try {
             Class<?> type = Class.forName("android.hardware.display.StepOSDisplayManager");
@@ -84,15 +94,42 @@ public final class BackScreen {
     public void setAlwaysOn(boolean alwaysOn) {
         if (!available) return;
         try {
+            if (alwaysOn) markForced(true);
             if (setEnabled != null) setEnabled.invoke(manager, alwaysOn);
             if (setDisplayMode != null) setDisplayMode.invoke(manager, alwaysOn ? 1 : 0);
             if (alwaysOn && setAgentState != null) {
                 setAgentState.invoke(manager, "wake_ai_key_click", null);
             }
             stateSet = alwaysOn;
+            if (!alwaysOn) markForced(false);
         } catch (Throwable error) {
             lastError = error.getClass().getSimpleName() + ": " + error.getMessage();
         }
+    }
+
+    private void markForced(boolean forced) {
+        if (prefs == null) return;
+        if (forced) prefs.edit().putBoolean(FORCED, true).apply();
+        else prefs.edit().remove(FORCED).apply();
+    }
+
+    /**
+     * 上次进程被强杀、没来得及归还控制权时，在下次启动把背屏恢复成「自动」。
+     * 没有这一步，背屏会在桌面上一直常亮。
+     */
+    public void recoverPending() {
+        if (!available || prefs == null) return;
+        if (!prefs.getBoolean(FORCED, false)) return;
+        try {
+            if (clearFrame != null) clearFrame.invoke(manager);
+        } catch (Throwable ignored) {
+        }
+        try {
+            if (setDisplayMode != null) setDisplayMode.invoke(manager, 0);
+        } catch (Throwable ignored) {
+        }
+        markForced(false);
+        Log.i(TAG, "back screen: recovered a forced always-on state");
     }
 
     /** 推一帧 17×23 的灰度画面。 */
@@ -121,6 +158,7 @@ public final class BackScreen {
             if (setDisplayMode != null) setDisplayMode.invoke(manager, 0);
         } catch (Throwable ignored) {
         }
+        markForced(false);
         stateSet = false;
     }
 }

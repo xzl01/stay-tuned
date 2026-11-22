@@ -28,6 +28,10 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(HapticsPlugin.class);
         registerPlugin(LayoutPlugin.class);
         super.onCreate(savedInstanceState);
+        // 上一次若被强杀，背屏可能还停在常亮：开机第一件事是把它交还系统。
+        BackScreen screen = new BackScreen();
+        screen.init(getApplicationContext());
+        screen.recoverPending();
         readIntent(getIntent());
     }
 
