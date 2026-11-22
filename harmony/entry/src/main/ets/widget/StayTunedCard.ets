@@ -49,13 +49,26 @@ struct StayTunedCard {
       Blank()
 
       Row() {
-        // Tapping the glyph asks the app to flip playback; the rest of the card
-        // simply opens it. Both end up in EntryAbility: the page owns the player.
+        // Transport keys mirror the Android widget. The audio lives in the
+        // WebView, so each key opens the app and hands the intent over.
+        Text('⏮')
+          .fontSize(16)
+          .fontColor('#5C6056')
+          .width(30)
+          .height(30)
+          .textAlign(TextAlign.Center)
+          .onClick(() => {
+            postCardAction(this, {
+              action: 'router',
+              abilityName: 'EntryAbility',
+              params: { stayTunedAction: 'prev' },
+            });
+          })
         Text(this.playing ? '⏸' : '▶')
           .fontSize(18)
           .fontColor('#C85235')
-          .width(32)
-          .height(32)
+          .width(34)
+          .height(30)
           .textAlign(TextAlign.Center)
           .onClick(() => {
             postCardAction(this, {
@@ -64,11 +77,23 @@ struct StayTunedCard {
               params: { stayTunedAction: 'toggle' },
             });
           })
+        Text('⏭')
+          .fontSize(16)
+          .fontColor('#5C6056')
+          .width(30)
+          .height(30)
+          .textAlign(TextAlign.Center)
+          .onClick(() => {
+            postCardAction(this, {
+              action: 'router',
+              abilityName: 'EntryAbility',
+              params: { stayTunedAction: 'next' },
+            });
+          })
+        Blank()
         Text(this.playing ? '在听' : '点按打开留频')
           .fontSize(12)
           .fontColor('#7A7D72')
-          .margin({ left: 4 })
-        Blank()
       }
       .width('100%')
     }

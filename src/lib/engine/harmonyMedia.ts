@@ -31,7 +31,7 @@ export interface HarmonyMediaState {
   artwork?: string;
 }
 
-export type HarmonyMediaCommand = 'play' | 'pause' | 'next' | 'prev' | 'seek';
+export type HarmonyMediaCommand = 'play' | 'pause' | 'toggle' | 'next' | 'prev' | 'seek';
 
 /** Position updates arrive ~1/s; the session only needs a coarse picture. */
 const PUSH_INTERVAL_MS = 1000;

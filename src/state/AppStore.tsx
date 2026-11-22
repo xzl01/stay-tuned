@@ -1795,6 +1795,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         if (!playing) togglePlayRef.current();
       } else if (command === 'pause') {
         if (playing) pauseRef.current();
+      } else if (command === 'toggle') {
+        // The card only knows whether something is playing, not which direction
+        // the user meant, so let the store decide.
+        togglePlayRef.current();
       } else if (command === 'next') {
         nextRef.current();
       } else if (command === 'prev') {
