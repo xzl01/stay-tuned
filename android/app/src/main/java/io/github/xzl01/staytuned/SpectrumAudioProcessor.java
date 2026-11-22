@@ -101,7 +101,6 @@ public final class SpectrumAudioProcessor extends BaseAudioProcessor {
             imag[i] = 0f;
         }
         fft();
-        bandCursor = 0;
         for (int band = 0; band < BANDS; band++) {
             int from = bandEdges[band];
             int to = Math.max(from + 1, bandEdges[band + 1]);
