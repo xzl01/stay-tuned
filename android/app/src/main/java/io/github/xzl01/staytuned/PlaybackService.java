@@ -171,6 +171,9 @@ public class PlaybackService extends Service {
                 publish();
             }
             emitState();
+            // The ticker is the only thing guaranteed to run after the UI comes
+            // back to the foreground, so start/stop the spectrum loop here too.
+            syncSpectrumLoop();
             if (playing) {
                 // ~5s cadence: survives a process kill without hammering flash.
                 if (Math.abs(positionMs - lastPersistedMs) >= 5_000) persistCurrentPosition();
