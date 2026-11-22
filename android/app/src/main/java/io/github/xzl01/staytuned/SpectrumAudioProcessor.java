@@ -3,9 +3,9 @@
 package io.github.xzl01.staytuned;
 
 import androidx.annotation.Nullable;
-import androidx.media3.common.AudioFormat;
 import androidx.media3.common.C;
 import androidx.media3.common.audio.AudioProcessor;
+import androidx.media3.common.audio.AudioProcessor.AudioFormat;
 import androidx.media3.common.audio.BaseAudioProcessor;
 import androidx.media3.common.util.UnstableApi;
 
