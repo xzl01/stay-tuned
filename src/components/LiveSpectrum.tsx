@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useAppStore } from '../state/AppStore';
+import { isNativePlatform } from '../lib/serverConfig';
 
 type SpectrumMode = 'scope' | 'mobile' | 'rail';
 
@@ -84,9 +85,14 @@ export function LiveSpectrum({ bars, active, className, mode = 'scope' }: LiveSp
     };
     let frame = 0;
 
+    // 安卓的频段来自原生音频管线：安静或缓冲时读到 0 是正常的，
+    // 不能像跨域 Web Audio 那样判死刑并永久退回装饰柱。
+    const nativeSpectrum = isNativePlatform();
+
     const tick = () => {
       if (!readSpectrum(data)) {
         setFloor();
+        frame = window.requestAnimationFrame(tick);
         return;
       }
       let rawPeak = 0;
@@ -96,11 +102,17 @@ export function LiveSpectrum({ bars, active, className, mode = 'scope' }: LiveSp
       if (rawPeak === 0) {
         silentFrames += 1;
         if (silentFrames > SILENT_FRAME_LIMIT) {
-          showFallback();
-          return;
+          if (!nativeSpectrum) {
+            showFallback();
+            return;
+          }
+          // 原生：先归零，但继续轮询，有声音就恢复。
+          setFloor();
+          container.classList.add('has-spectrum');
         }
       } else {
         silentFrames = 0;
+        if (nativeSpectrum) container.classList.add('has-spectrum');
       }
 
       const targets: number[] = [];
