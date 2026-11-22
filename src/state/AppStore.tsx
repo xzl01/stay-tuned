@@ -1697,16 +1697,20 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isNativePlatform()) return undefined;
     const offState = onNativeState((state) => {
+      // The service reports "buffering" when a live stream stalls. That is not
+      // a user pause: keep the transport looking active and show loading, so a
+      // network hiccup no longer reads as "playback stopped by itself".
+      const buffering = state.state === 'buffering';
       setPlayback((snapshot) => ({
         ...snapshot,
-        isPlaying: state.isPlaying,
+        isPlaying: buffering ? true : state.isPlaying,
         currentTime: Number.isFinite(state.position) ? state.position : snapshot.currentTime,
         duration: state.duration > 0 ? state.duration : snapshot.duration,
         buffered:
           state.duration > 0
             ? Math.min(100, Math.max(snapshot.buffered, (state.buffered / state.duration) * 100))
             : snapshot.buffered,
-        isLoading: false,
+        isLoading: buffering,
         error: null,
       }));
       const target = currentRef.current;

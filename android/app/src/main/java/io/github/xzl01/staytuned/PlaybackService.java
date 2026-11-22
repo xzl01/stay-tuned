@@ -129,6 +129,8 @@ public class PlaybackService extends Service {
     private String lastMetaKey = "";
     private String lastNotifyKey = "";
     private long sessionPositionMs = -1;
+    /** Last state code published to the session, so transitions get logged once. */
+    private int lastPublishedState = -1;
 
     private final Runnable ticker = new Runnable() {
         @Override
@@ -569,12 +571,26 @@ public class PlaybackService extends Service {
             lastMetaKey = key;
             session.setMetadata(buildMetadata());
         }
+        // A live stream that stalls is "buffering", not "paused": reporting the
+        // latter makes the UI look stopped and hides a network hiccup behind a
+        // pause icon. Only a user pause (wanted == false) is really paused.
+        boolean buffering = player != null
+                && player.getPlaybackState() == Player.STATE_BUFFERING;
+        int stateCode = playing
+                ? PlaybackState.STATE_PLAYING
+                : (buffering && playWhenReadyWanted ? PlaybackState.STATE_BUFFERING
+                        : PlaybackState.STATE_PAUSED);
+        if (stateCode != lastPublishedState) {
+            lastPublishedState = stateCode;
+            Log.i(TAG, "state=" + stateCode + " buffering=" + buffering
+                    + " wanted=" + playWhenReadyWanted + " retries=" + errorRetries);
+        }
         PlaybackState.Builder state = new PlaybackState.Builder()
                 .setActions(PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE
                         | PlaybackState.ACTION_PLAY_PAUSE
                         | PlaybackState.ACTION_SKIP_TO_NEXT | PlaybackState.ACTION_SKIP_TO_PREVIOUS
                         | (live ? 0 : PlaybackState.ACTION_SEEK_TO))
-                .setState(playing ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
+                .setState(stateCode,
                         live ? PlaybackState.PLAYBACK_POSITION_UNKNOWN : positionMs,
                         playing ? rate : 0f);
         session.setPlaybackState(state.build());
@@ -991,7 +1007,8 @@ public class PlaybackService extends Service {
         data.put("position", positionMs / 1000.0);
         data.put("duration", durationMs / 1000.0);
         data.put("buffered", bufferedMs / 1000.0);
-        data.put("state", playing ? "playing" : "paused");
+        boolean stalled = player != null && player.getPlaybackState() == Player.STATE_BUFFERING;
+        data.put("state", playing ? "playing" : stalled && playWhenReadyWanted ? "buffering" : "paused");
         MediaBridgePlugin.emit("nativeState", data);
     }
 
