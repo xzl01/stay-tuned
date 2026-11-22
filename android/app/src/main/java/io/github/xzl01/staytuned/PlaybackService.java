@@ -193,9 +193,10 @@ public class PlaybackService extends Service {
 
     private void ensurePlayer() {
         if (player != null) return;
-        // The custom renderers factory lets us tap the decoded PCM for the
-        // spectrum bars; without it the analyser would only see silence.
-        player = new ExoPlayer.Builder(this, new SpectrumRenderersFactory(this)).build();
+        // NOTE: the spectrum tap is not wired in here on purpose. Inserting an
+        // AudioProcessor into the sink silenced playback on device; until that is
+        // sorted out the player keeps the stock audio path.
+        player = new ExoPlayer.Builder(this).build();
         player.setAudioAttributes(
                 new AudioAttributes.Builder()
                         .setUsage(C.USAGE_MEDIA)
