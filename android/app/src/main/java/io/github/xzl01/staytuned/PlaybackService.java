@@ -28,6 +28,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.util.Log;
 import android.util.LruCache;
 
 import java.lang.reflect.Method;
@@ -63,6 +64,7 @@ public class PlaybackService extends Service {
     static final String ACTION_PREV = "io.github.xzl01.staytuned.MEDIA_PREV";
     static final String ACTION_STOP = "io.github.xzl01.staytuned.MEDIA_STOP";
 
+    private static final String TAG = "StayTuned";
     private static final boolean REAR_SCREEN_DEVICE = isXiaomiRearScreenDevice();
     private static final String POSITION_PREFS = "stay_tuned_positions";
     /** Survives a service restart so a paused item can still be resumed. */
@@ -71,8 +73,25 @@ public class PlaybackService extends Service {
     private static final int NOTIFICATION_ID = 1201;
     private static final int CONTENT_REQUEST = 1202;
 
+    /** 点阵背屏：StepOS 机型的 17×23 像素屏，播放时显示波形与进度。 */
+    private static final long SCREEN_FRAME_MS = 90;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final LruCache<String, Bitmap> artworkCache = new LruCache<>(6);
+    private BackScreen backScreen;
+    private boolean screenLoop;
+    private final Handler screenHandler = new Handler(Looper.getMainLooper());
+    private final Runnable screenTick = new Runnable() {
+        @Override
+        public void run() {
+            if (!screenLoop || backScreen == null || !backScreen.available()) return;
+            float progress = (!live && durationMs > 0)
+                    ? (float) positionMs / (float) durationMs
+                    : 0f;
+            backScreen.show(BackScreenArt.frame(
+                    android.os.SystemClock.elapsedRealtime(), playing, live, progress));
+            screenHandler.postDelayed(this, SCREEN_FRAME_MS);
+        }
+    };
 
     private ExoPlayer player;
     private MediaSession session;
@@ -558,9 +577,38 @@ public class PlaybackService extends Service {
         session.setPlaybackState(state.build());
         sessionPositionMs = positionMs;
         String notifyKey = key + '\u0001' + playing;
+        syncBackScreen();
         if (foreground && notifyKey.equals(lastNotifyKey)) return;
         lastNotifyKey = notifyKey;
         showNotification();
+    }
+
+    /**
+     * 背屏内容跟随播放状态：播放时约 11 帧每秒画波形，暂停时推一张静态帧，
+     * 没有背屏的机型只会在第一次尝试后永久跳过。
+     */
+    private void syncBackScreen() {
+        if (backScreen == null) {
+            backScreen = new BackScreen();
+            backScreen.init(getApplicationContext());
+            if (!backScreen.available()) {
+                Log.i(TAG, "no back screen: " + backScreen.lastError());
+                return;
+            }
+        }
+        if (!backScreen.available()) return;
+        if (playing) {
+            if (!screenLoop) {
+                screenLoop = true;
+                screenHandler.post(screenTick);
+            }
+            return;
+        }
+        screenLoop = false;
+        screenHandler.removeCallbacks(screenTick);
+        float progress = (!live && durationMs > 0) ? (float) positionMs / (float) durationMs : 0f;
+        backScreen.show(BackScreenArt.frame(
+                android.os.SystemClock.elapsedRealtime(), false, live, progress));
     }
 
     private MediaMetadata buildMetadata() {
@@ -965,6 +1013,12 @@ public class PlaybackService extends Service {
             foreground = false;
         }
         playing = false;
+        screenLoop = false;
+        screenHandler.removeCallbacks(screenTick);
+        if (backScreen != null) {
+            backScreen.clear();
+            backScreen = null;
+        }
     }
 
     @Override
