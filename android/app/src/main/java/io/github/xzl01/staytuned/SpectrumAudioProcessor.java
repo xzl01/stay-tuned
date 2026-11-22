@@ -109,8 +109,11 @@ public final class SpectrumAudioProcessor extends BaseAudioProcessor {
                 float magnitude = (float) Math.hypot(real[bin], imag[bin]);
                 if (magnitude > peak) peak = magnitude;
             }
-            // 归一化到 0–1，压一下动态范围，柱子才不总贴底或顶格。
-            float level = (float) Math.min(1, Math.log10(1 + peak * 12));
+            // 先折算成相对满幅的振幅，再按 -60…0 dB 映射到 0–1。
+            // 之前直接 log10(1 + peak*12) 对真实音频几乎必然饱和，柱子会全顶格。
+            float amplitude = peak / (FFT_SIZE * 0.5f);
+            float db = 20f * (float) Math.log10(Math.max(amplitude, 1e-5f));
+            float level = Math.max(0f, Math.min(1f, (db + 60f) / 60f));
             float previous = bands[band];
             bands[band] = level > previous
                     ? previous + (level - previous) * SMOOTH_UP
