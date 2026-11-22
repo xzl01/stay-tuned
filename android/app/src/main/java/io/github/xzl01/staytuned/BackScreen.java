@@ -78,20 +78,27 @@ public final class BackScreen {
     }
 
     /**
-     * 推一帧。第一次推之前先声明一次「背屏上有一个应用内容」，
-     * 否则系统仍停留在时间/天气那一层。
+     * 播放时让背屏保持点亮；暂停后交还给「自动」，只在翻过来时出现。
+     * 面板常亮很费电，所以只在真正出声的时候占用。
      */
+    public void setAlwaysOn(boolean alwaysOn) {
+        if (!available) return;
+        try {
+            if (setEnabled != null) setEnabled.invoke(manager, alwaysOn);
+            if (setDisplayMode != null) setDisplayMode.invoke(manager, alwaysOn ? 1 : 0);
+            if (alwaysOn && setAgentState != null) {
+                setAgentState.invoke(manager, "wake_ai_key_click", null);
+            }
+            stateSet = alwaysOn;
+        } catch (Throwable error) {
+            lastError = error.getClass().getSimpleName() + ": " + error.getMessage();
+        }
+    }
+
+    /** 推一帧 17×23 的灰度画面。 */
     public boolean show(int[] frame) {
         if (!available || frame == null || frame.length < CELLS) return false;
         try {
-            if (!stateSet) {
-                // 与点阵小游戏一致：打开背屏并切到「常显」，否则背屏朝向桌面时
-                // 系统会按策略把输出全部压掉，自定义帧只会停在 pending 状态。
-                if (setEnabled != null) setEnabled.invoke(manager, true);
-                if (setDisplayMode != null) setDisplayMode.invoke(manager, 1);
-                if (setAgentState != null) setAgentState.invoke(manager, "wake_ai_key_click", null);
-                stateSet = true;
-            }
             setFrame.invoke(manager, frame, null);
             return true;
         } catch (Throwable error) {

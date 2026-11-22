@@ -599,6 +599,7 @@ public class PlaybackService extends Service {
         if (!backScreen.available()) return;
         if (playing) {
             if (!screenLoop) {
+                backScreen.setAlwaysOn(true);
                 screenLoop = true;
                 screenHandler.post(screenTick);
             }
@@ -606,6 +607,8 @@ public class PlaybackService extends Service {
         }
         screenLoop = false;
         screenHandler.removeCallbacks(screenTick);
+        // 暂停后画面留着，但不再常亮：翻过来才看得到，功耗交回系统。
+        backScreen.setAlwaysOn(false);
         float progress = (!live && durationMs > 0) ? (float) positionMs / (float) durationMs : 0f;
         backScreen.show(BackScreenArt.frame(
                 android.os.SystemClock.elapsedRealtime(), false, live, progress));
